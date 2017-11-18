@@ -1,0 +1,6 @@
+pip
+wheel
+flake8
+coverage
+pytest
+pytest-runner
