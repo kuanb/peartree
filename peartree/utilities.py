@@ -2,6 +2,8 @@ import logging as lg
 
 import partridge as ptg
 
+from . import settings
+
 
 def config(log_console=settings.log_console):
     # Taken from OSMnx's utils.py file, see log comments
