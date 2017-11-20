@@ -101,8 +101,7 @@ def log(message: str, level=None, name=None, filename=None):
 
 
 class InvalidGTFS(Exception):
-    # Let's have a custom exception for when reading
-    # in GTFS files
+    # Let's have a custom exception for when we read in GTFS files
     pass
 
 
