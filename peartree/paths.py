@@ -1,13 +1,12 @@
 import string
-from typing import Dict
 import random
 
+import networkx as nx
 import partridge as ptg
 
 from .graph import (generate_empty_md_graph,
                     generate_summary_graph_elements,
                     populate_graph)
-from .settings import WGS84
 from .utilities import log
 
 

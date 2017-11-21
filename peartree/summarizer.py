@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import random
 
-from utilities import log
+from .utilities import log
 
 
 def calculate_average_wait(direction_times):
@@ -80,7 +80,7 @@ def summarize_edge_costs(df):
 
 def generate_summary_edge_costs(all_edge_costs):
     summary_groupings = all_edge_costs.groupby('from_stop_id')
-    summary = summary_groupings.apply(_summarize_edge_costs)
+    summary = summary_groupings.apply(summarize_edge_costs)
     summary = summary.reset_index(drop=True)
     return summary
 
@@ -165,7 +165,7 @@ def generate_summary_wait_times(df):
         raise Exception('NaN values for both directions on some stop IDs.')
     
     grouped = df_sub.groupby('stop_id')
-    summarized = grouped.apply(_summarize_waits_at_one_stop)
+    summarized = grouped.apply(summarize_waits_at_one_stop)
     
     summed_reset = summarized.reset_index(drop=False)
     summed_reset.columns = ['stop_id', 'avg_cost']
