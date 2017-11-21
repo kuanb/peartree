@@ -5,8 +5,8 @@
 
 from setuptools import setup, find_packages
 
-# with open('README.rst') as readme_file:
-#     readme = readme_file.read()
+with open('README.rst') as readme_file:
+    readme = readme_file.read()
 
 # About dict to store version and package info
 about = dict()
@@ -30,7 +30,7 @@ setup(
     name='peartree',
     version=about['__version__'],
     description='Peartree is a library for converting GTFS to directed graphs.',
-    long_description=readme + '\n\n' + history,
+    long_description=readme,
     author='Kuan Butts',
     author_email='kuanbutts@gmail.com',
     url='https://github.com/kuanb/peartree',
