@@ -10,7 +10,7 @@ with open('README.rst') as readme_file:
 
 # About dict to store version and package info
 about = dict()
-with open('partridge/__version__.py', 'r', encoding='utf-8') as f:
+with open('peartree/__version__.py', 'r', encoding='utf-8') as f:
     exec(f.read(), about)
 
 requirements = [
