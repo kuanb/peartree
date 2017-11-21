@@ -25,6 +25,12 @@ def test_generate_name():
     assert isinstance(name, str)
 
 
+def test_empty_feed():
+    path = fixture('empty.zip')
+    with pytest.raises(InvalidGTFS):
+        get_representative_feed(path)
+
+
 def test_extract_valid_feed():
     # Read in without name, or any
     # other optional arguments
