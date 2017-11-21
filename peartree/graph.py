@@ -3,11 +3,14 @@ import numpy as np
 import pandas as pd
 import random
 
-from utilities import log
+from fiona import crs
+import networkx as nx
+
+from .utilities import log
 
 
-def generate_empty_md_graph(name,
-                            init_crs={'init':'epsg:4326'}):
+def generate_empty_md_graph(name: str,
+                            init_crs: Dict=crs.from_epsg(WGS84)):
     return nx.MultiDiGraph(name=name, crs=init_crs)
 
 
@@ -15,6 +18,20 @@ def nameify_stop_id(name, sid):
     name = str(name)
     sid = str(sid)
     return f'{name}_{sid}'
+
+
+def generate_summary_graph_elements(feed: ,
+                                    target_time_start,
+                                    target_time_end):
+    (all_edge_costs,
+     all_wait_times) = generate_edge_and_wait_values(feed,
+                                                     target_time_start,
+                                                     target_time_end)
+    
+    summary_edge_costs = generate_summary_edge_costs(all_edge_costs)
+    wait_times_by_stop = generate_summary_wait_times(all_wait_times)
+    
+    return (summary_edge_costs, wait_times_by_stop)
 
 
 def populate_graph(G,

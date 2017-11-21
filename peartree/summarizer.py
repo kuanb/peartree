@@ -276,20 +276,3 @@ def generate_edge_and_wait_values(feed,
             all_edge_costs = all_edge_costs.append(edge_costs)
             
     return (all_edge_costs, all_wait_times)
-
-
-def generate_summary_graph_elements(feed, target_time_start, target_time_end):
-    (all_edge_costs,
-     all_wait_times) = generate_edge_and_wait_values(feed,
-                                                      target_time_start,
-                                                      target_time_end)
-    
-    summary_edge_costs = generate_summary_edge_costs(all_edge_costs)
-    wait_times_by_stop = generate_summary_wait_times(all_wait_times)
-    
-    return (summary_edge_costs, wait_times_by_stop)
-
-
-def generate_random_name():
-    choices = (string.ascii_uppercase + string.digits)
-    return ''.join(random.SystemRandom().choice(choices) for _ in range(N))
