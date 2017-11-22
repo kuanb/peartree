@@ -25,7 +25,7 @@ def generate_empty_md_graph(name: str,
 def nameify_stop_id(name, sid):
     name = str(name)
     sid = str(sid)
-    return f'{name}_{sid}'
+    return '{}_{}'.format(name, sid)
 
 
 def generate_summary_graph_elements(feed: ptg.gtfs.feed,
@@ -49,7 +49,7 @@ def populate_graph(G: nx.MultiDiGraph,
                    summary_edge_costs: pd.DataFrame):
     for i, row in wait_times_by_stop.iterrows():
         sid = str(row.stop_id)
-        full_sid = f'{name}_{sid}'
+        full_sid = nameify_stop_id(name, sid)
 
         # TODO: Join tables before hand to make
         #       this part go faster

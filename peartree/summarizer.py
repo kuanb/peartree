@@ -171,8 +171,8 @@ def generate_summary_wait_times(df):
     summed_reset.columns = ['stop_id', 'avg_cost']
     
     end_of_stop_ids = summed_reset.stop_id.unique()
-    log(f'Original stop id count: {len(init_of_stop_ids)}')
-    log(f'After cleaning stop id count: {len(end_of_stop_ids)}')
+    log('Original stop id count: {}'.format(len(init_of_stop_ids)))
+    log('After cleaning stop id count: {}'.format(len(end_of_stop_ids)))
     
     if len(init_of_stop_ids) > len(end_of_stop_ids):
         a = set(list(init_of_stop_ids))
@@ -205,7 +205,7 @@ def generate_edge_and_wait_values(feed,
     all_edge_costs = None
     all_wait_times = None
     for i, route in feed.routes.iterrows():
-        log(f'Processing on route {route.route_id}.')
+        log('Processing on route {}.'.format(route.route_id))
         # Now get all the trips for that route
         trips = feed.trips[feed.trips.route_id==route.route_id]
 
