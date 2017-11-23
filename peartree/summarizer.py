@@ -132,7 +132,7 @@ def generate_summary_wait_times(df):
     new_len = len(df_sub_clean)
     if not new_len == orig_len:
         log(('Cleaned out bi-directional NaN values from '
-               'stop IDs. From {} to {}.'.format(orig_len, new_len)))
+             'stop IDs. From {} to {}.'.format(orig_len, new_len)))
         # And now replace df_sub
         df_sub = df_sub_clean
     
@@ -158,10 +158,6 @@ def generate_summary_wait_times(df):
     dir_1_check_2 = df_sub[np.isnan(df_sub.wait_dir_1)]
 
     if (len(dir_0_check_2) > 0) or (len(dir_1_check_2) > 0):
-        log('\ndir_0_check_1 values')
-        log(dir_0_check_2.head())
-        log('\ndir_1_check_2 values')
-        log(dir_1_check_2.head())
         raise Exception('NaN values for both directions on some stop IDs.')
     
     grouped = df_sub.groupby('stop_id')
@@ -179,7 +175,7 @@ def generate_summary_wait_times(df):
         b = set(list(end_of_stop_ids))
         unresolved_ids = list(a - b)
         log('Some unaccounted for stop '
-              'ids. Resolving {}...'.format(len(unresolved_ids)))
+            'ids. Resolving {}...'.format(len(unresolved_ids)))
         
         # TODO: Perhaps these are start/end stops and should adopt
         #       a cost that is "average" for that route?

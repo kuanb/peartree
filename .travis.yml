@@ -1,9 +1,19 @@
+addons:
+  apt:
+    packages:
+    - libgdal1h
+    - gdal-bin
+    - libgdal-dev
+    - libspatialindex-dev
+
 language: python
+
 python:
   - 3.6
   - 3.5
 
 before_install:
+  - sudo apt-get -y update
   - pip install --upgrade pip
   - pip install --upgrade wheel
 
