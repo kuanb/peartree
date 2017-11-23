@@ -1,0 +1,30 @@
+# Docs @ http://pre-commit.com/
+
+repos:
+- repo: git://github.com/pre-commit/pre-commit-hooks
+  sha: v0.7.1  # Use the ref you want to point at
+  hooks:
+  - id: autopep8-wrapper
+  - id: check-added-large-files
+    args: ['--maxkb=500']
+  - id: check-ast
+  - id: check-byte-order-marker
+  - id: check-case-conflict
+  - id: check-docstring-first
+  - id: check-json
+  - id: check-merge-conflict
+  - id: check-symlinks
+  - id: check-xml
+  - id: check-yaml
+    args: ['--ignore-tags=!include']
+  - id: debug-statements
+  - id: end-of-file-fixer
+  - id: fix-encoding-pragma
+    args: ["--remove"]
+  - id: flake8
+  - id: trailing-whitespace
+
+- repo: https://github.com/CalthorpeAnalytics/pre-commit-python-sorter.git
+  sha: 1.0.8
+  hooks:
+  - id: python-import-sorter
