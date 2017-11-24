@@ -2,6 +2,9 @@
 Peartree 🍐🌳
 ===========
 
+.. image:: https://img.shields.io/pypi/v/peartree.svg
+        :target: https://pypi.python.org/pypi/peartree
+
 .. image:: https://img.shields.io/travis/kuanb/peartree.svg
         :target: https://travis-ci.org/kuanb/peartree
 
@@ -36,8 +39,6 @@ Usage
 
 Installation
 ------------
-
-Note: Still a WIP. Current version on PyPI not good...
 
 .. code:: console
 
