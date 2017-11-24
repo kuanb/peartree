@@ -18,6 +18,8 @@ Above, an example of multiple Bay Area transit operators being incrementally loa
 Usage
 -----
 
+See a full notebook at `this gist <https://gist.github.com/kuanb/c54d0ae7ee353cac3d56371d3491cf56>`_ to see a simple, step-by-step iPython Notebook pulling in an AC Transit GTFS feed and converting it to a NetworkX graph.
+
 .. code:: python
 
     import peartree as pt
