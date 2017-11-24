@@ -1,7 +1,8 @@
 import datetime as dt
-import os
-
 import logging as lg
+import os
+import sys
+import unicodedata
 
 from . import settings
 
@@ -26,7 +27,8 @@ def get_logger(level=None,
 
         # get today's date and construct a log filename
         todays_date = dt.datetime.today().strftime('%Y_%m_%d')
-        log_filename = '{}/{}_{}.log'.format(settings.logs_folder, filename, todays_date)
+        log_filename = '{}/{}_{}.log'.format(
+            settings.logs_folder, filename, todays_date)
 
         # if the logs folder does not already exist, create it
         if not os.path.exists(settings.logs_folder):
@@ -34,7 +36,8 @@ def get_logger(level=None,
 
         # create file handler and log formatter and set them up
         handler = lg.FileHandler(log_filename, encoding='utf-8')
-        formatter = lg.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
+        formatter = lg.Formatter(
+            '%(asctime)s %(levelname)s %(name)s %(message)s')
         handler.setFormatter(formatter)
         logger.addHandler(handler)
         logger.setLevel(level)
@@ -46,13 +49,23 @@ def get_logger(level=None,
 def config(log_console=settings.log_console):
     # Taken from OSMnx's utils.py file, see log comments
     # for link to version from which these methods were taken
-    
+
     # Set each global variable to the passed-in parameter value
     settings.log_console = log_console
 
     # if logging is turned on, log that we are configured
     if settings.log_file or settings.log_console:
         log('Configured osmnx')
+
+
+def make_str(value):
+    # This method should I ever want to support Python 2.x
+    try:
+        # For python 2.x compatibility, use unicode
+        return unicode(value)
+    except NameError:
+        # Python 3.x has no unicode type, so if error, use str type
+        return str(value)
 
 
 def log(message: str, level=None, name=None, filename=None):
@@ -92,6 +105,9 @@ def log(message: str, level=None, name=None, filename=None):
 
         # Convert message to ascii for console display so it doesn't break
         # windows terminals
-        message = unicodedata.normalize('NFKD', make_str(message)).encode('ascii', errors='replace').decode()
-        print(message)
+        str_msg = make_str(message)
+        normalized = unicodedata.normalize('NFKD', str_msg)
+        encoded = normalized.encode('ascii', errors='replace')
+        decoded = encoded.decode()
+        print(decoded)
         sys.stdout = standard_out

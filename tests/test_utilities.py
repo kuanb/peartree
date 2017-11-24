@@ -1,5 +1,3 @@
-import pytest
-
 from peartree.utilities import log
 
 

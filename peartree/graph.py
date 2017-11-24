@@ -1,20 +1,14 @@
 from typing import Dict
 
 import networkx as nx
-import numpy as np
-import pandas as pd
-import random
-
-from fiona import crs
-import networkx as nx
 import pandas as pd
 import partridge as ptg
+from fiona import crs
 
 from .settings import WGS84
 from .summarizer import (generate_edge_and_wait_values,
                          generate_summary_edge_costs,
                          generate_summary_wait_times)
-from .utilities import log
 
 
 def generate_empty_md_graph(name: str,
@@ -35,10 +29,10 @@ def generate_summary_graph_elements(feed: ptg.gtfs.feed,
      all_wait_times) = generate_edge_and_wait_values(feed,
                                                      target_time_start,
                                                      target_time_end)
-    
+
     summary_edge_costs = generate_summary_edge_costs(all_edge_costs)
     wait_times_by_stop = generate_summary_wait_times(all_wait_times)
-    
+
     return (summary_edge_costs, wait_times_by_stop)
 
 
@@ -53,7 +47,7 @@ def populate_graph(G: nx.MultiDiGraph,
 
         # TODO: Join tables before hand to make
         #       this part go faster
-        id_mask = (feed.stops.stop_id==sid)
+        id_mask = (feed.stops.stop_id == sid)
         stop_data = feed.stops[id_mask].head(1).T.squeeze()
 
         G.add_node(full_sid,

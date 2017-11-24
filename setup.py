@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """The setup script."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -31,7 +30,8 @@ test_requirements = [
 setup(
     name='peartree',
     version=about['__version__'],
-    description='Peartree is a library for converting GTFS to directed graphs.',
+    description=('Peartree is a library for '
+                 'converting GTFS to directed graphs.'),
     long_description=readme,
     author='Kuan Butts',
     author_email='kuanbutts@gmail.com',

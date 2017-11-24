@@ -29,7 +29,7 @@ Usage
     # use to summarize impedance
     start = 7*60*60  # 7:00 AM
     end = 10*60*60  # 10:00 AM
-    
+
     # Converts feed subset into a directed
     # network multigraph
     G = pt.load_feed_as_graph(feed, start, end)
@@ -42,4 +42,3 @@ Note: Still a WIP. Current version on PyPI not good...
 .. code:: console
 
     pip install peartree
-

@@ -1,8 +1,8 @@
 # Docs @ http://pre-commit.com/
 
 repos:
-- repo: git://github.com/pre-commit/pre-commit-hooks
-  sha: v0.7.1  # Use the ref you want to point at
+- repo: https://github.com/kuanb/pre-commit-hooks.git
+  sha: 61d0735ca8b0ce5ab8df867bc974798ba8316ee5
   hooks:
   - id: autopep8-wrapper
   - id: check-added-large-files
@@ -24,7 +24,7 @@ repos:
   - id: flake8
   - id: trailing-whitespace
 
-- repo: https://github.com/CalthorpeAnalytics/pre-commit-python-sorter.git
+- repo: https://github.com/kuanb/pre-commit-python-sorter.git
   sha: 1.0.8
   hooks:
   - id: python-import-sorter

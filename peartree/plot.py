@@ -1,5 +1,10 @@
+import matplotlib
 import networkx as nx
 import osmnx as ox
+
+# Force matplotlib to not use any Xwindows backend.
+matplotlib.use('Agg')
+
 
 def generate_plot(G: nx.MultiDiGraph):
     # TODO: Build out custom plotting configurations but,
