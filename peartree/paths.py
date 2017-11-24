@@ -43,11 +43,11 @@ def get_representative_feed(file_loc: str,
     else:
         raise NotImplementedError('Unsupported day type string supplied.')
 
-    log(f'Selected_date: {selected_date}')
-    log(f'Number of trips on that date: {trip_count}')
+    log('Selected_date: {}'.format(selected_date))
+    log('Number of trips on that date: {}'.format(trip_count))
 
     all_service_ids = '\n\t'.join(service_ids_by_date[selected_date])
-    log(f'\nAll related service IDs: \n\t{all_service_ids}')
+    log('\nAll related service IDs: \n\t{}'.format(all_service_ids))
 
     sub = service_ids_by_date[selected_date]
     feed_query = {'trips.txt': {'service_id': sub}}
