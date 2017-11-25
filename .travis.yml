@@ -19,6 +19,11 @@ before_install:
 
 install:
   - pip install -r requirements.txt
+  - pip install -r requirements_dev.txt
 
 script:
-  - PYTHONPATH=. MPLBACKEND="agg" py.test
+  - PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose
+
+after_success:
+  - coverage report -m
+  - coveralls
