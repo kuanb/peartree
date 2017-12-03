@@ -41,6 +41,12 @@ def generate_cross_feed_edges(G,
                               feed,
                               wait_times_by_stop,
                               connection_threshold):
+    # Terminate this process early if the graph is empty
+    if (G.number_of_nodes() == 0):
+        return pd.DataFrame({'stop_id': [],
+                             'to_nodes': [],
+                             'edge_costs': []})
+
     # First, we need a DataFrame representation of the nodes in the graph
     node_df = generate_graph_node_dataframe(G)
 
