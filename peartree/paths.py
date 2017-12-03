@@ -59,6 +59,39 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                        end_time: int,
                        name: str=None,
                        existing_graph: nx.MultiDiGraph=None):
+    """
+    Convert a feed object into a NetworkX Graph, connect to an existing
+    NetworkX graph if one is supplied
+
+    Parameters
+    ----------
+    feed : partridge.feed
+        A feed object from Partridge holding a representation of the
+        desired schedule ids and their releated scheudule data from an
+        operator GTFS
+    start_time : int
+        Represented in seconds after midnight; indicates the start time
+        with which to take the subset of the target feed schedule
+        to be used to measure impedance between stops along
+        the route, as well as cost (wait time) to board at each stop
+    end_time : int
+        Represented in seconds after midnight; indicates the end time
+        with which to take the subset of the target feed schedule
+        to be used to measure impedance between stops along
+        the route, as well as cost (wait time) to board at each stop
+    name : str
+        Name of the operator, which is used to create a unique ID for each
+        of the stops, routes, etc. in the feed being supplied
+    existing_graph : networkx.Graph
+        An existing graph containing other operator or schedule data
+
+    Returns
+    -------
+    tuple
+        (geometry_proj, crs), the projected shapely geometry and the crs of the
+        projected geometry
+    """
+
     # Generate a random name for name if it is None
     if not name:
         name = _generate_random_name()
