@@ -72,7 +72,11 @@ def generate_cross_feed_edges(G,
         # Once check has cleared, pull out the first row as a pd.Series
         stop_data = stop_data_head.T.squeeze()
 
-        point = (stop_data.stop_lat, stop_data.stop_lon)
+        # Ensure that each value is typed correctly prior to being
+        # fed into the nearest node method
+        lat = float(stop_data.stop_lat)
+        lon = float(stop_data.stop_lon)
+        point = (lat, lon)
         (nn, nn_dist) = get_nearest_node(node_df, point)
 
         # Only generate a connector edge if it satisfies the

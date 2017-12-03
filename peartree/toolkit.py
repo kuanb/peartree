@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 import osmnx as ox
 import pandas as pd
@@ -26,10 +28,10 @@ def generate_graph_node_dataframe(G):
     # Dump graph node coordinates array
     clist = []
     for node, data in G.nodes(data=True):
-        # Ensure that each items is cast as the correct type
+        # Ensure that each items is cast as the correct typegi
         x = float(data['x'])
         y = float(data['y'])
-        clist.append(node, x, y)
+        clist.append([node, x, y])
     coords = np.array(clist)
 
     # Then make into a Pandas DataFrame, with the node as index
@@ -37,7 +39,7 @@ def generate_graph_node_dataframe(G):
 
 
 def get_nearest_node(df_orig: pd.DataFrame,
-                     point: tuple):
+                     point: Tuple[float, float]):
     # This method breaks out a portion of a similar method from
     # OSMnx's get_nearest_node; source:
     #   https://github.com/gboeing/osmnx/blob/
