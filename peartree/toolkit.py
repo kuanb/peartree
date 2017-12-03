@@ -55,12 +55,18 @@ def get_nearest_node(df_orig: pd.DataFrame,
     # TODO: OSMnx supports euclidean as well, for now we have a stumped
     #       version of this same function
 
+    # Ensure each vectorized series is typed correctly
+    ref_ys = df['reference_y'].astype(float)
+    ref_xs = df['reference_x'].astype(float)
+    ys = df['y'].astype(float)
+    xs = df['x'].astype(float)
+
     # Calculate distance vector using great circle distances (ie, for
     # spherical lat-long geometries)
-    distances = great_circle_vec(lat1=df['reference_y'],
-                                 lng1=df['reference_x'],
-                                 lat2=df['y'],
-                                 lng2=df['x'])
+    distances = great_circle_vec(lat1=ref_ys,
+                                 lng1=ref_xs,
+                                 lat2=ys,
+                                 lng2=xs)
 
     # Calculate the final results to be returned
     nearest_node = int(distances.idxmin())
