@@ -38,8 +38,7 @@ def generate_summary_graph_elements(feed: ptg.gtfs.feed,
 
 
 def generate_cross_feed_edges(G,
-                              feed,
-                              wait_times_by_stop,
+                              stops_df,
                               connection_threshold):
     # Terminate this process early if the graph is empty
     if (G.number_of_nodes() == 0):
@@ -56,26 +55,13 @@ def generate_cross_feed_edges(G,
 
     # TODO: Repeating this in populate_graph as well, there may
     #       be a way to condense these two steps well
-    for i, row in wait_times_by_stop.iterrows():
+    for i, row in stops_df.iterrows():
         sid = str(row.stop_id)
-
-        # TODO: Join tables before hand to make
-        #       this part go faster
-        id_mask = (feed.stops.stop_id == sid)
-        stop_data_head = feed.stops[id_mask].head(1)
-
-        # Handle the possibility that there are no values for that stop
-        # id in the feed subset of wait times
-        if not len(stop_data_head):
-            continue
-
-        # Once check has cleared, pull out the first row as a pd.Series
-        stop_data = stop_data_head.T.squeeze()
 
         # Ensure that each value is typed correctly prior to being
         # fed into the nearest node method
-        lat = float(stop_data.stop_lat)
-        lon = float(stop_data.stop_lon)
+        lat = float(row.stop_lat)
+        lon = float(row.stop_lon)
         point = (lat, lon)
         (nn, nn_dist) = get_nearest_node(node_df, point)
 
@@ -113,30 +99,17 @@ def populate_graph(G: nx.MultiDiGraph,
     stops_df = _merge_stop_waits_and_attributes(wait_times_by_stop, feed.stops)
     assert len(stops_df) == len(wait_times_by_stop)
 
-    for i, row in wait_times_by_stop.iterrows():
+    for i, row in stops_df.iterrows():
         sid = str(row.stop_id)
         full_sid = nameify_stop_id(name, sid)
-
-        # TODO: Join tables before hand to make
-        #       this part go faster
-        id_mask = (feed.stops.stop_id == sid)
-        stop_data_head = feed.stops[id_mask].head(1)
-
-        # Handle the possibility that there are no values for that stop
-        # id in the feed subset of wait times
-        if not len(stop_data_head):
-            continue
-
-        # Once check has cleared, pull out the first row as a pd.Series
-        stop_data = stop_data_head.T.squeeze()
 
         # Add to the lookup crosswalk dictionary
         sid_lookup[sid] = full_sid
 
         G.add_node(full_sid,
                    boarding_cost=row.avg_cost,
-                   y=stop_data.stop_lat,
-                   x=stop_data.stop_lon)
+                   y=row.stop_lat,
+                   x=row.stop_lon)
 
     for i, row in summary_edge_costs.iterrows():
         sid_fr = nameify_stop_id(name, row.from_stop_id)
@@ -147,8 +120,7 @@ def populate_graph(G: nx.MultiDiGraph,
 
     # Generate cross feed edge values
     cross_feed_edges = generate_cross_feed_edges(G,
-                                                 feed,
-                                                 wait_times_by_stop,
+                                                 stops_df,
                                                  connection_threshold)
 
     # Now add the cross feed edge connectors to the graph to
