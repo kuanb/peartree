@@ -91,6 +91,14 @@ def generate_cross_feed_edges(G,
                          'distance': edge_costs})
 
 
+def _merge_stop_waits_and_attributes(wait_times_by_stop: pd.DataFrame,
+                                     feed_stops: pd.DataFrame) -> pd.DataFrame:
+    wt_sub = wait_times_by_stop[['avg_cost', 'stop_id']]
+    fs_sub = feed_stops[['stop_lat', 'stop_lon', 'stop_id']]
+    mdf = pd.merge(wt_sub, fs_sub, on='stop_id', how='left')
+    return mdf[~mdf.isnull()]
+
+
 def populate_graph(G: nx.MultiDiGraph,
                    name: str,
                    feed: ptg.gtfs.feed,
@@ -101,6 +109,9 @@ def populate_graph(G: nx.MultiDiGraph,
     # here so that we can reference them when we add connector edges across
     # the various feeds loaded into the graph
     sid_lookup = {}
+
+    stops_df = _merge_stop_waits_and_attributes(wait_times_by_stop, feed.stops)
+    assert len(stops_df) == len(wait_times_by_stop)
 
     for i, row in wait_times_by_stop.iterrows():
         sid = str(row.stop_id)
