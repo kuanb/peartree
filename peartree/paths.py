@@ -4,8 +4,8 @@ import string
 import networkx as nx
 import partridge as ptg
 
-from .graph import (generate_cross_feed_edges, generate_empty_md_graph,
-                    generate_summary_graph_elements, populate_graph)
+from .graph import (generate_empty_md_graph, generate_summary_graph_elements,
+                    populate_graph)
 from .utilities import log
 
 
@@ -127,14 +127,9 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
     else:
         G = generate_empty_md_graph(name)
 
-    cross_feed_edges = generate_cross_feed_edges(G,
-                                                 feed,
-                                                 wait_times_by_stop,
-                                                 connection_threshold)
-
     return populate_graph(G,
                           name,
                           feed,
                           wait_times_by_stop,
                           summary_edge_costs,
-                          cross_feed_edges)
+                          connection_threshold)
