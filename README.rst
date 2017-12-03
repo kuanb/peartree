@@ -5,7 +5,7 @@ Peartree 🍐🌳
 .. image:: https://img.shields.io/pypi/v/peartree.svg
         :target: https://pypi.python.org/pypi/peartree
 
-.. image:: https://img.shields.io/travis/kuanb/peartree.svg
+.. image:: https://img.shields.io/travis/kuanb/peartree.svg?branch=master
         :target: https://travis-ci.org/kuanb/peartree
 
 .. image:: https://coveralls.io/repos/github/kuanb/peartree/badge.svg?branch=master
