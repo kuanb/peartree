@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union
 
 import networkx as nx
 import pandas as pd
@@ -96,7 +96,7 @@ def populate_graph(G: nx.MultiDiGraph,
                    feed: ptg.gtfs.feed,
                    wait_times_by_stop: pd.DataFrame,
                    summary_edge_costs: pd.DataFrame,
-                   cross_feed_edges: pd.DataFrame):
+                   connection_threshold: Union[int, float]):
     # As we convert stop ids to actual nodes, let's keep track of those names
     # here so that we can reference them when we add connector edges across
     # the various feeds loaded into the graph
@@ -133,6 +133,12 @@ def populate_graph(G: nx.MultiDiGraph,
         G.add_edge(sid_fr,
                    sid_to,
                    length=row.edge_cost)
+
+    # Generate cross feed edge values
+    cross_feed_edges = generate_cross_feed_edges(G,
+                                                 feed,
+                                                 wait_times_by_stop,
+                                                 connection_threshold)
 
     # Now add the cross feed edge connectors to the graph to
     # capture transfer points
