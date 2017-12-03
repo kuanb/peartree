@@ -37,15 +37,16 @@ def test_extract_valid_feed():
 
 
 def test_feed_to_graph_path():
-    path = fixture('caltrain-2017-07-24.zip')
-    feed = get_representative_feed(path)
+    path_1 = fixture('caltrain-2017-07-24.zip')
+    feed_1 = get_representative_feed(path_1)
 
     start = 7 * 60 * 60
     end = 10 * 60 * 60
 
-    G = load_feed_as_graph(feed,
-                           start,
-                           end,
-                           'foo')
+    G = load_feed_as_graph(feed_1, start, end, 'foo')
+
+    path_2 = fixture('samtrans-2017-11-28.zip')
+    feed_2 = get_representative_feed(path_2)
+    G = load_feed_as_graph(feed_2, start, end, 'bar', G)
 
     assert isinstance(G, nx.MultiDiGraph)
