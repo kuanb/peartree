@@ -69,7 +69,7 @@ def get_nearest_node(df_orig: pd.DataFrame,
                                  lng2=xs)
 
     # Calculate the final results to be returned
-    nearest_node = int(distances.idxmin())
+    nearest_node = str(distances.idxmin())
     nn_dist = distances.loc[nearest_node]
 
     # Returna as tuple
