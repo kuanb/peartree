@@ -4,8 +4,8 @@ import string
 import networkx as nx
 import partridge as ptg
 
-from .graph import (generate_empty_md_graph, generate_summary_graph_elements,
-                    populate_graph)
+from .graph import (generate_cross_feed_edges, generate_empty_md_graph,
+                    generate_summary_graph_elements, populate_graph)
 from .utilities import log
 
 
@@ -58,7 +58,8 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                        start_time: int,
                        end_time: int,
                        name: str=None,
-                       existing_graph: nx.MultiDiGraph=None):
+                       existing_graph: nx.MultiDiGraph=None,
+                       connection_threshold: float=50):
     """
     Convert a feed object into a NetworkX Graph, connect to an existing
     NetworkX graph if one is supplied
@@ -84,12 +85,15 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
         of the stops, routes, etc. in the feed being supplied
     existing_graph : networkx.Graph
         An existing graph containing other operator or schedule data
+    connection_threshold : float
+        Treshold by which to create a connection with an existing stop
+        in the existing_graph graph, measured in meters
 
     Returns
     -------
-    tuple
-        (geometry_proj, crs), the projected shapely geometry and the crs of the
-        projected geometry
+    G
+        networkx.Graph, the loaded, combined representation of the schedule
+        data from the feed subset by the time parameters provided
     """
 
     # Generate a random name for name if it is None
@@ -122,6 +126,8 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
         G = existing_graph
     else:
         G = generate_empty_md_graph(name)
+
+    generate_cross_feed_edges(G, summary_edge_costs)
 
     return populate_graph(G,
                           name,
