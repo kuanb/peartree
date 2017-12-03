@@ -54,13 +54,14 @@ def generate_all_observed_edge_costs(trips_and_stop_times):
             edge_costs = np.subtract(arrs.values, deps.values)
 
             # Now place results in data frame
-            new_edges = pd.DataFrame({'edge_cost': edge_costs})
-            new_edges['from_stop_id'] = tst_sub_dir.stop_id[:-1].values
-            new_edges['to_stop_id'] = tst_sub_dir.stop_id[1:].values
+            new_edges = pd.DataFrame({
+                'edge_cost': edge_costs,
+                'from_stop_id': tst_sub_dir.stop_id[:-1].values,
+                'to_stop_id': tst_sub_dir.stop_id[1:].values})
 
             if all_edge_costs is None:
                 all_edge_costs = new_edges
-            else:
+            elif not new_edges.empty:
                 all_edge_costs = all_edge_costs.append(new_edges)
     return all_edge_costs
 
