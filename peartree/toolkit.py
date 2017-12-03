@@ -24,7 +24,12 @@ def generate_graph_node_dataframe(G):
                          'should contain at least one node')
 
     # Dump graph node coordinates array
-    clist = [[node, data['x'], data['y']] for node, data in G.nodes(data=True)]
+    clist = []
+    for node, data in G.nodes(data=True):
+        # Ensure that each items is cast as the correct type
+        x = float(data['x'])
+        y = float(data['y'])
+        clist.append(node, x, y)
     coords = np.array(clist)
 
     # Then make into a Pandas DataFrame, with the node as index
