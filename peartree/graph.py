@@ -96,8 +96,11 @@ def populate_graph(G: nx.MultiDiGraph,
     # the various feeds loaded into the graph
     sid_lookup = {}
 
+    # Generate a merge of the wait time data and the feed stops data that will
+    # be used for both the addition of new stop nodes and the addition of
+    # cross feed edges later on (that join one feeds stops to the other if
+    # they are within the connection threshold).
     stops_df = _merge_stop_waits_and_attributes(wait_times_by_stop, feed.stops)
-    assert len(stops_df) == len(wait_times_by_stop)
 
     for i, row in stops_df.iterrows():
         sid = str(row.stop_id)
