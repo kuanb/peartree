@@ -12,6 +12,10 @@ from .summarizer import (generate_edge_and_wait_values,
 from .toolkit import generate_graph_node_dataframe, get_nearest_node
 
 
+class InsufficientSummaryResults(Exception):
+    pass
+
+
 def generate_empty_md_graph(name: str,
                             init_crs: Dict=crs.from_epsg(WGS84)):
     return nx.MultiDiGraph(name=name, crs=init_crs)
@@ -30,6 +34,14 @@ def generate_summary_graph_elements(feed: ptg.gtfs.feed,
      all_wait_times) = generate_edge_and_wait_values(feed,
                                                      target_time_start,
                                                      target_time_end)
+
+    # Handle if there are no valid edges returned (or wait times)
+    if not all_edge_costs or len(all_edge_costs) == 0:
+        raise InsufficientSummaryResults('The target time frame returned no '
+                                         'valid edge costs from feed object.')
+    if not all_wait_times or len(all_wait_times) == 0:
+        raise InsufficientSummaryResults('The target time frame returned no '
+                                         'valid wait times from feed object.')
 
     summary_edge_costs = generate_summary_edge_costs(all_edge_costs)
     wait_times_by_stop = generate_summary_wait_times(all_wait_times)
