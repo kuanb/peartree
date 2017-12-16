@@ -1,6 +1,6 @@
-===========
+=============
 Peartree 🍐🌳
-===========
+=============
 
 .. image:: https://img.shields.io/pypi/v/peartree.svg
         :target: https://pypi.python.org/pypi/peartree
@@ -17,6 +17,13 @@ Peartree is a library for converting `GTFS <https://developers.google.com/transi
    :alt: graph loader animation
 
 Above, an example of multiple Bay Area transit operators being incrementally loaded into Peartree.
+
+Installation
+------------
+
+.. code:: console
+
+    pip install peartree
 
 Usage
 -----
@@ -42,9 +49,9 @@ See a full notebook at `this gist <https://gist.github.com/kuanb/c54d0ae7ee353ca
     # network multigraph
     G = pt.load_feed_as_graph(feed, start, end)
 
-Installation
-------------
+Examples
+--------
 
-.. code:: console
+I've yet to produce a full how-to guide for this library, but will begin to populate this section with any blog posts or notebooks that I or others produce, that include workflows using Peartree.
 
-    pip install peartree
+`Calcualting betweeness centrality with Brooklyn bus network <http://kuanbutts.com/2017/12/13/betweenness-centrality-peartree/>`_
