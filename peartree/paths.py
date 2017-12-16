@@ -104,7 +104,7 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
     if (start_time < 0) or (end_time < 0):
         raise InvalidTimeBracket('Invalid start or end target times provided.')
 
-    if end_time < start_time:
+    if end_time <= start_time:
         raise InvalidTimeBracket('Invalid ordering: Start time '
                                  'is greater than end time.')
 

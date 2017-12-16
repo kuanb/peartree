@@ -36,10 +36,10 @@ def generate_summary_graph_elements(feed: ptg.gtfs.feed,
                                                      target_time_end)
 
     # Handle if there are no valid edges returned (or wait times)
-    if not all_edge_costs or len(all_edge_costs) == 0:
+    if all_edge_costs is None or len(all_edge_costs) == 0:
         raise InsufficientSummaryResults('The target time frame returned no '
                                          'valid edge costs from feed object.')
-    if not all_wait_times or len(all_wait_times) == 0:
+    if all_wait_times is None or len(all_wait_times) == 0:
         raise InsufficientSummaryResults('The target time frame returned no '
                                          'valid wait times from feed object.')
 
