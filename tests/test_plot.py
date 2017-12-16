@@ -8,7 +8,7 @@ def fixture(filename):
     return os.path.join(os.path.dirname(__file__), 'fixtures', filename)
 
 
-def test_feed_to_graph_path():
+def test_feed_to_graph_plot():
     path = fixture('caltrain-2017-07-24.zip')
     feed = get_representative_feed(path)
 

@@ -3,6 +3,7 @@ import os
 import networkx as nx
 import partridge as ptg
 import pytest
+from peartree.graph import InsufficientSummaryResults
 from peartree.paths import (InvalidGTFS, _generate_random_name,
                             get_representative_feed, load_feed_as_graph)
 
@@ -34,6 +35,16 @@ def test_extract_valid_feed():
     path = fixture('caltrain-2017-07-24.zip')
     feed = get_representative_feed(path)
     assert isinstance(feed, ptg.gtfs.feed)
+
+
+def test_loading_in_no_length_timeframes():
+    path_1 = fixture('caltrain-2017-07-24.zip')
+    feed_1 = get_representative_feed(path_1)
+
+    start = 0
+    end = 0
+    with pytest.raises(InsufficientSummaryResults):
+        load_feed_as_graph(feed_1, start, end, 'foo')
 
 
 def test_feed_to_graph_path():
