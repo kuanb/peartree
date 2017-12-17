@@ -1,18 +1,27 @@
+from typing import Dict, List, Tuple, Union
+
 import numpy as np
 import pandas as pd
+import partridge as ptg
 
 from .utilities import log
 
 
-def calculate_average_wait(direction_times):
+def calculate_average_wait(direction_times: List) -> float:
     first = direction_times.arrival_time[1:].values
     second = direction_times.arrival_time[:-1].values
     wait_seconds = (first - second)
-    average_wait = np.array(wait_seconds).mean()
+
+    # TODO: Can implement something more substantial here that takes into
+    #       account divergent/erratic performance or intentional timing
+    #       clusters that are not evenly dispersed
+    na = np.array(wait_seconds)
+    average_wait = na.mean()
     return average_wait
 
 
-def generate_wait_times(trips_and_stop_times: pd.DataFrame):
+def generate_wait_times(trips_and_stop_times: pd.DataFrame
+                        ) -> Dict[int, List[float]]:
     wait_times = {0: [], 1: []}
     for stop_id in trips_and_stop_times.stop_id:
 
@@ -20,8 +29,8 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame):
         for direction in [0, 1]:
             constraint_1 = (trips_and_stop_times.direction_id == direction)
             constraint_2 = (trips_and_stop_times.stop_id == stop_id)
-            direction_subset = trips_and_stop_times[
-                constraint_1 & constraint_2]
+            both_constraints = (constraint_1 & constraint_2)
+            direction_subset = trips_and_stop_times[both_constraints]
 
             # Only run if each direction is contained
             # in the same trip id
@@ -36,7 +45,8 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame):
     return wait_times
 
 
-def generate_all_observed_edge_costs(trips_and_stop_times):
+def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
+                                     ) -> Union[None, pd.DataFrame]:
     all_edge_costs = None
     for trip_id in trips_and_stop_times.trip_id.unique():
         tst_mask = (trips_and_stop_times.trip_id == trip_id)
@@ -66,7 +76,7 @@ def generate_all_observed_edge_costs(trips_and_stop_times):
     return all_edge_costs
 
 
-def summarize_edge_costs(df):
+def summarize_edge_costs(df: pd.DataFrame) -> pd.DataFrame:
     from_stop_id = df.from_stop_id.values[0]
     results_mtx = []
     for to_stop_id in df.to_stop_id.unique():
@@ -78,14 +88,16 @@ def summarize_edge_costs(df):
     return pd.DataFrame(results_mtx, columns=df.columns)
 
 
-def generate_summary_edge_costs(all_edge_costs):
+def generate_summary_edge_costs(all_edge_costs: pd.DataFrame) -> pd.DataFrame:
     summary_groupings = all_edge_costs.groupby('from_stop_id')
     summary = summary_groupings.apply(summarize_edge_costs)
     summary = summary.reset_index(drop=True)
     return summary
 
 
-def summarize_waits_at_one_stop(stop_df):
+def summarize_waits_at_one_stop(stop_df: pd.DataFrame) -> float:
+    # Calculate average wait time at this stop, given all observed
+    # wait times
     divide_by = len(stop_df) * 2
     dir_0_sum = stop_df.wait_dir_0.sum()
     dir_1_sum = stop_df.wait_dir_1.sum()
@@ -94,7 +106,7 @@ def summarize_waits_at_one_stop(stop_df):
     return calculated
 
 
-def generate_summary_wait_times(df):
+def generate_summary_wait_times(df: pd.DataFrame) -> pd.DataFrame:
     df_sub = df[['stop_id',
                  'wait_dir_0',
                  'wait_dir_1']].reset_index(drop=True)
@@ -197,9 +209,9 @@ def generate_summary_wait_times(df):
     return summed_reset
 
 
-def generate_edge_and_wait_values(feed,
-                                  target_time_start,
-                                  target_time_end):
+def generate_edge_and_wait_values(feed: ptg.gtfs.feed,
+                                  target_time_start: int,
+                                  target_time_end: int) -> Tuple[pd.DataFrame]:
     all_edge_costs = None
     all_wait_times = None
     for i, route in feed.routes.iterrows():
