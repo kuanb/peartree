@@ -119,3 +119,11 @@ def test_feed_to_graph_path():
     new_edge_len = len(G.edges())
     assert new_node_len > orig_node_len
     assert new_edge_len > orig_edge_len
+
+    # Make sure that a length measure has been calculated for each
+    # edge in the resulting graph, also sanity check that all are
+    # positive values
+    for _, _, edge in G.edges(data=True):
+        assert 'length' in edge.keys()
+        assert isinstance(edge['length'], float)
+        assert edge['length'] > 0
