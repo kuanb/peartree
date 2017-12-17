@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy as np
 import pandas as pd
 
@@ -8,11 +10,16 @@ def calculate_average_wait(direction_times):
     first = direction_times.arrival_time[1:].values
     second = direction_times.arrival_time[:-1].values
     wait_seconds = (first - second)
-    average_wait = np.array(wait_seconds).mean()
+
+    # TODO: Can implement something more substantial here that takes into
+    #       account divergent/erratic performance or intentional timing
+    #       clusters that are not evenly dispersed
+    na = np.array(wait_seconds)
+    average_wait = na.mean()
     return average_wait
 
 
-def generate_wait_times(trips_and_stop_times: pd.DataFrame):
+def generate_wait_times(trips_and_stop_times: pd.DataFrame) -> Dict[int: list]:
     wait_times = {0: [], 1: []}
     for stop_id in trips_and_stop_times.stop_id:
 
@@ -20,8 +27,8 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame):
         for direction in [0, 1]:
             constraint_1 = (trips_and_stop_times.direction_id == direction)
             constraint_2 = (trips_and_stop_times.stop_id == stop_id)
-            direction_subset = trips_and_stop_times[
-                constraint_1 & constraint_2]
+            both_constraints = (constraint_1 & constraint_2)
+            direction_subset = trips_and_stop_times[both_constraints]
 
             # Only run if each direction is contained
             # in the same trip id
