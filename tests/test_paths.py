@@ -126,4 +126,4 @@ def test_feed_to_graph_path():
     for _, _, edge in G.edges(data=True):
         assert 'length' in edge.keys()
         assert isinstance(edge['length'], float)
-        assert edge['length'] > 0
+        assert edge['length'] >= 0

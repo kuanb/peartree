@@ -91,6 +91,9 @@ def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
 
 
 def summarize_edge_costs(df: pd.DataFrame) -> pd.DataFrame:
+    # Used as a function applied to a grouping
+    # operation, pulls out the mean edge cost for each
+    # unqiue edge pair (from node and to node)
     from_stop_id = df.from_stop_id.values[0]
     results_mtx = []
     for to_stop_id in df.to_stop_id.unique():
@@ -103,6 +106,8 @@ def summarize_edge_costs(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def generate_summary_edge_costs(all_edge_costs: pd.DataFrame) -> pd.DataFrame:
+    # Given a dataframe of edges costs, get the average for each
+    # from node - to node pair
     summary_groupings = all_edge_costs.groupby('from_stop_id')
     summary = summary_groupings.apply(summarize_edge_costs)
     summary = summary.reset_index(drop=True)
@@ -110,11 +115,17 @@ def generate_summary_edge_costs(all_edge_costs: pd.DataFrame) -> pd.DataFrame:
 
 
 def summarize_waits_at_one_stop(stop_df: pd.DataFrame) -> float:
-    # Calculate average wait time at this stop, given all observed
-    # wait times
+    # Calculates average wait time at this stop, given all observed
+    # TODO: Simply dividiing by two may not be appropriate - it is
+    #       go for estimation purposes, but I could introduce
+    #       more sophisticated wait time calculations here
     divide_by = (len(stop_df) * 2)
     dir_0_sum = stop_df.wait_dir_0.sum()
     dir_1_sum = stop_df.wait_dir_1.sum()
+
+    # A weighted average is performed, which could inaccurately8
+    # portrary a wait time at a given stop if one direction has
+    # significantly higher frequence than another
     calculated = ((dir_0_sum + dir_1_sum) / divide_by)
 
     return calculated
