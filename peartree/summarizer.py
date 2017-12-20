@@ -57,13 +57,13 @@ def generate_all_observed_edge_costs(trips_and_stop_times):
             edge_costs = np.subtract(arrs.values, deps.values)
 
             # Add each resulting list to the running array totals
-            all_edge_costs.append(edge_costs)
+            all_edge_costs += (edge_costs)
 
             fr_ids = tst_sub_dir.stop_id[:-1].values
-            all_from_stop_ids.append(fr_ids)
+            all_from_stop_ids += (fr_ids)
 
             to_ids = tst_sub_dir.stop_id[1:].values
-            all_to_stop_ids.append(to_ids)
+            all_to_stop_ids += (to_ids)
 
     # Now place results in data frame
     return pd.DataFrame({
