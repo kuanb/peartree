@@ -68,19 +68,26 @@ def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
             edge_costs = np.subtract(arrs.values, deps.values)
 
             # Add each resulting list to the running array totals
-            all_edge_costs += edge_costs
+            all_edge_costs += list(edge_costs)
 
             fr_ids = tst_sub_dir.stop_id[:-1].values
-            all_from_stop_ids += fr_ids
+            all_from_stop_ids += list(fr_ids)
 
             to_ids = tst_sub_dir.stop_id[1:].values
-            all_to_stop_ids += to_ids
+            all_to_stop_ids += list(to_ids)
 
-    # Now place results in data frame
-    return pd.DataFrame({
-        'edge_cost': edge_costs,
-        'from_stop_id': all_from_stop_ids,
-        'to_stop_id': all_to_stop_ids})
+    # Only return a dataframe if there is contents to populate
+    # it with
+    if len(all_edge_costs) > 0:
+        # Now place results in data frame
+        return pd.DataFrame({
+            'edge_cost': all_edge_costs,
+            'from_stop_id': all_from_stop_ids,
+            'to_stop_id': all_to_stop_ids})
+
+    # Otherwise a None value should be returned
+    else:
+        return None
 
 
 def summarize_edge_costs(df: pd.DataFrame) -> pd.DataFrame:
