@@ -1,4 +1,4 @@
-from peartree.graphs import generate_empty_md_graph
+from peartree.graph import generate_empty_md_graph
 
 
 def test_generate_empty_graph():
