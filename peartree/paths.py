@@ -59,7 +59,8 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                        end_time: int,
                        name: str=None,
                        existing_graph: nx.MultiDiGraph=None,
-                       connection_threshold: float=50):
+                       connection_threshold: float=50.0,
+                       walk_speed_kmph: float=4.5):
     """
     Convert a feed object into a NetworkX Graph, connect to an existing
     NetworkX graph if one is supplied
@@ -132,4 +133,5 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                           feed,
                           wait_times_by_stop,
                           summary_edge_costs,
-                          connection_threshold)
+                          connection_threshold,
+                          walk_speed_kmph)

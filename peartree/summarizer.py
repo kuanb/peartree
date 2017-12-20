@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -11,7 +11,12 @@ def calculate_average_wait(direction_times: pd.DataFrame) -> float:
     first = direction_times.arrival_time[1:].values
     second = direction_times.arrival_time[:-1].values
     wait_seconds = (first - second)
-    average_wait = np.array(wait_seconds).mean()
+
+    # TODO: Can implement something more substantial here that takes into
+    #       account divergent/erratic performance or intentional timing
+    #       clusters that are not evenly dispersed
+    na = np.array(wait_seconds)
+    average_wait = na.mean()
     return average_wait
 
 
@@ -24,8 +29,8 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame
         for direction in [0, 1]:
             constraint_1 = (trips_and_stop_times.direction_id == direction)
             constraint_2 = (trips_and_stop_times.stop_id == stop_id)
-            direction_subset = trips_and_stop_times[
-                constraint_1 & constraint_2]
+            both_constraints = (constraint_1 & constraint_2)
+            direction_subset = trips_and_stop_times[both_constraints]
 
             # Only run if each direction is contained
             # in the same trip id
@@ -41,10 +46,11 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame
 
 
 def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
-                                     ) -> pd.DataFrame:
+                                     ) -> Union[None, pd.DataFrame]:
     all_edge_costs = []
     all_from_stop_ids = []
     all_to_stop_ids = []
+
     for trip_id in trips_and_stop_times.trip_id.unique():
         tst_mask = (trips_and_stop_times.trip_id == trip_id)
         tst_sub = trips_and_stop_times[tst_mask]
@@ -97,6 +103,8 @@ def generate_summary_edge_costs(all_edge_costs: pd.DataFrame) -> pd.DataFrame:
 
 
 def summarize_waits_at_one_stop(stop_df: pd.DataFrame) -> float:
+    # Calculate average wait time at this stop, given all observed
+    # wait times
     divide_by = (len(stop_df) * 2)
     dir_0_sum = stop_df.wait_dir_0.sum()
     dir_1_sum = stop_df.wait_dir_1.sum()

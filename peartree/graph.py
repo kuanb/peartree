@@ -102,7 +102,8 @@ def populate_graph(G: nx.MultiDiGraph,
                    feed: ptg.gtfs.feed,
                    wait_times_by_stop: pd.DataFrame,
                    summary_edge_costs: pd.DataFrame,
-                   connection_threshold: Union[int, float]):
+                   connection_threshold: Union[int, float],
+                   walk_speed_kmph: float=4.5):
     # As we convert stop ids to actual nodes, let's keep track of those names
     # here so that we can reference them when we add connector edges across
     # the various feeds loaded into the graph
@@ -150,7 +151,7 @@ def populate_graph(G: nx.MultiDiGraph,
         full_sid = sid_lookup[sid]
 
         # Convert to km/hour
-        kmph = (d / 1000) / 4.5
+        kmph = (d / 1000) / walk_speed_kmph
 
         # Convert to seconds
         in_seconds = kmph * 60 * 60
