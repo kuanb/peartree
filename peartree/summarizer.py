@@ -37,14 +37,17 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame):
 
 
 def generate_all_observed_edge_costs(trips_and_stop_times):
-    all_edge_costs = None
+    all_edge_costs = []
+    all_from_stop_ids = []
+    all_to_stop_ids = []
     for trip_id in trips_and_stop_times.trip_id.unique():
         tst_mask = (trips_and_stop_times.trip_id == trip_id)
         tst_sub = trips_and_stop_times[tst_mask]
 
         # Just in case both directions are under the same trip id
         for direction in [0, 1]:
-            tst_sub_dir = tst_sub[tst_sub.direction_id == direction]
+            dir_mask = (tst_sub.direction_id == direction)
+            tst_sub_dir = tst_sub[dir_mask]
 
             tst_sub_dir = tst_sub_dir.sort_values('stop_sequence')
             deps = tst_sub_dir.departure_time[:-1]
@@ -53,17 +56,20 @@ def generate_all_observed_edge_costs(trips_and_stop_times):
             # Use .values to strip existing indices
             edge_costs = np.subtract(arrs.values, deps.values)
 
-            # Now place results in data frame
-            new_edges = pd.DataFrame({
-                'edge_cost': edge_costs,
-                'from_stop_id': tst_sub_dir.stop_id[:-1].values,
-                'to_stop_id': tst_sub_dir.stop_id[1:].values})
+            # Add each resulting list to the running array totals
+            all_edge_costs.append(edge_costs)
 
-            if all_edge_costs is None:
-                all_edge_costs = new_edges
-            elif not new_edges.empty:
-                all_edge_costs = all_edge_costs.append(new_edges)
-    return all_edge_costs
+            fr_ids = tst_sub_dir.stop_id[:-1].values
+            all_from_stop_ids.append(fr_ids)
+
+            to_ids = tst_sub_dir.stop_id[1:].values
+            all_to_stop_ids.append(to_ids)
+
+    # Now place results in data frame
+    return pd.DataFrame({
+        'edge_cost': edge_costs,
+        'from_stop_id': all_from_stop_ids,
+        'to_stop_id': all_to_stop_ids})
 
 
 def summarize_edge_costs(df):
@@ -204,8 +210,10 @@ def generate_edge_and_wait_values(feed,
     all_wait_times = None
     for i, route in feed.routes.iterrows():
         log('Processing on route {}.'.format(route.route_id))
-        # Now get all the trips for that route
-        trips = feed.trips[feed.trips.route_id == route.route_id]
+
+        # Get all the subset of trips that are related to this route
+        route_match_mask = (feed.trips.route_id == route.route_id)
+        trips = feed.trips[route_match_mask]
 
         # Get just the stop times related to this trip
         st_trip_id_mask = feed.stop_times.trip_id.isin(trips.trip_id)
@@ -261,6 +269,7 @@ def generate_edge_and_wait_values(feed,
                                         'wait_dir_0',
                                         'wait_dir_1']]
 
+        # Add to the running total for wait times in this feed subset
         if all_wait_times is None:
             all_wait_times = tst_sub
         else:
@@ -269,7 +278,7 @@ def generate_edge_and_wait_values(feed,
         # Get all edge costs for this route and add to the running total
         edge_costs = generate_all_observed_edge_costs(trips_and_stop_times)
 
-        # Add to the running total
+        # Add to the running total in this feed subset
         if all_edge_costs is None:
             all_edge_costs = edge_costs
         else:
