@@ -50,7 +50,6 @@ def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
     all_edge_costs = []
     all_from_stop_ids = []
     all_to_stop_ids = []
-
     for trip_id in trips_and_stop_times.trip_id.unique():
         tst_mask = (trips_and_stop_times.trip_id == trip_id)
         tst_sub = trips_and_stop_times[tst_mask]
