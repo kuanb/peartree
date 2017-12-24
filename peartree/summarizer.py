@@ -264,8 +264,7 @@ def generate_edge_and_wait_values(feed: ptg.gtfs.feed,
         end_time_mask = (stimes_init.arrival_time <= target_time_end)
         stimes = stimes_init[start_time_mask & end_time_mask]
 
-        # Let user know how it is going
-        # TODO: Make these logger.info statements
+        # Report on progress if requested
         a = len(stimes_init.trip_id.unique())
         b = len(stimes.trip_id.unique())
         log('\tReduced trips in consideration from {} to {}.'.format(a, b))
