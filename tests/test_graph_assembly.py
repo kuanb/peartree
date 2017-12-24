@@ -28,7 +28,7 @@ def test_feed_to_graph_performance():
     print('Perf of get_representative_feed: {}s'.format(elapsed))
 
     fl = len(feed.routes)
-    print(f'Iteration on {fl} routes.')
+    print('Iteration on {} routes.'.format(fl))
 
     a = time()
     (all_edge_costs,
