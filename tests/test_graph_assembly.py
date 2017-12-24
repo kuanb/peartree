@@ -25,7 +25,7 @@ def test_feed_to_graph_performance():
     path = fixture('samtrans-2017-11-28.zip')
     feed = get_representative_feed(path)
     elapsed = round(time() - a, 2)
-    print(f'Perf of get_representative_feed: {elapsed}s')
+    print('Perf of get_representative_feed: {}s'.format(elapsed))
 
     fl = len(feed.routes)
     print(f'Iteration on {fl} routes.')
@@ -36,22 +36,22 @@ def test_feed_to_graph_performance():
                                                      start,
                                                      end)
     elapsed = round(time() - a, 2)
-    print(f'Perf of generate_edge_and_wait_values: {elapsed}s')
+    print('Perf of generate_edge_and_wait_values: {}s'.format(elapsed))
 
     a = time()
     summary_edge_costs = generate_summary_edge_costs(all_edge_costs)
     elapsed = round(time() - a, 2)
-    print(f'Perf of generate_summary_edge_costs: {elapsed}s')
+    print('Perf of generate_summary_edge_costs: {}s'.format(elapsed))
 
     a = time()
     wait_times_by_stop = generate_summary_wait_times(all_wait_times)
     elapsed = round(time() - a, 2)
-    print(f'Perf of generate_summary_wait_times: {elapsed}s')
+    print('Perf of generate_summary_wait_times: {}s'.format(elapsed))
 
     a = time()
     G = generate_empty_md_graph('foo')
     elapsed = round(time() - a, 2)
-    print(f'Perf of generate_empty_md_graph: {elapsed}s')
+    print('Perf of generate_empty_md_graph: {}s'.format(elapsed))
 
     a = time()
     G = populate_graph(G,
@@ -62,4 +62,4 @@ def test_feed_to_graph_performance():
                        50,
                        4.5)
     elapsed = round(time() - a, 2)
-    print(f'Perf of populate_graph: {elapsed}s')
+    print('Perf of populate_graph: {}s'.format(elapsed))
