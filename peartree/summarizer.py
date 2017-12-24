@@ -238,14 +238,22 @@ def generate_summary_wait_times(df: pd.DataFrame) -> pd.DataFrame:
 def generate_edge_and_wait_values(feed: ptg.gtfs.feed,
                                   target_time_start: int,
                                   target_time_end: int) -> Tuple[pd.DataFrame]:
+    ftrips = feed.trips.copy()
+    ftrips = ftrips[~ftrips['route_id'].isnull()]
+    ftrips = ftrips.set_index('route_id', drop=False)
+
     all_edge_costs = None
     all_wait_times = None
     for i, route in feed.routes.iterrows():
         log('Processing on route {}.'.format(route.route_id))
 
         # Get all the subset of trips that are related to this route
-        route_match_mask = (feed.trips.route_id == route.route_id)
-        trips = feed.trips[route_match_mask]
+        trips = ftrips.loc[route.route_id]
+
+        # Pandas will try and make returned result a Series if there
+        # is only one result - prevent this from happening
+        if isinstance(trips, pd.Series):
+            trips = trips.to_frame().T
 
         # Get just the stop times related to this trip
         st_trip_id_mask = feed.stop_times.trip_id.isin(trips.trip_id)
