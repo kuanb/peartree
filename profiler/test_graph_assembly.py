@@ -9,7 +9,7 @@ from peartree.summarizer import (generate_edge_and_wait_values,
 
 
 def fixture(filename):
-    return os.path.join(os.path.dirname(__file__), 'fixtures', filename)
+    return os.path.join('tests', 'fixtures', filename)
 
 
 def test_feed_to_graph_performance():

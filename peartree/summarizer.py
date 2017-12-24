@@ -279,15 +279,10 @@ def generate_edge_and_wait_values(feed: ptg.gtfs.feed,
                                         how='inner',
                                         on='stop_id')
 
-        trips_and_stop_times = pd.merge(trips,
-                                        stimes,
-                                        how='inner',
-                                        on='trip_id')
-
-        trips_and_stop_times = pd.merge(trips_and_stop_times,
-                                        feed.stops,
-                                        how='inner',
-                                        on='stop_id')
+        sort_list = ['stop_sequence',
+                     'arrival_time',
+                     'departure_time']
+        trips_and_stop_times = trips_and_stop_times.sort_values(sort_list)
 
         wait_times = generate_wait_times(trips_and_stop_times)
         trips_and_stop_times['wait_dir_0'] = wait_times[0]
