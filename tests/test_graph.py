@@ -36,3 +36,16 @@ def test_generate_summary_graph_elements():
     t = summary_edge_costs.to_stop_id
     z = list(zip(f, t))
     assert len(list(set(z))) == len(z)
+
+    # Ensure that the wait times dataframe looks as it should
+    wt_cols = ['avg_cost', 'stop_id']
+    for c in wt_cols:
+        assert c in wait_times_by_stop.columns
+
+    # Sanity check edge costs
+    mask = (wait_times_by_stop.avg_cost < 0)
+    assert len(wait_times_by_stop[mask]) == 0
+
+    # Make sure that there are stop ids unique
+    u = wait_times_by_stop.stop_id.unique()
+    assert len(u) == len(wait_times_by_stop)

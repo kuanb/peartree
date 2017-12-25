@@ -238,14 +238,22 @@ def generate_summary_wait_times(df: pd.DataFrame) -> pd.DataFrame:
 def generate_edge_and_wait_values(feed: ptg.gtfs.feed,
                                   target_time_start: int,
                                   target_time_end: int) -> Tuple[pd.DataFrame]:
+    ftrips = feed.trips.copy()
+    ftrips = ftrips[~ftrips['route_id'].isnull()]
+    ftrips = ftrips.set_index('route_id', drop=False)
+
     all_edge_costs = None
     all_wait_times = None
     for i, route in feed.routes.iterrows():
         log('Processing on route {}.'.format(route.route_id))
 
         # Get all the subset of trips that are related to this route
-        route_match_mask = (feed.trips.route_id == route.route_id)
-        trips = feed.trips[route_match_mask]
+        trips = ftrips.loc[route.route_id]
+
+        # Pandas will try and make returned result a Series if there
+        # is only one result - prevent this from happening
+        if isinstance(trips, pd.Series):
+            trips = trips.to_frame().T
 
         # Get just the stop times related to this trip
         st_trip_id_mask = feed.stop_times.trip_id.isin(trips.trip_id)
@@ -256,8 +264,7 @@ def generate_edge_and_wait_values(feed: ptg.gtfs.feed,
         end_time_mask = (stimes_init.arrival_time <= target_time_end)
         stimes = stimes_init[start_time_mask & end_time_mask]
 
-        # Let user know how it is going
-        # TODO: Make these logger.info statements
+        # Report on progress if requested
         a = len(stimes_init.trip_id.unique())
         b = len(stimes.trip_id.unique())
         log('\tReduced trips in consideration from {} to {}.'.format(a, b))
@@ -272,26 +279,10 @@ def generate_edge_and_wait_values(feed: ptg.gtfs.feed,
                                         how='inner',
                                         on='stop_id')
 
-        sort_values_list = ['stop_sequence',
-                            'arrival_time',
-                            'departure_time']
-        trips_and_stop_times = trips_and_stop_times.sort_values(
-            sort_values_list)
-        trips_and_stop_times = pd.merge(trips,
-                                        stimes,
-                                        how='inner',
-                                        on='trip_id')
-
-        trips_and_stop_times = pd.merge(trips_and_stop_times,
-                                        feed.stops,
-                                        how='inner',
-                                        on='stop_id')
-
-        sort_values_list = ['stop_sequence',
-                            'arrival_time',
-                            'departure_time']
-        trips_and_stop_times = trips_and_stop_times.sort_values(
-            sort_values_list)
+        sort_list = ['stop_sequence',
+                     'arrival_time',
+                     'departure_time']
+        trips_and_stop_times = trips_and_stop_times.sort_values(sort_list)
 
         wait_times = generate_wait_times(trips_and_stop_times)
         trips_and_stop_times['wait_dir_0'] = wait_times[0]
