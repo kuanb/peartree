@@ -13,7 +13,7 @@ with open('peartree/__version__.py', 'r', encoding='utf-8') as f:
     exec(f.read(), about)
 
 requirements = [
-    'fiona==1.6.1',
+    'fiona>=1.6.1',
     'networkx>=2.0',
     'osmnx==0.6',
     'partridge==0.3.0'
