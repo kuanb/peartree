@@ -75,14 +75,14 @@ def generate_cross_feed_edges(G,
         lat = float(row.stop_lat)
         lon = float(row.stop_lon)
         point = (lat, lon)
-        (nn, nn_dist) = get_nearest_node(node_df, point)
+        nearest_nodes = get_nearest_node(node_df, point, connection_threshold)
 
-        # Only generate a connector edge if it satisfies the
-        # meter distance threshold
-        if nn_dist < connection_threshold:
-            stop_ids.append(sid)
-            to_nodes.append(nn)
-            edge_costs.append(nn_dist)
+        # Iterate through series results and add to output
+        for node,distance in nearest_nodes.iteritems():
+          stop_ids.append(sid)
+          to_nodes.append(node)
+          edge_costs.append(distance)
+
 
     return pd.DataFrame({'stop_id': stop_ids,
                          'to_node': to_nodes,
@@ -149,7 +149,7 @@ def populate_graph(G: nx.MultiDiGraph,
 
         # Use the lookup table to get converted stop id name
         full_sid = sid_lookup[sid]
-
+        
         # Convert to km/hour
         kmph = (d / 1000) / walk_speed_kmph
 
