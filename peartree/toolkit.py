@@ -34,13 +34,17 @@ def generate_graph_node_dataframe(G):
         clist.append([node, x, y])
     coords = np.array(clist)
 
-    # Then make into a Pandas DataFrame, with the node as index
-    return pd.DataFrame(coords, columns=['node', 'x', 'y']).set_index('node')
+    # Then make into a Pandas DataFrame, with the node as index (type string)
+    df = pd.DataFrame(coords, columns=['node', 'x', 'y'])
+    df['node'] = df['node'].astype(str)
+    df = df.set_index('node')
+    return df
 
 
-def get_nearest_node(df_orig: pd.DataFrame,
-                     point: Tuple[float, float],
-                     connection_threshold):
+def get_nearest_nodes(df_orig: pd.DataFrame,
+                      point: Tuple[float, float],
+                      connection_threshold: float,
+                      exempt_id: str=None):
     # This method breaks out a portion of a similar method from
     # OSMnx's get_nearest_node; source:
     #   https://github.com/gboeing/osmnx/blob/
@@ -48,6 +52,11 @@ def get_nearest_node(df_orig: pd.DataFrame,
 
     # Make a copy of the DataFrame to prevent mutation outside of function
     df = df_orig.copy()
+
+    if exempt_id is not None:
+        df.index = df.index.astype(str)
+        mask = ~(df.index == exempt_id)
+        df = df[mask]
 
     # Add second column of reference points
     df['reference_y'] = point[0]
@@ -69,8 +78,8 @@ def get_nearest_node(df_orig: pd.DataFrame,
                                  lat2=ys,
                                  lng2=xs)
 
-    # Calculate the final results to be returned
-    # Filter out nodes outside connection threshold and self (distance = 0)
-    nearest_nodes = distances[(distances > 0.0) & (distances < connection_threshold)]
+    # Filter out nodes outside connection threshold
+    nearest_nodes = distances[(distances < connection_threshold)]
+
     # Return filtered series
     return nearest_nodes

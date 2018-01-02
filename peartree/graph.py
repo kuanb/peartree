@@ -9,7 +9,7 @@ from .settings import WGS84
 from .summarizer import (generate_edge_and_wait_values,
                          generate_summary_edge_costs,
                          generate_summary_wait_times)
-from .toolkit import generate_graph_node_dataframe, get_nearest_node
+from .toolkit import generate_graph_node_dataframe, get_nearest_nodes
 
 
 class InsufficientSummaryResults(Exception):
@@ -75,14 +75,16 @@ def generate_cross_feed_edges(G,
         lat = float(row.stop_lat)
         lon = float(row.stop_lon)
         point = (lat, lon)
-        nearest_nodes = get_nearest_node(node_df, point, connection_threshold)
+        nearest_nodes = get_nearest_nodes(node_df,
+                                          point,
+                                          connection_threshold,
+                                          exempt_id=sid)
 
         # Iterate through series results and add to output
-        for node,distance in nearest_nodes.iteritems():
-          stop_ids.append(sid)
-          to_nodes.append(node)
-          edge_costs.append(distance)
-
+        for node_id, dist_val in nearest_nodes.iteritems():
+            stop_ids.append(sid)
+            to_nodes.append(node_id)
+            edge_costs.append(dist_val)
 
     return pd.DataFrame({'stop_id': stop_ids,
                          'to_node': to_nodes,
@@ -149,7 +151,7 @@ def populate_graph(G: nx.MultiDiGraph,
 
         # Use the lookup table to get converted stop id name
         full_sid = sid_lookup[sid]
-        
+
         # Convert to km/hour
         kmph = (d / 1000) / walk_speed_kmph
 

@@ -106,6 +106,7 @@ def test_feed_to_graph_path():
     # Sanity check that the number of nodes and edges go up
     orig_node_len = len(G.nodes())
     orig_edge_len = len(G.edges())
+    orig_node_list = list(G.nodes())
 
     path_2 = fixture('samtrans-2017-11-28.zip')
     feed_2 = get_representative_feed(path_2)
@@ -120,10 +121,24 @@ def test_feed_to_graph_path():
     assert new_node_len > orig_node_len
     assert new_edge_len > orig_edge_len
 
-    # Make sure that a length measure has been calculated for each
-    # edge in the resulting graph, also sanity check that all are
-    # positive values
-    for _, _, edge in G.edges(data=True):
+    connector_edge_count = 0
+    for from_node, to_node, edge in G.edges(data=True):
+        # Make sure that a length measure has been calculated for each
+        # edge in the resulting graph, also sanity check that all are
+        # positive values
         assert 'length' in edge.keys()
         assert isinstance(edge['length'], float)
         assert edge['length'] >= 0
+
+        # Also, we should also make sure that edges were also created that
+        # connect the two feeds
+        from_orig_a = from_node in orig_node_list
+        from_orig_b = to_node in orig_node_list
+        one_valid_fr = from_orig_a and (not from_orig_b)
+        one_valid_to = (not from_orig_a) and from_orig_b
+        if one_valid_fr or one_valid_to:
+            connector_edge_count += 1
+
+    # We know that there should be 9 new edges that are created to connect
+    # the two GTFS feeds in the joint graph
+    assert connector_edge_count == 9
