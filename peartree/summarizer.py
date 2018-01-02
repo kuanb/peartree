@@ -29,12 +29,12 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame
         for direction in [0, 1]:
             # Check if direction_id exists in source data
             if 'direction_id' in trips_and_stop_times:
-              constraint_1 = (trips_and_stop_times.direction_id == direction)
-              constraint_2 = (trips_and_stop_times.stop_id == stop_id)
-              both_constraints = (constraint_1 & constraint_2)
-              direction_subset = trips_and_stop_times[both_constraints]
+                constraint_1 = (trips_and_stop_times.direction_id == direction)
+                constraint_2 = (trips_and_stop_times.stop_id == stop_id)
+                both_constraints = (constraint_1 & constraint_2)
+                direction_subset = trips_and_stop_times[both_constraints]
             else:
-              direction_subset = trips_and_stop_times
+                direction_subset = trips_and_stop_times.copy()
 
             # Only run if each direction is contained
             # in the same trip id
@@ -51,6 +51,13 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame
 
 def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
                                      ) -> Union[None, pd.DataFrame]:
+    # TODO: This edge case should be handled up stream. If there is
+    #       no direction id upstream, when the trip and stop times
+    #       dataframe is created, then it should be added there and all
+    #       directions should be set to default 0 or 1.
+    # Make sure that the GTFS feed has a direction id
+    has_dir_col = 'direction_id' in trips_and_stop_times.columns.values
+
     all_edge_costs = []
     all_from_stop_ids = []
     all_to_stop_ids = []
@@ -59,13 +66,16 @@ def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
         tst_sub = trips_and_stop_times[tst_mask]
 
         # Just in case both directions are under the same trip id
-        for direction in [1]:
-            # Check if direction_id exists in source data
-            if 'direction_id' in tst_sub:
-              dir_mask = (tst_sub.direction_id == direction)
-              tst_sub_dir = tst_sub[dir_mask]
+        for direction in [0, 1]:
+            # Support situations wheredirection_id is absent from the
+            # GTFS data. In such situations, include all trip and stop
+            # time data, instead of trying to split on that column
+            # (since it would not exist).
+            if has_dir_col:
+                dir_mask = (tst_sub.direction_id == direction)
+                tst_sub_dir = tst_sub[dir_mask]
             else:
-              tst_sub_dir = tst_sub
+                tst_sub_dir = tst_sub
 
             tst_sub_dir = tst_sub_dir.sort_values('stop_sequence')
             deps = tst_sub_dir.departure_time[:-1]
