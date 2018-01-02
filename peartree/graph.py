@@ -75,7 +75,9 @@ def generate_cross_feed_edges(G,
         lat = float(row.stop_lat)
         lon = float(row.stop_lon)
         point = (lat, lon)
-        (nns, nn_dists) = get_nearest_nodes(node_df, point)
+        (nns, nn_dists) = get_nearest_nodes(node_df,
+                                            point,
+                                            connection_threshold)
 
         # Iterate through series results and add to output
         for node_id, dist_val in zip(nns, nn_dists):
