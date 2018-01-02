@@ -38,9 +38,9 @@ def generate_graph_node_dataframe(G):
     return pd.DataFrame(coords, columns=['node', 'x', 'y']).set_index('node')
 
 
-def get_nearest_node(df_orig: pd.DataFrame,
-                     point: Tuple[float, float],
-                     connection_threshold):
+def get_nearest_nodes(df_orig: pd.DataFrame,
+                      point: Tuple[float, float],
+                      connection_threshold: float):
     # This method breaks out a portion of a similar method from
     # OSMnx's get_nearest_node; source:
     #   https://github.com/gboeing/osmnx/blob/
@@ -71,6 +71,7 @@ def get_nearest_node(df_orig: pd.DataFrame,
 
     # Calculate the final results to be returned
     # Filter out nodes outside connection threshold and self (distance = 0)
-    nearest_nodes = distances[(distances > 0.0) & (distances < connection_threshold)]
+    mask = (distances < connection_threshold)
+    nearest_nodes = distances[mask]
     # Return filtered series
     return nearest_nodes
