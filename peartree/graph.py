@@ -81,7 +81,7 @@ def generate_cross_feed_edges(G,
                                           exempt_id=sid)
 
         # Iterate through series results and add to output
-        for node_id, dist_val in nearest_nodes.iterrows():
+        for node_id, dist_val in nearest_nodes.iteritems():
             stop_ids.append(sid)
             to_nodes.append(node_id)
             edge_costs.append(dist_val)
