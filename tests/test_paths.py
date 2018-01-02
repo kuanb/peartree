@@ -139,4 +139,6 @@ def test_feed_to_graph_path():
         if one_valid_fr or one_valid_to:
             connector_edge_count += 1
 
-    print('New connector edges count:', connector_edge_count)
+    # We know that there should be 9 new edges that are created to connect
+    # the two GTFS feeds in the joint graph
+    assert connector_edge_count == 9
