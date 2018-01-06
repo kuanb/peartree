@@ -8,3 +8,8 @@ notebook:
 	docker-compose build
 	mkdir ./notebooks
 	docker-compose up notebook
+
+docker-clean:
+	docker network prune --force
+	docker volume prune --force
+	docker image prune --force
