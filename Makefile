@@ -1,4 +1,4 @@
-it test:
+test:
 	PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose
 
 performance:
@@ -6,7 +6,7 @@ performance:
 
 notebook:
 	docker-compose build
-	mkdir ./notebooks
+	mkdir -p ./notebooks
 	docker-compose up notebook
 
 docker-clean:
