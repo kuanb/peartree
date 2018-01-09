@@ -34,13 +34,13 @@ RUN echo "Installing GEOS libraries..." && \
 
 # Get ESRI FileGDB libraries for Fiona/Geopandas Python packages
 # http://appsforms.esri.com/products/download/
-ARG FILEGDB_VERSION=1_4
+ARG FILEGDB_VERSION=1_5
 RUN echo "Installing ESRI FileGDB libraries..." && \
     mkdir -p /provisioning/filegdb && \
-    curl -# -o filegdb_api_${FILEGDB_VERSION}-64.tar.gz https://www.dropbox.com/s/dti2x6ydibyfs68/filegdb_api_1_2-64.tar.gz?dl=1 && \
+    curl -L -o filegdb_api_${FILEGDB_VERSION}-64.tar.gz https://www.dropbox.com/s/xi11vshwt9uojsy/FileGDB_API_1_5_64gcc51.tar.gz?dl=1 && \
     tar -zxvf filegdb_api_${FILEGDB_VERSION}-64.tar.gz && \
-    cp -r FileGDB_API-64/lib/* /usr/local/lib && \
-    cp -r FileGDB_API-64/include/* /usr/local/include && \
+    cp -r FileGDB_API-64gcc51/lib/* /usr/local/lib && \
+    cp -r FileGDB_API-64gcc51/include/* /usr/local/include && \
     ldconfig -v && \
     rm -rf /provisioning/filegdb* /provisioning/FileGDB*
 
