@@ -1,4 +1,4 @@
-FROM python:3.6-stretch
+FROM kuanb/peartree
 
 RUN mkdir /code && \
     pip install numpy==1.12.1 --src /usr/local/src
