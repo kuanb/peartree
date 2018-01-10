@@ -13,3 +13,10 @@ docker-clean:
 	docker network prune --force
 	docker volume prune --force
 	docker image prune --force
+
+install-graph-tool:
+	sed -i -e '$$a\
+	deb http://downloads.skewed.de/apt/stretch stretch main\
+	deb-src http://downloads.skewed.de/apt/stretch stretch main' /etc/apt/sources.list && \
+	apt-get update && \
+	apt-get install python3-graph-tool
