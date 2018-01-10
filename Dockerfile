@@ -1,7 +1,7 @@
 FROM kuanb/peartree
 
 RUN mkdir /code && \
-    pip install numpy==1.12.1 --src /usr/local/src
+    pip install numpy==1.14.0 scipy==1.0.0
 
 WORKDIR /code
 
