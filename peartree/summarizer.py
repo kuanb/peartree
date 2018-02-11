@@ -307,9 +307,6 @@ def generate_edge_and_wait_values(feed: ptg.gtfs.feed,
     # interpolated values based on their nearest numerically valid
     # neighbors
     stop_times = linearly_interpolate_infill_times(feed.stop_times)
-    # Then set index as trip_id since that is how we will be sub-
-    # selecting this dataframe
-    stop_times = stop_times.set_index('trip_id')
 
     all_edge_costs = None
     all_wait_times = None
@@ -325,7 +322,7 @@ def generate_edge_and_wait_values(feed: ptg.gtfs.feed,
             trips = trips.to_frame().T
 
         # Get just the stop times related to this trip
-        st_trip_id_mask = stop_times.loc[trips.trip_id.tolist()]
+        st_trip_id_mask = stop_times.trip_id.isin(trips.trip_id)
         stimes_init = stop_times[st_trip_id_mask]
 
         # Then subset further by just the time period that we care about
