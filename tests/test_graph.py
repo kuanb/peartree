@@ -16,7 +16,7 @@ def test_generate_empty_graph():
 
 
 def test_generate_summary_graph_elements():
-    path_1 = fixture('caltrain-2017-07-24.zip')
+    path_1 = fixture('samtrans-2017-11-28.zip')
     feed_1 = get_representative_feed(path_1)
 
     start = 7 * 60 * 60
@@ -49,3 +49,21 @@ def test_generate_summary_graph_elements():
     # Make sure that there are stop ids unique
     u = wait_times_by_stop.stop_id.unique()
     assert len(u) == len(wait_times_by_stop)
+
+    # Another sanity check, we should be sure that the resulting
+    # edges list captures all the stops that were assigned null
+    # values in the fixture dataset were assigned a linearly imputed
+    # arrival and departure time and thus preserved as a stop
+    # in the edge list
+
+    # First get the null times mask
+    null_times = feed_1.stop_times.departure_time.isnull()
+    # And identify all unique stops from the original feed
+    null_stop_ids = feed_1.stop_times[null_times].stop_id.unique()
+
+    # Now let's take the list of these null stop ids and extract
+    # all the ones from that list in the summary edge dataframe
+    mask = summary_edge_costs.from_stop_id.isin(null_stop_ids)
+    # And now we can get the stop ids out from this list
+    preserved_from_nulls = summary_edge_costs.from_stop_id[mask].unique()
+    assert len(preserved_from_nulls) == 205
