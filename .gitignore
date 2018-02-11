@@ -1,5 +1,10 @@
+Gemfile
 .DS_Store
 *.pyc
 __pycache__/
 ptenv/
 .cache/
+build/
+dist/
+peartree.egg-info/
+notebooks/
