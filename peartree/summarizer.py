@@ -294,19 +294,24 @@ def linearly_interpolate_infill_times(stops_orig_df):
     return cleaned
 
 
-def generate_edge_and_wait_values(feed: ptg.gtfs.feed,
-                                  target_time_start: int,
-                                  target_time_end: int) -> Tuple[pd.DataFrame]:
+def generate_edge_and_wait_values(
+        feed: ptg.gtfs.feed,
+        target_time_start: int,
+        target_time_end: int,
+        interpolate_times: bool) -> Tuple[pd.DataFrame]:
     # Initialize the trips dataframe to be worked with
     ftrips = feed.trips.copy()
     ftrips = ftrips[~ftrips['route_id'].isnull()]
     ftrips = ftrips.set_index('route_id', drop=False)
 
-    # Similarly, prepare the stops times dataframe by also
-    # infilling all stop times that are NaN with their linearly
-    # interpolated values based on their nearest numerically valid
-    # neighbors
-    stop_times = linearly_interpolate_infill_times(feed.stop_times)
+    # Flags whether we interpolate intermediary stops or not
+    if interpolate_times:
+        # Prepare the stops times dataframe by also infilling
+        # all stop times that are NaN with their linearly interpolated
+        # values based on their nearest numerically valid neighbors
+        stop_times = linearly_interpolate_infill_times(feed.stop_times)
+    else:
+        stop_times = feed.stop_times.copy()
 
     all_edge_costs = None
     all_wait_times = None
