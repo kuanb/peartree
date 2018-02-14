@@ -60,7 +60,8 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                        name: str=None,
                        existing_graph: nx.MultiDiGraph=None,
                        connection_threshold: float=50.0,
-                       walk_speed_kmph: float=4.5):
+                       walk_speed_kmph: float=4.5,
+                       interpolate_times: bool=True):
     """
     Convert a feed object into a NetworkX Graph, connect to an existing
     NetworkX graph if one is supplied
@@ -112,7 +113,8 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
     (summary_edge_costs,
      wait_times_by_stop) = generate_summary_graph_elements(feed,
                                                            start_time,
-                                                           end_time)
+                                                           end_time,
+                                                           interpolate_times)
 
     # This is a flag used to check if we need to run any additional steps
     # after the feed is returned to ensure that new nodes and edge can connect

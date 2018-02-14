@@ -29,11 +29,13 @@ def nameify_stop_id(name, sid):
 
 def generate_summary_graph_elements(feed: ptg.gtfs.feed,
                                     target_time_start: int,
-                                    target_time_end: int):
+                                    target_time_end: int,
+                                    interpolate_times: bool):
     (all_edge_costs,
      all_wait_times) = generate_edge_and_wait_values(feed,
                                                      target_time_start,
-                                                     target_time_end)
+                                                     target_time_end,
+                                                     interpolate_times)
 
     # Handle if there are no valid edges returned (or wait times)
     if all_edge_costs is None or len(all_edge_costs) == 0:
