@@ -17,6 +17,7 @@ def test_feed_to_graph_performance():
     # but open up to expose to benchmarking/performance profiling
     start = 7 * 60 * 60
     end = 10 * 60 * 60
+    interpolate_times = True
 
     print('Running time profiles on each major '
           'function in graph generation workflow')
@@ -34,7 +35,8 @@ def test_feed_to_graph_performance():
     (all_edge_costs,
      all_wait_times) = generate_edge_and_wait_values(feed,
                                                      start,
-                                                     end)
+                                                     end,
+                                                     interpolate_times)
     elapsed = round(time() - a, 2)
     print('Perf of generate_edge_and_wait_values: {}s'.format(elapsed))
 
