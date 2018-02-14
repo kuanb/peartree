@@ -1,3 +1,5 @@
+# Docs @ http://pre-commit.com/
+
 repos:
 - repo: https://github.com/kuanb/pre-commit-hooks.git
   sha: 61d0735ca8b0ce5ab8df867bc974798ba8316ee5
