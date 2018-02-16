@@ -1,0 +1,16 @@
+
+version: "3"
+
+services:
+
+  # Jupyter Notebook
+  notebook:
+    build:
+      context: .
+    env_file: .env
+    command: jupyter notebook --config jupyter_notebook_config.py
+    volumes:
+      - .:/code
+      - /tmp:/tmp
+    ports:
+      - "9797:9797"
