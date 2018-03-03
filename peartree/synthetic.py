@@ -81,7 +81,7 @@ def generate_stop_ids(stops_count: int) -> List[str]:
     shape_name = generate_random_name(5)
     stop_names = []
     for i in range(stops_count):
-        stop_names.append('_'.join([shape_name, i]))
+        stop_names.append('_'.join([shape_name, str(i)]))
     return stop_names
 
 
