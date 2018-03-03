@@ -99,11 +99,13 @@ def test_synthetic_network():
 
     G = load_synthetic_network_as_graph(reference_geojson)
 
+    # This fixture gets broken into 15 chunks, so 15 + 1 = 16
     nodes = list(G.nodes())
-    print(len(nodes))
+    assert len(nodes) == 16
 
+    # And since it is one-directional, it gets the same edges as chunks
     edges = list(G.edges())
-    print(len(edges))
+    assert len(edges) == 15
 
 
 def test_feed_to_graph_path():
