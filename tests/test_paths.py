@@ -89,6 +89,10 @@ def test_loading_in_invalid_timeframes():
         load_feed_as_graph(feed_1, start, end)
 
 
+def test_synthetic_network():
+    path = fixture('synthetic_example.geojson')
+
+
 def test_feed_to_graph_path():
     path_1 = fixture('caltrain-2017-07-24.zip')
     feed_1 = get_representative_feed(path_1)
