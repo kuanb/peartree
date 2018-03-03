@@ -135,10 +135,10 @@ def test_feed_to_graph_path():
     _check_unreasonable_lengths(G, max_reasonable_segment_length)
 
     # Part 2 of sanity check that the number of nodes and edges go up
-    new_node_len = len(G.nodes())
-    new_edge_len = len(G.edges())
-    assert new_node_len > orig_node_len
-    assert new_edge_len > orig_edge_len
+    node_len_2 = len(G.nodes())
+    edge_len_2 = len(G.edges())
+    assert node_len_2 > orig_node_len
+    assert edge_len_2 > orig_edge_len
 
     connector_edge_count = 0
     for from_node, to_node, edge in G.edges(data=True):
@@ -161,3 +161,17 @@ def test_feed_to_graph_path():
     # We know that there should be 9 new edges that are created to connect
     # the two GTFS feeds in the joint graph
     assert connector_edge_count == 9
+
+    # Now reload in the synthetic graph geojson
+    geojson_path = fixture('synthetic_example.geojson')
+    with open(geojson_path, 'r') as gjf:
+        reference_geojson = json.load(gjf)
+
+    # Then load it onto the graph, as well
+    G = load_synthetic_network_as_graph(reference_geojson, existing_graph=G)
+
+    # And make sure it connected correctly
+    node_len_3 = len(G.nodes())
+    edge_len_3 = len(G.edges())
+    assert node_len_3 - node_len_2 == 16
+    assert edge_len_3 - edge_len_2 == 15
