@@ -1,3 +1,4 @@
+from typing import Dict
 import random
 import string
 
@@ -140,16 +141,12 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
 
 
 def load_synthetic_network_as_graph(
-        geojson_path: str,
+        reference_geojson: Dict,
         name: str=None,
         existing_graph: nx.MultiDiGraph=None,
         connection_threshold: float=50.0,
         walk_speed_kmph: float=4.5,
         interpolate_times: bool=True):
-
-    # Load in the GeoJSON as a JSON and convert to a dictionary
-    with open(geojson_path, 'r') as gjf:
-        reference_geojson = json.load(gjf)
 
     # Generate a random name for name if it is None
     if not name:
