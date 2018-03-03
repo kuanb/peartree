@@ -1,3 +1,4 @@
+import json
 import os
 
 import geopandas as gpd
@@ -6,8 +7,9 @@ import partridge as ptg
 import pytest
 from peartree.graph import InsufficientSummaryResults
 from peartree.paths import (InvalidGTFS, InvalidTimeBracket,
-                            _generate_random_name, get_representative_feed,
-                            load_feed_as_graph)
+                            get_representative_feed, load_feed_as_graph,
+                            load_synthetic_network_as_graph)
+from peartree.toolkit import generate_random_name
 
 
 def fixture(filename):
@@ -30,13 +32,13 @@ def _check_unreasonable_lengths(G, threshold):
 
 
 def test_generate_name():
-    name = _generate_random_name(10)
+    name = generate_random_name(10)
     assert len(name) == 10
 
-    name = _generate_random_name(12)
+    name = generate_random_name(12)
     assert len(name) == 12
 
-    name = _generate_random_name()
+    name = generate_random_name()
     assert isinstance(name, str)
 
 
@@ -89,6 +91,23 @@ def test_loading_in_invalid_timeframes():
         load_feed_as_graph(feed_1, start, end)
 
 
+def test_synthetic_network():
+    # Load in the GeoJSON as a JSON and convert to a dictionary
+    geojson_path = fixture('synthetic_example.geojson')
+    with open(geojson_path, 'r') as gjf:
+        reference_geojson = json.load(gjf)
+
+    G = load_synthetic_network_as_graph(reference_geojson)
+
+    # This fixture gets broken into 15 chunks, so 15 + 1 = 16
+    nodes = list(G.nodes())
+    assert len(nodes) == 16
+
+    # And since it is one-directional, it gets the same edges as chunks
+    edges = list(G.edges())
+    assert len(edges) == 15
+
+
 def test_feed_to_graph_path():
     path_1 = fixture('caltrain-2017-07-24.zip')
     feed_1 = get_representative_feed(path_1)
@@ -116,10 +135,10 @@ def test_feed_to_graph_path():
     _check_unreasonable_lengths(G, max_reasonable_segment_length)
 
     # Part 2 of sanity check that the number of nodes and edges go up
-    new_node_len = len(G.nodes())
-    new_edge_len = len(G.edges())
-    assert new_node_len > orig_node_len
-    assert new_edge_len > orig_edge_len
+    node_len_2 = len(G.nodes())
+    edge_len_2 = len(G.edges())
+    assert node_len_2 > orig_node_len
+    assert edge_len_2 > orig_edge_len
 
     connector_edge_count = 0
     for from_node, to_node, edge in G.edges(data=True):
@@ -142,3 +161,19 @@ def test_feed_to_graph_path():
     # We know that there should be 9 new edges that are created to connect
     # the two GTFS feeds in the joint graph
     assert connector_edge_count == 9
+
+    # Now reload in the synthetic graph geojson
+    geojson_path = fixture('synthetic_example.geojson')
+    with open(geojson_path, 'r') as gjf:
+        reference_geojson = json.load(gjf)
+
+    # Then load it onto the graph, as well
+    G = load_synthetic_network_as_graph(reference_geojson, existing_graph=G)
+
+    # And make sure it connected correctly
+    node_len_3 = len(G.nodes())
+    edge_len_3 = len(G.edges())
+    assert node_len_3 - node_len_2 == 16
+    # 0 connector edges should have been created since the
+    # example fixture is too far away
+    assert edge_len_3 - edge_len_2 == 15

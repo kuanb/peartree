@@ -4,11 +4,15 @@ import networkx as nx
 import pandas as pd
 import partridge as ptg
 from fiona import crs
+from shapely.geometry import shape
 
 from .settings import WGS84
 from .summarizer import (generate_edge_and_wait_values,
                          generate_summary_edge_costs,
                          generate_summary_wait_times)
+from .synthetic import (generate_edges_df, generate_meter_projected_chunks,
+                        generate_nodes_df, generate_stop_ids,
+                        generate_stop_points)
 from .toolkit import generate_graph_node_dataframe, get_nearest_nodes
 
 
@@ -153,6 +157,86 @@ def populate_graph(G: nx.MultiDiGraph,
 
         # Use the lookup table to get converted stop id name
         full_sid = sid_lookup[sid]
+
+        # Convert to km/hour
+        kmph = (d / 1000) / walk_speed_kmph
+
+        # Convert to seconds
+        in_seconds = kmph * 60 * 60
+
+        G.add_edge(full_sid, to, length=in_seconds)
+
+    return G
+
+
+def make_synthetic_system_network(
+        G: nx.MultiDiGraph,
+        name: str,
+        reference_geojson: Dict,
+        connection_threshold: Union[int, float],
+        walk_speed_kmph: float=4.5):
+    # Same as populate_graph, we use this dict to monitor the stop ids
+    # that are created
+    sid_lookup = {}
+    for feat in reference_geojson['features']:
+        ref_shape = shape(feat['geometry'])
+
+        # Pull out required properties
+        props = feat['properties']
+        headway = props['headway']
+        avg_speed = props['average_speed']
+        stop_dist = props['stop_distance_distribution']
+
+        # Generate reference geometry data
+        chunks = generate_meter_projected_chunks(ref_shape, stop_dist)
+        all_pts = generate_stop_points(chunks)
+
+        # Give each stop a unique id
+        stop_ids = generate_stop_ids(len(all_pts))
+
+        # Produce graph components
+        nodes = generate_nodes_df(stop_ids, all_pts, headway)
+        edges = generate_edges_df(stop_ids, all_pts, chunks, avg_speed)
+
+        for i, row in nodes.iterrows():
+            sid = str(row.stop_id)
+            full_sid = nameify_stop_id(name, sid)
+
+            # Add to the lookup crosswalk dictionary
+            sid_lookup[sid] = full_sid
+
+            G.add_node(full_sid,
+                       boarding_cost=row.avg_cost,
+                       y=row.stop_lat,
+                       x=row.stop_lon)
+
+        for i, row in edges.iterrows():
+            sid_fr = nameify_stop_id(name, row.from_stop_id)
+            sid_to = nameify_stop_id(name, row.to_stop_id)
+            G.add_edge(sid_fr,
+                       sid_to,
+                       length=row.edge_cost)
+
+    # Generate cross feed edge values
+    cross_feed_edges = generate_cross_feed_edges(G, nodes,
+                                                 connection_threshold)
+
+    # Now add the cross feed edge connectors to the graph to
+    # capture transfer points
+    for i, row in cross_feed_edges.iterrows():
+        # Extract the row column values as discrete variables
+        sid = row.stop_id
+        to = row.to_node
+        d = row.distance
+
+        # Use the lookup table to get converted stop id name
+        full_sid = sid_lookup[sid]
+
+        # Avoid creating new edges that connect nodes that
+        # are only from one node in the new stop nodes to another
+        # in the new stop nodes
+        if to in sid_lookup.values():
+            continue
 
         # Convert to km/hour
         kmph = (d / 1000) / walk_speed_kmph
