@@ -56,25 +56,32 @@ def generate_meter_projected_chunks(
     return clean_chunks
 
 
-def generate_stop_points(
-        route_shape: LineString,
-        stop_distance_distribution: int):
-    # Rename variable for brevity
-    rs = route_shape
+def generate_stop_points(chunks: List[LineString]) -> List[Point]:
+    all_points = []
 
-    # Create the array of break points/joints
-    stop_count = round(rs.length / stop_distance_distribution)
-    mp_array = []
-    for i in range(1, stop_count):
-        fr = (i / stop_count)
-        mp_array.append(rs.interpolate(fr, normalized=True))
+    # First point is the first node on the first line
+    first_chunk = chunks[0].coords
+    first_pt = [Point(p) for p in first_chunk][0]
+    all_points.append(first_pt)
 
-    # Resulting array is compose of first and last point, plus
-    # splitter points in the middle
-    all_points = [Point(rs.coords[0])]
-    all_points += mp_array
-    all_points += [Point(rs.coords[-1])]
-    return all_points
+    # Then for all other points, we get from the end of each line
+    for c in chunks:
+        last_pt = [Point(p) for p in first_chunk][-1]
+        all_points.append(last_pt)
+
+    # Now we need to convert to a Shapely object
+    ap_ma = MultiPoint(all_points)
+
+    # So we can reproject back out of equal area to 4326
+    project = partial(
+        pyproj.transform,
+        pyproj.Proj(init='epsg:2163'),  # source coordinate system
+        pyproj.Proj(init='epsg:4326'))  # destination coordinate system
+
+    ap_ma_reproj = transform(project, ap_ma)  # apply projection
+
+    # Final step will be to pull out all points back into a list
+    return [p for p in ap_ma_reproj]
 
 
 def generate_stop_ids(stops_count: int) -> List[str]:
@@ -124,7 +131,10 @@ def generate_edges_df(
     # Sanity check
     if not len(chunks) == len(paired_nodes):
         raise Exception('Chunking operation did not result '
-                        'correct route shape subdivisions.')
+                        'correct route shape subdivisions. '
+                        '\nChunk len: {} \nPaired len: {}'.format(
+                            str(len(chunks)),
+                            str(len(paired_nodes))))
 
     for i, nodes in enumerate(paired_nodes):
         point_a = nodes[0]
