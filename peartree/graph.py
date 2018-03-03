@@ -232,6 +232,12 @@ def make_synthetic_system_network(
         # Use the lookup table to get converted stop id name
         full_sid = sid_lookup[sid]
 
+        # Avoid creating new edges that connect nodes that
+        # are only from one node in the new stop nodes to another
+        # in the new stop nodes
+        if to in sid_lookup.values():
+            continue
+
         # Convert to km/hour
         kmph = (d / 1000) / walk_speed_kmph
 
