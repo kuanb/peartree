@@ -65,8 +65,8 @@ def generate_stop_points(chunks: List[LineString]) -> List[Point]:
     all_points.append(first_pt)
 
     # Then for all other points, we get from the end of each line
-    for c in chunks:
-        last_pt = [Point(p) for p in first_chunk][-1]
+    for chunk in chunks:
+        last_pt = [Point(p) for p in chunk.coords][-1]
         all_points.append(last_pt)
 
     # Now we need to convert to a Shapely object
