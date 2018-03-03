@@ -146,8 +146,12 @@ def generate_edges_df(
         # take to traverse this portion of the
         # route path given the default speed
         l = chunks[i].length / 1000  # distance in km
+
         # Note: Average speed is to be supplied in kmph
-        edge_costs.append(round(l / avg_speed, 3))
+        in_hours = round(l / avg_speed, 3)
+        # Convert to seconds
+        in_seconds = in_hours * 60 * 60
+        edge_costs.append(in_seconds)
 
     edges_df = pd.DataFrame({
         'from_stop_id': from_stop_ids,
