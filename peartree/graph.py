@@ -4,11 +4,15 @@ import networkx as nx
 import pandas as pd
 import partridge as ptg
 from fiona import crs
+from shapely.geometry import shape
 
 from .settings import WGS84
 from .summarizer import (generate_edge_and_wait_values,
                          generate_summary_edge_costs,
                          generate_summary_wait_times)
+from .synthetic import (generate_edges_df, generate_meter_projected_chunks,
+                        generate_nodes_df, generate_stop_ids,
+                        generate_stop_points)
 from .toolkit import generate_graph_node_dataframe, get_nearest_nodes
 
 
@@ -171,12 +175,12 @@ def make_synthetic_system_network(
         reference_geojson: Dict,
         connection_threshold: Union[int, float],
         walk_speed_kmph: float=4.5):
-    graph_name = _generate_random_name(5)
+    # Same as populate_graph, we use this dict to monitor the stop ids
+    # that are created
     sid_lookup = {}
-
     for feat in reference_geojson['features']:
         ref_shape = shape(feat['geometry'])
-        
+
         # Pull out required properties
         props = feat['properties']
         headway = props['headway']
@@ -186,13 +190,13 @@ def make_synthetic_system_network(
         # Generate reference geometry data
         chunks = generate_meter_projected_chunks(ref_shape, stop_dist)
         all_pts = generate_stop_points(ref_shape, stop_dist)
-        
+
         # Give each stop a unique id
         stop_ids = generate_stop_ids(len(all_pts))
-        
+
         # Produce graph components
         nodes = generate_nodes_df(stop_ids, all_pts, headway)
-        edges = generate_edges_df(stop_ids, all_points, chunks, avg_speed)
+        edges = generate_edges_df(stop_ids, all_pts, chunks, avg_speed)
 
         for i, row in nodes.iterrows():
             sid = str(row.stop_id)
@@ -206,7 +210,7 @@ def make_synthetic_system_network(
                        y=row.stop_lat,
                        x=row.stop_lon)
 
-        for i, row in summary_edge_costs.iterrows():
+        for i, row in edges.iterrows():
             sid_fr = nameify_stop_id(name, row.from_stop_id)
             sid_to = nameify_stop_id(name, row.to_stop_id)
             G.add_edge(sid_fr,
@@ -214,8 +218,7 @@ def make_synthetic_system_network(
                        length=row.edge_cost)
 
     # Generate cross feed edge values
-    cross_feed_edges = generate_cross_feed_edges(G,
-                                                 stops_df,
+    cross_feed_edges = generate_cross_feed_edges(G, nodes,
                                                  connection_threshold)
 
     # Now add the cross feed edge connectors to the graph to

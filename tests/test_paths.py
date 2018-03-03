@@ -7,9 +7,9 @@ import partridge as ptg
 import pytest
 from peartree.graph import InsufficientSummaryResults
 from peartree.paths import (InvalidGTFS, InvalidTimeBracket,
-                            _generate_random_name, get_representative_feed,
-                            load_feed_as_graph,
+                            get_representative_feed, load_feed_as_graph,
                             load_synthetic_network_as_graph)
+from peartree.toolkit import generate_random_name
 
 
 def fixture(filename):
@@ -32,13 +32,13 @@ def _check_unreasonable_lengths(G, threshold):
 
 
 def test_generate_name():
-    name = _generate_random_name(10)
+    name = generate_random_name(10)
     assert len(name) == 10
 
-    name = _generate_random_name(12)
+    name = generate_random_name(12)
     assert len(name) == 12
 
-    name = _generate_random_name()
+    name = generate_random_name()
     assert isinstance(name, str)
 
 

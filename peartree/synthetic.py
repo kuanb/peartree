@@ -1,22 +1,23 @@
 from functools import partial
-from typing import Dict, List
+from typing import List
 
+import pandas as pd
 import pyproj
-from shapely.geometry import LineString, MultiPoint, Point, shape
+from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import linemerge, split, transform
 
-from .paths import _generate_random_name
+from .toolkit import generate_random_name
 
 
 def generate_meter_projected_chunks(
         route_shape: LineString,
         stop_distance_distribution: int) -> List[LineString]:
-    
+
     # Reproject 4326 lat/lon coordinates to equal area
     project = partial(
         pyproj.transform,
-        pyproj.Proj(init='epsg:4326'), # source coordinate system
-        pyproj.Proj(init='epsg:2163')) # destination coordinate system
+        pyproj.Proj(init='epsg:4326'),  # source coordinate system
+        pyproj.Proj(init='epsg:2163'))  # destination coordinate system
 
     rs2 = transform(project, route_shape)  # apply projection
     stop_count = round(rs2.length / stop_distance_distribution)
@@ -24,7 +25,7 @@ def generate_meter_projected_chunks(
     # Create the array of break points/joints
     mp_array = []
     for i in range(1, stop_count):
-        fr = (i/stop_count)
+        fr = (i / stop_count)
         mp_array.append(rs2.interpolate(fr, normalized=True))
 
     # Cast array as a Shapely object
@@ -52,20 +53,22 @@ def generate_meter_projected_chunks(
         else:
             clean_chunks.append(current)
 
+    return clean_chunks
+
 
 def generate_stop_points(
         route_shape: LineString,
         stop_distance_distribution: int):
     # Rename variable for brevity
     rs = route_shape
-    
+
     # Create the array of break points/joints
     stop_count = round(rs.length / stop_distance_distribution)
     mp_array = []
     for i in range(1, stop_count):
-        fr = (i/stop_count)
+        fr = (i / stop_count)
         mp_array.append(rs.interpolate(fr, normalized=True))
-    
+
     # Resulting array is compose of first and last point, plus
     # splitter points in the middle
     all_points = [Point(rs.coords[0])]
@@ -75,7 +78,7 @@ def generate_stop_points(
 
 
 def generate_stop_ids(stops_count: int) -> List[str]:
-    shape_name = _generate_random_name(5)
+    shape_name = generate_random_name(5)
     stop_names = []
     for i in range(stops_count):
         stop_names.append('_'.join([shape_name, i]))
@@ -90,7 +93,7 @@ def generate_nodes_df(
     stop_lats = []
     stop_lons = []
 
-    default_avg_cost = headway/2
+    default_avg_cost = headway / 2
 
     for point in all_points:
         avg_costs.append(default_avg_cost)
@@ -128,18 +131,18 @@ def generate_edges_df(
         point_b = nodes[1]
         from_stop_ids.append(point_a)
         to_stop_ids.append(point_b)
-        
+
         # Estimate the amount of time it would
         # take to traverse this portion of the
         # route path given the default speed
-        l = clean_chunks[i].length / 1000  # distance in km
+        l = chunks[i].length / 1000  # distance in km
         # Note: Average speed is to be supplied in kmph
-        edge_costs.append(l / avg_speed)
+        edge_costs.append(round(l / avg_speed, 3))
 
     edges_df = pd.DataFrame({
         'from_stop_id': from_stop_ids,
         'to_stop_id': to_stop_ids,
         'edge_cost': edge_costs,
     })
-    
+
     return edges_df

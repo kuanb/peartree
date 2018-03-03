@@ -1,12 +1,11 @@
 from typing import Dict
-import random
-import string
 
 import networkx as nx
 import partridge as ptg
 
 from .graph import (generate_empty_md_graph, generate_summary_graph_elements,
-                    populate_graph)
+                    make_synthetic_system_network, populate_graph)
+from .toolkit import generate_random_name
 from .utilities import log
 
 
@@ -17,11 +16,6 @@ class InvalidGTFS(Exception):
 
 class InvalidTimeBracket(Exception):
     pass
-
-
-def _generate_random_name(N: int=5):
-    choices = (string.ascii_uppercase + string.digits)
-    return ''.join(random.SystemRandom().choice(choices) for _ in range(N))
 
 
 def get_representative_feed(file_loc: str,
@@ -101,7 +95,7 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
 
     # Generate a random name for name if it is None
     if not name:
-        name = _generate_random_name()
+        name = generate_random_name()
 
     # Some sanity checking, to make sure only positive values are provided
     if (start_time < 0) or (end_time < 0):
@@ -150,7 +144,7 @@ def load_synthetic_network_as_graph(
 
     # Generate a random name for name if it is None
     if not name:
-        name = _generate_random_name()
+        name = generate_random_name()
 
     # This is a flag used to check if we need to run any additional steps
     # after the feed is returned to ensure that new nodes and edge can connect

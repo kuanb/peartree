@@ -1,3 +1,5 @@
+import random
+import string
 from typing import Tuple
 
 import numpy as np
@@ -14,6 +16,11 @@ def great_circle_vec(lat1: float,
     #   https://github.com/gboeing/osmnx/blob/
     #   b32f8d333c6965a0d2f27c1f3224a29de2f08d55/osmnx/utils.py#L262
     return ox.utils.great_circle_vec(lat1, lng1, lat2, lng2, earth_radius)
+
+
+def generate_random_name(N: int=5):
+    choices = (string.ascii_uppercase + string.digits)
+    return ''.join(random.SystemRandom().choice(choices) for _ in range(N))
 
 
 def generate_graph_node_dataframe(G):
