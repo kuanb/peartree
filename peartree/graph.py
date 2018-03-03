@@ -168,7 +168,9 @@ def populate_graph(G: nx.MultiDiGraph,
 def make_synthetic_system_network(
         G: nx.MultiDiGraph,
         name: str,
-        reference_geojson: Dict):
+        reference_geojson: Dict,
+        connection_threshold: Union[int, float],
+        walk_speed_kmph: float=4.5):
     graph_name = _generate_random_name(5)
     sid_lookup = {}
 
@@ -234,3 +236,5 @@ def make_synthetic_system_network(
         in_seconds = kmph * 60 * 60
 
         G.add_edge(full_sid, to, length=in_seconds)
+
+    return G

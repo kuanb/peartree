@@ -137,3 +137,41 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                           summary_edge_costs,
                           connection_threshold,
                           walk_speed_kmph)
+
+
+def load_synthetic_network_as_graph(
+        geojson_path: str,
+        name: str=None,
+        existing_graph: nx.MultiDiGraph=None,
+        connection_threshold: float=50.0,
+        walk_speed_kmph: float=4.5,
+        interpolate_times: bool=True):
+
+    # Load in the GeoJSON as a JSON and convert to a dictionary
+    with open(geojson_path, 'r') as gjf:
+        reference_geojson = json.load(gjf)
+
+    # Generate a random name for name if it is None
+    if not name:
+        name = _generate_random_name()
+
+    # This is a flag used to check if we need to run any additional steps
+    # after the feed is returned to ensure that new nodes and edge can connect
+    # with existing ones (if they exist/a graph is passed in)
+    existing_graph_supplied = bool(existing_graph)
+
+    # G is either a new MultiDiGraph or one pass from before
+    if existing_graph_supplied:
+        # TODO: If passed from before we should run some checks to ensure
+        #       it is valid as well as set a flag to create join points with
+        #       other feeds so that they can be linked when the next is added.
+        G = existing_graph
+    else:
+        G = generate_empty_md_graph(name)
+
+    return make_synthetic_system_network(
+        G,
+        name,
+        reference_geojson,
+        connection_threshold,
+        walk_speed_kmph)
