@@ -4,9 +4,9 @@
         {
             "type": "Feature",
             "properties": {
-                "headway": 15 * 60,  # 15 min in seconds
-                "average_speed": 16,  # 16 kmph, approx. 10 mph
-                "stop_distance_distribution": 402,  # 1/4 mile in meters
+                "headway": 900,
+                "average_speed": 16,
+                "stop_distance_distribution": 402
             },
             "geometry": {
                 "type": "LineString",

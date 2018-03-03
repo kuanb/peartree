@@ -1,3 +1,4 @@
+import json
 import os
 
 import geopandas as gpd
@@ -7,7 +8,8 @@ import pytest
 from peartree.graph import InsufficientSummaryResults
 from peartree.paths import (InvalidGTFS, InvalidTimeBracket,
                             _generate_random_name, get_representative_feed,
-                            load_feed_as_graph)
+                            load_feed_as_graph,
+                            load_synthetic_network_as_graph)
 
 
 def fixture(filename):
@@ -90,13 +92,18 @@ def test_loading_in_invalid_timeframes():
 
 
 def test_synthetic_network():
-    path = fixture('synthetic_example.geojson')
-    
     # Load in the GeoJSON as a JSON and convert to a dictionary
+    geojson_path = fixture('synthetic_example.geojson')
     with open(geojson_path, 'r') as gjf:
         reference_geojson = json.load(gjf)
 
     G = load_synthetic_network_as_graph(reference_geojson)
+
+    nodes = list(G.nodes())
+    print(len(nodes))
+
+    edges = list(G.edges())
+    print(len(edges))
 
 
 def test_feed_to_graph_path():
