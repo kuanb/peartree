@@ -104,8 +104,8 @@ def generate_nodes_df(
 
     for point in all_points:
         avg_costs.append(default_avg_cost)
-        stop_lats.append(point.x)
-        stop_lons.append(point.y)
+        stop_lats.append(point.y)
+        stop_lons.append(point.x)
 
     nodes_df = pd.DataFrame({
         'stop_id': stop_ids,
