@@ -163,3 +163,74 @@ def populate_graph(G: nx.MultiDiGraph,
         G.add_edge(full_sid, to, length=in_seconds)
 
     return G
+
+
+def make_synthetic_system_network(
+        G: nx.MultiDiGraph,
+        name: str,
+        reference_geojson: Dict):
+    graph_name = _generate_random_name(5)
+    sid_lookup = {}
+
+    for feat in reference_geojson['features']:
+        ref_shape = shape(feat['geometry'])
+        
+        # Pull out required properties
+        props = feat['properties']
+        headway = props['headway']
+        avg_speed = props['average_speed']
+        stop_dist = props['stop_distance_distribution']
+
+        # Generate reference geometry data
+        chunks = generate_meter_projected_chunks(ref_shape, stop_dist)
+        all_pts = generate_stop_points(ref_shape, stop_dist)
+        
+        # Give each stop a unique id
+        stop_ids = generate_stop_ids(len(all_pts))
+        
+        # Produce graph components
+        nodes = generate_nodes_df(stop_ids, all_pts, headway)
+        edges = generate_edges_df(stop_ids, all_points, chunks, avg_speed)
+
+        for i, row in nodes.iterrows():
+            sid = str(row.stop_id)
+            full_sid = nameify_stop_id(name, sid)
+
+            # Add to the lookup crosswalk dictionary
+            sid_lookup[sid] = full_sid
+
+            G.add_node(full_sid,
+                       boarding_cost=row.avg_cost,
+                       y=row.stop_lat,
+                       x=row.stop_lon)
+
+        for i, row in summary_edge_costs.iterrows():
+            sid_fr = nameify_stop_id(name, row.from_stop_id)
+            sid_to = nameify_stop_id(name, row.to_stop_id)
+            G.add_edge(sid_fr,
+                       sid_to,
+                       length=row.edge_cost)
+
+    # Generate cross feed edge values
+    cross_feed_edges = generate_cross_feed_edges(G,
+                                                 stops_df,
+                                                 connection_threshold)
+
+    # Now add the cross feed edge connectors to the graph to
+    # capture transfer points
+    for i, row in cross_feed_edges.iterrows():
+        # Extract the row column values as discrete variables
+        sid = row.stop_id
+        to = row.to_node
+        d = row.distance
+
+        # Use the lookup table to get converted stop id name
+        full_sid = sid_lookup[sid]
+
+        # Convert to km/hour
+        kmph = (d / 1000) / walk_speed_kmph
+
+        # Convert to seconds
+        in_seconds = kmph * 60 * 60
+
+        G.add_edge(full_sid, to, length=in_seconds)
