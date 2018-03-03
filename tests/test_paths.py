@@ -91,6 +91,12 @@ def test_loading_in_invalid_timeframes():
 
 def test_synthetic_network():
     path = fixture('synthetic_example.geojson')
+    
+    # Load in the GeoJSON as a JSON and convert to a dictionary
+    with open(geojson_path, 'r') as gjf:
+        reference_geojson = json.load(gjf)
+
+    G = load_synthetic_network_as_graph(reference_geojson)
 
 
 def test_feed_to_graph_path():
