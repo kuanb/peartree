@@ -139,8 +139,7 @@ def load_synthetic_network_as_graph(
         name: str=None,
         existing_graph: nx.MultiDiGraph=None,
         connection_threshold: float=50.0,
-        walk_speed_kmph: float=4.5,
-        interpolate_times: bool=True):
+        walk_speed_kmph: float=4.5):
 
     # Generate a random name for name if it is None
     if not name:
