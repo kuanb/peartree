@@ -189,7 +189,7 @@ def make_synthetic_system_network(
 
         # Generate reference geometry data
         chunks = generate_meter_projected_chunks(ref_shape, stop_dist)
-        all_pts = generate_stop_points(ref_shape, stop_dist)
+        all_pts = generate_stop_points(chunks)
 
         # Give each stop a unique id
         stop_ids = generate_stop_ids(len(all_pts))
