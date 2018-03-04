@@ -1,4 +1,4 @@
-from typing import Dict, Union
+from typing import Dict, List, Union
 
 import networkx as nx
 import pandas as pd
@@ -55,9 +55,10 @@ def generate_summary_graph_elements(feed: ptg.gtfs.feed,
     return (summary_edge_costs, wait_times_by_stop)
 
 
-def generate_cross_feed_edges(G,
-                              stops_df,
-                              connection_threshold):
+def generate_cross_feed_edges(G: nx.MultiDiGraph,
+                              stops_df: pd.DataFrame,
+                              exempt_nodes: List[str],
+                              connection_threshold: float) -> pd.DataFrame:
     # Terminate this process early if the graph is empty
     if (G.number_of_nodes() == 0):
         return pd.DataFrame({'stop_id': [],
@@ -218,7 +219,9 @@ def make_synthetic_system_network(
                        length=row.edge_cost)
 
     # Generate cross feed edge values
+    exempt_nodes = sid_lookup.values()
     cross_feed_edges = generate_cross_feed_edges(G, nodes,
+                                                 exempt_nodes,
                                                  connection_threshold)
 
     # Now add the cross feed edge connectors to the graph to
