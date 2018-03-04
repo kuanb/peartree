@@ -68,6 +68,9 @@ def generate_cross_feed_edges(G: nx.MultiDiGraph,
     # First, we need a DataFrame representation of the nodes in the graph
     node_df = generate_graph_node_dataframe(G)
 
+    # Remove all nodes that are part of the new additions to the graph
+    node_df = node_df[~node_df.index.isin(exempt_nodes)]
+
     stop_ids = []
     to_nodes = []
     edge_costs = []
@@ -144,8 +147,9 @@ def populate_graph(G: nx.MultiDiGraph,
                    length=row.edge_cost)
 
     # Generate cross feed edge values
-    cross_feed_edges = generate_cross_feed_edges(G,
-                                                 stops_df,
+    exempt_nodes = sid_lookup.values()
+    cross_feed_edges = generate_cross_feed_edges(G, stops_df,
+                                                 exempt_nodes,
                                                  connection_threshold)
 
     # Now add the cross feed edge connectors to the graph to
@@ -234,12 +238,6 @@ def make_synthetic_system_network(
 
         # Use the lookup table to get converted stop id name
         full_sid = sid_lookup[sid]
-
-        # Avoid creating new edges that connect nodes that
-        # are only from one node in the new stop nodes to another
-        # in the new stop nodes
-        if to in sid_lookup.values():
-            continue
 
         # Convert to km/hour
         kmph = (d / 1000) / walk_speed_kmph
