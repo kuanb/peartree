@@ -20,6 +20,35 @@ class InsufficientSummaryResults(Exception):
     pass
 
 
+def _add_cross_feed_edges(G: nx.MultiDiGraph,
+                          sid_lookup: Dict[str, str],
+                          cross_feed_edges: pd.DataFrame,
+                          walk_speed_kmph: float) -> nx.MultiDiGraph:
+    # Add the cross feed edge connectors to the graph to
+    # capture transfer points
+    for i, row in cross_feed_edges.iterrows():
+        # Extract the row column values as discrete variables
+        sid = row.stop_id
+        to = row.to_node
+        d = row.distance
+
+        # Use the lookup table to get converted stop id name
+        full_sid = sid_lookup[sid]
+
+        # Convert to km/hour
+        kmph = (d / 1000) / walk_speed_kmph
+
+        # Convert to seconds
+        in_seconds = kmph * 60 * 60
+
+        # And then add it to the graph
+        G.add_edge(full_sid, to, length=in_seconds)
+
+        # TODO: Since we are updating the instantiated G class,
+        #       is there really a reason we need to return it here?
+        return G
+
+
 def generate_empty_md_graph(name: str,
                             init_crs: Dict=crs.from_epsg(WGS84)):
     return nx.MultiDiGraph(name=name, crs=init_crs)
@@ -151,25 +180,7 @@ def populate_graph(G: nx.MultiDiGraph,
     cross_feed_edges = generate_cross_feed_edges(G, stops_df,
                                                  exempt_nodes,
                                                  connection_threshold)
-
-    # Now add the cross feed edge connectors to the graph to
-    # capture transfer points
-    for i, row in cross_feed_edges.iterrows():
-        # Extract the row column values as discrete variables
-        sid = row.stop_id
-        to = row.to_node
-        d = row.distance
-
-        # Use the lookup table to get converted stop id name
-        full_sid = sid_lookup[sid]
-
-        # Convert to km/hour
-        kmph = (d / 1000) / walk_speed_kmph
-
-        # Convert to seconds
-        in_seconds = kmph * 60 * 60
-
-        G.add_edge(full_sid, to, length=in_seconds)
+    G = _add_cross_feed_edges(G, sid_lookup, cross_feed_edges, walk_speed_kmph)
 
     return G
 
@@ -227,24 +238,6 @@ def make_synthetic_system_network(
     cross_feed_edges = generate_cross_feed_edges(G, nodes,
                                                  exempt_nodes,
                                                  connection_threshold)
-
-    # Now add the cross feed edge connectors to the graph to
-    # capture transfer points
-    for i, row in cross_feed_edges.iterrows():
-        # Extract the row column values as discrete variables
-        sid = row.stop_id
-        to = row.to_node
-        d = row.distance
-
-        # Use the lookup table to get converted stop id name
-        full_sid = sid_lookup[sid]
-
-        # Convert to km/hour
-        kmph = (d / 1000) / walk_speed_kmph
-
-        # Convert to seconds
-        in_seconds = kmph * 60 * 60
-
-        G.add_edge(full_sid, to, length=in_seconds)
+    G = _add_cross_feed_edges(G, sid_lookup, cross_feed_edges, walk_speed_kmph)
 
     return G
