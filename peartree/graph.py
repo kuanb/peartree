@@ -1,4 +1,4 @@
-from typing import Dict, Union
+from typing import Dict, List, Union
 
 import networkx as nx
 import pandas as pd
@@ -55,9 +55,10 @@ def generate_summary_graph_elements(feed: ptg.gtfs.feed,
     return (summary_edge_costs, wait_times_by_stop)
 
 
-def generate_cross_feed_edges(G,
-                              stops_df,
-                              connection_threshold):
+def generate_cross_feed_edges(G: nx.MultiDiGraph,
+                              stops_df: pd.DataFrame,
+                              exempt_nodes: List[str],
+                              connection_threshold: float) -> pd.DataFrame:
     # Terminate this process early if the graph is empty
     if (G.number_of_nodes() == 0):
         return pd.DataFrame({'stop_id': [],
@@ -66,6 +67,9 @@ def generate_cross_feed_edges(G,
 
     # First, we need a DataFrame representation of the nodes in the graph
     node_df = generate_graph_node_dataframe(G)
+
+    # Remove all nodes that are part of the new additions to the graph
+    node_df = node_df[~node_df.index.isin(exempt_nodes)]
 
     stop_ids = []
     to_nodes = []
@@ -105,24 +109,36 @@ def _merge_stop_waits_and_attributes(wait_times_by_stop: pd.DataFrame,
     return mdf[~mdf.isnull()]
 
 
-def populate_graph(G: nx.MultiDiGraph,
-                   name: str,
-                   feed: ptg.gtfs.feed,
-                   wait_times_by_stop: pd.DataFrame,
-                   summary_edge_costs: pd.DataFrame,
-                   connection_threshold: Union[int, float],
-                   walk_speed_kmph: float=4.5):
-    # As we convert stop ids to actual nodes, let's keep track of those names
-    # here so that we can reference them when we add connector edges across
-    # the various feeds loaded into the graph
-    sid_lookup = {}
+def _add_cross_feed_edges(G: nx.MultiDiGraph,
+                          sid_lookup: Dict[str, str],
+                          cross_feed_edges: pd.DataFrame,
+                          walk_speed_kmph: float) -> nx.MultiDiGraph:
+    # Add the cross feed edge connectors to the graph to
+    # capture transfer points
+    for i, row in cross_feed_edges.iterrows():
+        # Extract the row column values as discrete variables
+        sid = row.stop_id
+        to = row.to_node
+        d = row.distance
 
-    # Generate a merge of the wait time data and the feed stops data that will
-    # be used for both the addition of new stop nodes and the addition of
-    # cross feed edges later on (that join one feeds stops to the other if
-    # they are within the connection threshold).
-    stops_df = _merge_stop_waits_and_attributes(wait_times_by_stop, feed.stops)
+        # Use the lookup table to get converted stop id name
+        full_sid = sid_lookup[sid]
 
+        # Convert to km/hour
+        kmph = (d / 1000) / walk_speed_kmph
+
+        # Convert to seconds
+        in_seconds = kmph * 60 * 60
+
+        # And then add it to the graph
+        G.add_edge(full_sid, to, length=in_seconds)
+
+
+def _add_nodes_and_edges(G: nx.MultiDiGraph,
+                         name: str,
+                         sid_lookup: Dict[str, str],
+                         stops_df: pd.DataFrame,
+                         summary_edge_costs: pd.DataFrame) -> nx.MultiDiGraph:
     for i, row in stops_df.iterrows():
         sid = str(row.stop_id)
         full_sid = nameify_stop_id(name, sid)
@@ -142,29 +158,36 @@ def populate_graph(G: nx.MultiDiGraph,
                    sid_to,
                    length=row.edge_cost)
 
+
+def populate_graph(G: nx.MultiDiGraph,
+                   name: str,
+                   feed: ptg.gtfs.feed,
+                   wait_times_by_stop: pd.DataFrame,
+                   summary_edge_costs: pd.DataFrame,
+                   connection_threshold: Union[int, float],
+                   walk_speed_kmph: float=4.5):
+    # As we convert stop ids to actual nodes, let's keep track of those names
+    # here so that we can reference them when we add connector edges across
+    # the various feeds loaded into the graph
+    sid_lookup = {}
+
+    # Generate a merge of the wait time data and the feed stops data that will
+    # be used for both the addition of new stop nodes and the addition of
+    # cross feed edges later on (that join one feeds stops to the other if
+    # they are within the connection threshold).
+    stops_df = _merge_stop_waits_and_attributes(wait_times_by_stop, feed.stops)
+
+    # Mutates the G network object
+    _add_nodes_and_edges(G, name, sid_lookup, stops_df, summary_edge_costs)
+
     # Generate cross feed edge values
-    cross_feed_edges = generate_cross_feed_edges(G,
-                                                 stops_df,
+    exempt_nodes = sid_lookup.values()
+    cross_feed_edges = generate_cross_feed_edges(G, stops_df,
+                                                 exempt_nodes,
                                                  connection_threshold)
 
-    # Now add the cross feed edge connectors to the graph to
-    # capture transfer points
-    for i, row in cross_feed_edges.iterrows():
-        # Extract the row column values as discrete variables
-        sid = row.stop_id
-        to = row.to_node
-        d = row.distance
-
-        # Use the lookup table to get converted stop id name
-        full_sid = sid_lookup[sid]
-
-        # Convert to km/hour
-        kmph = (d / 1000) / walk_speed_kmph
-
-        # Convert to seconds
-        in_seconds = kmph * 60 * 60
-
-        G.add_edge(full_sid, to, length=in_seconds)
+    # Mutates the G network object
+    _add_cross_feed_edges(G, sid_lookup, cross_feed_edges, walk_speed_kmph)
 
     return G
 
@@ -198,52 +221,16 @@ def make_synthetic_system_network(
         nodes = generate_nodes_df(stop_ids, all_pts, headway)
         edges = generate_edges_df(stop_ids, all_pts, chunks, avg_speed)
 
-        for i, row in nodes.iterrows():
-            sid = str(row.stop_id)
-            full_sid = nameify_stop_id(name, sid)
-
-            # Add to the lookup crosswalk dictionary
-            sid_lookup[sid] = full_sid
-
-            G.add_node(full_sid,
-                       boarding_cost=row.avg_cost,
-                       y=row.stop_lat,
-                       x=row.stop_lon)
-
-        for i, row in edges.iterrows():
-            sid_fr = nameify_stop_id(name, row.from_stop_id)
-            sid_to = nameify_stop_id(name, row.to_stop_id)
-            G.add_edge(sid_fr,
-                       sid_to,
-                       length=row.edge_cost)
+        # Mutates the G network object
+        _add_nodes_and_edges(G, name, sid_lookup, nodes, edges)
 
     # Generate cross feed edge values
+    exempt_nodes = sid_lookup.values()
     cross_feed_edges = generate_cross_feed_edges(G, nodes,
+                                                 exempt_nodes,
                                                  connection_threshold)
 
-    # Now add the cross feed edge connectors to the graph to
-    # capture transfer points
-    for i, row in cross_feed_edges.iterrows():
-        # Extract the row column values as discrete variables
-        sid = row.stop_id
-        to = row.to_node
-        d = row.distance
-
-        # Use the lookup table to get converted stop id name
-        full_sid = sid_lookup[sid]
-
-        # Avoid creating new edges that connect nodes that
-        # are only from one node in the new stop nodes to another
-        # in the new stop nodes
-        if to in sid_lookup.values():
-            continue
-
-        # Convert to km/hour
-        kmph = (d / 1000) / walk_speed_kmph
-
-        # Convert to seconds
-        in_seconds = kmph * 60 * 60
-
-        G.add_edge(full_sid, to, length=in_seconds)
+    # Mutates the G network object
+    _add_cross_feed_edges(G, sid_lookup, cross_feed_edges, walk_speed_kmph)
 
     return G

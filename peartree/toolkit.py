@@ -86,7 +86,8 @@ def get_nearest_nodes(df_orig: pd.DataFrame,
                                  lng2=xs)
 
     # Filter out nodes outside connection threshold
-    nearest_nodes = distances[(distances < connection_threshold)]
+    mask = (distances < connection_threshold)
+    nearest_nodes = distances[mask]
 
     # Return filtered series
     return nearest_nodes
