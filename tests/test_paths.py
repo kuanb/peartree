@@ -93,7 +93,7 @@ def test_loading_in_invalid_timeframes():
 
 def test_synthetic_network():
     # Load in the GeoJSON as a JSON and convert to a dictionary
-    geojson_path = fixture('synthetic_example.geojson')
+    geojson_path = fixture('synthetic_east_bay.geojson')
     with open(geojson_path, 'r') as gjf:
         reference_geojson = json.load(gjf)
 
@@ -163,7 +163,7 @@ def test_feed_to_graph_path():
     assert connector_edge_count == 9
 
     # Now reload in the synthetic graph geojson
-    geojson_path = fixture('synthetic_example.geojson')
+    geojson_path = fixture('synthetic_east_bay.geojson')
     with open(geojson_path, 'r') as gjf:
         reference_geojson = json.load(gjf)
 
