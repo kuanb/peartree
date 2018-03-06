@@ -171,7 +171,8 @@ def populate_graph(G: nx.MultiDiGraph,
                    wait_times_by_stop: pd.DataFrame,
                    summary_edge_costs: pd.DataFrame,
                    connection_threshold: Union[int, float],
-                   walk_speed_kmph: float=4.5):
+                   walk_speed_kmph: float=4.5,
+                   exempt_internal_edge_imputation: bool=False):
     # Generate a merge of the wait time data and the feed stops data that will
     # be used for both the addition of new stop nodes and the addition of
     # cross feed edges later on (that join one feeds stops to the other if
@@ -182,7 +183,9 @@ def populate_graph(G: nx.MultiDiGraph,
     sid_lookup = _add_nodes_and_edges(G, name, stops_df, summary_edge_costs)
 
     # Generate cross feed edge values
-    exempt_nodes = sid_lookup.values()
+    exempt_nodes = []
+    if exempt_internal_edge_imputation:
+        exempt_nodes = sid_lookup.values()
     cross_feed_edges = generate_cross_feed_edges(G, stops_df,
                                                  exempt_nodes,
                                                  connection_threshold)
@@ -198,7 +201,8 @@ def make_synthetic_system_network(
         name: str,
         reference_geojson: Dict,
         connection_threshold: Union[int, float],
-        walk_speed_kmph: float=4.5):
+        walk_speed_kmph: float=4.5,
+        exempt_internal_edge_imputation: bool=False):
     # Same as populate_graph, we use this dict to monitor the stop ids
     # that are created
     sid_lookup = {}
@@ -237,8 +241,10 @@ def make_synthetic_system_network(
             all_nodes = all_nodes.append(nodes)
 
     # Generate cross feed edge values
-    exempt_nodes = sid_lookup.values()
-    cross_feed_edges = generate_cross_feed_edges(G, all_nodes,
+    exempt_nodes = []
+    if exempt_internal_edge_imputation:
+        exempt_nodes = sid_lookup.values()
+    cross_feed_edges = generate_cross_feed_edges(G, nodes,
                                                  exempt_nodes,
                                                  connection_threshold)
     # Mutates the G network object
