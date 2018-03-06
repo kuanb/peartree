@@ -1,5 +1,4 @@
 coverage
-coveralls
 pip
 wheel
 flake8
