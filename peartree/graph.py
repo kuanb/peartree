@@ -4,7 +4,7 @@ import networkx as nx
 import pandas as pd
 import partridge as ptg
 from fiona import crs
-from shapely.geometry import shape, LineString, Point
+from shapely.geometry import LineString, Point, shape
 
 from .settings import WGS84
 from .summarizer import (generate_edge_and_wait_values,
@@ -211,13 +211,17 @@ def make_synthetic_system_network(
     sid_lookup = {}
     all_nodes = None
     for feat in reference_geojson['features']:
-        ref_shape = shape(feat['geometry'])
+        # Pull out required properties
+        props = feat['properties']
+        headway = props['headway']
+        avg_speed = props['average_speed']
+        stop_dist = props['stop_distance_distribution']
 
         ref_shape_1 = shape(feat['geometry'])
         ref_shapes = [ref_shape_1]
 
         # Check if want to do bidirectional (optional)
-        if 'bidirectional' in feat and bool(feat['bidirectional']):
+        if 'bidirectional' in props and bool(props['bidirectional']):
             coord_array = [Point(p) for p in ref_shape_1.coords]
             ref_shape_2 = LineString(reversed(coord_array))
             ref_shapes.append(ref_shape_2)
@@ -225,12 +229,6 @@ def make_synthetic_system_network(
         # For either the one specified direction or both, create
         # and add imputed nodes and edges from supplied shape
         for ref_shape in ref_shapes:
-            # Pull out required properties
-            props = feat['properties']
-            headway = props['headway']
-            avg_speed = props['average_speed']
-            stop_dist = props['stop_distance_distribution']
-
             # Generate reference geometry data
             chunks = generate_meter_projected_chunks(ref_shape, stop_dist)
             all_pts = generate_stop_points(chunks)
