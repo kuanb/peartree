@@ -4,7 +4,7 @@ import networkx as nx
 import pandas as pd
 import partridge as ptg
 from fiona import crs
-from shapely.geometry import LineString, Point, shape
+from shapely.geometry import shape
 
 from .settings import WGS84
 from .summarizer import (generate_edge_and_wait_values,
@@ -140,7 +140,8 @@ def _add_cross_feed_edges(G: nx.MultiDiGraph,
 def _add_nodes_and_edges(G: nx.MultiDiGraph,
                          name: str,
                          stops_df: pd.DataFrame,
-                         summary_edge_costs: pd.DataFrame) -> Dict[str, str]:
+                         summary_edge_costs: pd.DataFrame,
+                         bidirectional: bool=False) -> Dict[str, str]:
     # As we convert stop ids to actual nodes, let's keep track of those names
     # here so that we can reference them when we add connector edges across
     # the various feeds loaded into the graph
@@ -230,8 +231,15 @@ def make_synthetic_system_network(
         nodes = generate_nodes_df(stop_ids, all_pts, headway)
         edges = generate_edges_df(stop_ids, all_pts, chunks, avg_speed)
 
+        # Check if want to do bidirectional (optional)
+        bidirectional = False
+        if 'bidirectional' in props:
+            # If true, each edge will be added both directions
+            bidirectional = bool(props['bidirectional'])
+
         # Mutates the G network object
-        sid_lookup_sub = _add_nodes_and_edges(G, name, nodes, edges)
+        sid_lookup_sub = _add_nodes_and_edges(
+            G, name, nodes, edges, bidirectional)
 
         # Update the parent sid with new values
         for key, val in sid_lookup_sub.items():
