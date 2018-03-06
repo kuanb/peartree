@@ -97,33 +97,29 @@ def test_synthetic_network():
     with open(geojson_path, 'r') as gjf:
         reference_geojson = json.load(gjf)
 
-    G = load_synthetic_network_as_graph(reference_geojson)
+    G1 = load_synthetic_network_as_graph(reference_geojson)
 
     # This fixture gets broken into 15 chunks, so 15 + 1 = 16
-    nodes = list(G.nodes())
+    nodes = list(G1.nodes())
     assert len(nodes) == 16
 
     # And since it is one-directional, it gets the same edges as chunks
-    edges = list(G.edges())
+    edges = list(G1.edges())
     assert len(edges) == 15
 
-    # Drop the graph and test a bi-direction
-    G = None
-
     # Go back to the GeoJSON and set optional bidirectional flag
-    for feat in reference_geojson['features']:
-        feat['properties']['bidirectional'] = True
+    for i in range(len(reference_geojson['features'])):
+        reference_geojson['features'][i]['properties']['bidirectional'] = True
 
-    G = load_synthetic_network_as_graph(reference_geojson)
+    G2 = load_synthetic_network_as_graph(reference_geojson)
 
     # This fixture gets broken into 15 chunks, so 15 + 1 = 16
-    nodes = list(G.nodes())
+    nodes = list(G2.nodes())
     assert len(nodes) == 16 * 2
 
     # And since it is one-directional, it gets the same edges as chunks
-    edges = list(G.edges())
-    assert len(edges) == 15 * 2
-
+    edges = list(G2.edges())
+    assert len(edges) == 62
 
 
 def test_feed_to_graph_path():
