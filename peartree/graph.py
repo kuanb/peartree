@@ -237,9 +237,6 @@ def make_synthetic_system_network(
         for key, val in sid_lookup_sub.items():
             sid_lookup[key] = val
 
-        # Update the nodes dataframe to include the graph name
-        # nodes['stop_id'] = '{}_'.format(name) + nodes['stop_id']
-
         # Then add to the running tally of nodes
         if all_nodes is None:
             all_nodes = nodes.copy()
