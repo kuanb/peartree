@@ -107,6 +107,24 @@ def test_synthetic_network():
     edges = list(G.edges())
     assert len(edges) == 15
 
+    # Drop the graph and test a bi-direction
+    G = None
+
+    # Go back to the GeoJSON and set optional bidirectional flag
+    for feat in reference_geojson['features']:
+        feat['properties']['bidirectional'] = True
+
+    G = load_synthetic_network_as_graph(reference_geojson)
+
+    # This fixture gets broken into 15 chunks, so 15 + 1 = 16
+    nodes = list(G.nodes())
+    assert len(nodes) == 16 * 2
+
+    # And since it is one-directional, it gets the same edges as chunks
+    edges = list(G.edges())
+    assert len(edges) == 15 * 2
+
+
 
 def test_feed_to_graph_path():
     path_1 = fixture('caltrain-2017-07-24.zip')
