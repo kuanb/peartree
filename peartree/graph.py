@@ -56,6 +56,7 @@ def generate_summary_graph_elements(feed: ptg.gtfs.feed,
 
 
 def generate_cross_feed_edges(G: nx.MultiDiGraph,
+                              name: str,
                               stops_df: pd.DataFrame,
                               exempt_nodes: List[str],
                               connection_threshold: float) -> pd.DataFrame:
@@ -80,6 +81,7 @@ def generate_cross_feed_edges(G: nx.MultiDiGraph,
     #       be a way to condense these two steps well
     for i, row in stops_df.iterrows():
         sid = str(row.stop_id)
+        full_sid = nameify_stop_id(name, sid)
 
         # Ensure that each value is typed correctly prior to being
         # fed into the nearest node method
@@ -89,7 +91,7 @@ def generate_cross_feed_edges(G: nx.MultiDiGraph,
         nearest_nodes = get_nearest_nodes(node_df,
                                           point,
                                           connection_threshold,
-                                          exempt_id=sid)
+                                          exempt_id=full_sid)
 
         # Iterate through series results and add to output
         for node_id, dist_val in nearest_nodes.iteritems():
@@ -187,7 +189,7 @@ def populate_graph(G: nx.MultiDiGraph,
     exempt_nodes = []
     if exempt_internal_edge_imputation:
         exempt_nodes = sid_lookup.values()
-    cross_feed_edges = generate_cross_feed_edges(G, stops_df,
+    cross_feed_edges = generate_cross_feed_edges(G, name, stops_df,
                                                  exempt_nodes,
                                                  connection_threshold)
 
@@ -236,7 +238,7 @@ def make_synthetic_system_network(
             sid_lookup[key] = val
 
         # Update the nodes dataframe to include the graph name
-        nodes['stop_id'] = '{}_'.format(name) + nodes['stop_id']
+        # nodes['stop_id'] = '{}_'.format(name) + nodes['stop_id']
 
         # Then add to the running tally of nodes
         if all_nodes is None:
@@ -248,7 +250,7 @@ def make_synthetic_system_network(
     exempt_nodes = []
     if exempt_internal_edge_imputation:
         exempt_nodes = sid_lookup.values()
-    cross_feed_edges = generate_cross_feed_edges(G, all_nodes,
+    cross_feed_edges = generate_cross_feed_edges(G, name, all_nodes,
                                                  exempt_nodes,
                                                  connection_threshold)
     # Mutates the G network object
