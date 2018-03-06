@@ -69,7 +69,8 @@ def generate_cross_feed_edges(G: nx.MultiDiGraph,
     node_df = generate_graph_node_dataframe(G)
 
     # Remove all nodes that are part of the new additions to the graph
-    node_df = node_df[~node_df.index.isin(exempt_nodes)]
+    if len(exempt_nodes) > 0:
+        node_df = node_df[~node_df.index.isin(exempt_nodes)]
 
     stop_ids = []
     to_nodes = []
@@ -242,7 +243,9 @@ def make_synthetic_system_network(
 
     # Generate cross feed edge values
     exempt_nodes = []
+    print('ayme?')
     if exempt_internal_edge_imputation:
+        print('using')
         exempt_nodes = sid_lookup.values()
     cross_feed_edges = generate_cross_feed_edges(G, nodes,
                                                  exempt_nodes,
