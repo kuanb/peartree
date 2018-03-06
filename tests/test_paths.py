@@ -93,7 +93,7 @@ def test_loading_in_invalid_timeframes():
 
 def test_synthetic_network():
     # Load in the GeoJSON as a JSON and convert to a dictionary
-    geojson_path = fixture('synthetic_example.geojson')
+    geojson_path = fixture('synthetic_east_bay.geojson')
     with open(geojson_path, 'r') as gjf:
         reference_geojson = json.load(gjf)
 
@@ -163,7 +163,7 @@ def test_feed_to_graph_path():
     assert connector_edge_count == 9
 
     # Now reload in the synthetic graph geojson
-    geojson_path = fixture('synthetic_example.geojson')
+    geojson_path = fixture('synthetic_san_bruno.geojson')
     with open(geojson_path, 'r') as gjf:
         reference_geojson = json.load(gjf)
 
@@ -173,7 +173,5 @@ def test_feed_to_graph_path():
     # And make sure it connected correctly
     node_len_3 = len(G.nodes())
     edge_len_3 = len(G.edges())
-    assert node_len_3 - node_len_2 == 16
-    # 0 connector edges should have been created since the
-    # example fixture is too far away
-    assert edge_len_3 - edge_len_2 == 15
+    assert node_len_3 - node_len_2 == 74
+    assert edge_len_3 - edge_len_2 == 80
