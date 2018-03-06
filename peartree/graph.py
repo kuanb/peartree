@@ -201,6 +201,7 @@ def make_synthetic_system_network(
     # Same as populate_graph, we use this dict to monitor the stop ids
     # that are created
     sid_lookup = {}
+    all_nodes = None
     for feat in reference_geojson['features']:
         ref_shape = shape(feat['geometry'])
 
@@ -223,6 +224,17 @@ def make_synthetic_system_network(
 
         # Mutates the G network object
         _add_nodes_and_edges(G, name, sid_lookup, nodes, edges)
+
+        # TODO(kuanb): Can this be consolidated with _add_nodes_and_edges?
+        # Update node stop_id name to prepare it for generate_cross_feed_edges
+        # check steps, which require name to include graph name as well
+        nodes['stop_id'] = '{}_'.format(name) + nodes['stop_id']
+
+        # Then add to the running tally of nodes
+        if all_nodes is None:
+            all_nodes = nodes.copy()
+        else:
+            all_nodes = all_nodes.append(nodes)
 
     # Generate cross feed edge values
     exempt_nodes = sid_lookup.values()
