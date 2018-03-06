@@ -238,7 +238,7 @@ def make_synthetic_system_network(
 
     # Generate cross feed edge values
     exempt_nodes = sid_lookup.values()
-    cross_feed_edges = generate_cross_feed_edges(G, nodes,
+    cross_feed_edges = generate_cross_feed_edges(G, all_nodes,
                                                  exempt_nodes,
                                                  connection_threshold)
 
