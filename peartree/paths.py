@@ -56,7 +56,8 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                        existing_graph: nx.MultiDiGraph=None,
                        connection_threshold: float=50.0,
                        walk_speed_kmph: float=4.5,
-                       interpolate_times: bool=True):
+                       interpolate_times: bool=True,
+                       exempt_internal_edge_imputation: bool=True):
     """
     Convert a feed object into a NetworkX Graph, connect to an existing
     NetworkX graph if one is supplied
@@ -131,7 +132,8 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                           wait_times_by_stop,
                           summary_edge_costs,
                           connection_threshold,
-                          walk_speed_kmph)
+                          walk_speed_kmph,
+                          exempt_internal_edge_imputation)
 
 
 def load_synthetic_network_as_graph(
@@ -139,7 +141,8 @@ def load_synthetic_network_as_graph(
         name: str=None,
         existing_graph: nx.MultiDiGraph=None,
         connection_threshold: float=50.0,
-        walk_speed_kmph: float=4.5):
+        walk_speed_kmph: float=4.5,
+        exempt_internal_edge_imputation: bool=False):
 
     # Generate a random name for name if it is None
     if not name:
@@ -164,4 +167,5 @@ def load_synthetic_network_as_graph(
         name,
         reference_geojson,
         connection_threshold,
-        walk_speed_kmph)
+        walk_speed_kmph,
+        exempt_internal_edge_imputation)
