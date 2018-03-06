@@ -136,9 +136,13 @@ def _add_cross_feed_edges(G: nx.MultiDiGraph,
 
 def _add_nodes_and_edges(G: nx.MultiDiGraph,
                          name: str,
-                         sid_lookup: Dict[str, str],
                          stops_df: pd.DataFrame,
-                         summary_edge_costs: pd.DataFrame) -> nx.MultiDiGraph:
+                         summary_edge_costs: pd.DataFrame) -> Dict[str, str]:
+    # As we convert stop ids to actual nodes, let's keep track of those names
+    # here so that we can reference them when we add connector edges across
+    # the various feeds loaded into the graph
+    sid_lookup = {}
+
     for i, row in stops_df.iterrows():
         sid = str(row.stop_id)
         full_sid = nameify_stop_id(name, sid)
@@ -158,6 +162,8 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
                    sid_to,
                    length=row.edge_cost)
 
+    return sid_lookup
+
 
 def populate_graph(G: nx.MultiDiGraph,
                    name: str,
@@ -166,11 +172,6 @@ def populate_graph(G: nx.MultiDiGraph,
                    summary_edge_costs: pd.DataFrame,
                    connection_threshold: Union[int, float],
                    walk_speed_kmph: float=4.5):
-    # As we convert stop ids to actual nodes, let's keep track of those names
-    # here so that we can reference them when we add connector edges across
-    # the various feeds loaded into the graph
-    sid_lookup = {}
-
     # Generate a merge of the wait time data and the feed stops data that will
     # be used for both the addition of new stop nodes and the addition of
     # cross feed edges later on (that join one feeds stops to the other if
@@ -178,7 +179,7 @@ def populate_graph(G: nx.MultiDiGraph,
     stops_df = _merge_stop_waits_and_attributes(wait_times_by_stop, feed.stops)
 
     # Mutates the G network object
-    _add_nodes_and_edges(G, name, sid_lookup, stops_df, summary_edge_costs)
+    sid_lookup = _add_nodes_and_edges(G, name, stops_df, summary_edge_costs)
 
     # Generate cross feed edge values
     exempt_nodes = sid_lookup.values()
@@ -223,7 +224,11 @@ def make_synthetic_system_network(
         edges = generate_edges_df(stop_ids, all_pts, chunks, avg_speed)
 
         # Mutates the G network object
-        _add_nodes_and_edges(G, name, sid_lookup, nodes, edges)
+        sid_lookup_sub = _add_nodes_and_edges(G, name, nodes, edges)
+
+        # Update teh parent sid with new values
+        for key, val in sid_lookup_sub.items():
+            sid_lookup[key] = val
 
         # TODO(kuanb): Can this be consolidated with _add_nodes_and_edges?
         # Update node stop_id name to prepare it for generate_cross_feed_edges
