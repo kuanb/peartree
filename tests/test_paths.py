@@ -117,9 +117,9 @@ def test_synthetic_network():
     nodes = list(G2.nodes())
     assert len(nodes) == 16
 
-    # And since it is one-directional, it gets the same edges as chunks
+    # Double the number of edges as before
     edges = list(G2.edges())
-    assert len(edges) == 62
+    assert len(edges) == 15 * 2
 
 
 def test_feed_to_graph_path():
