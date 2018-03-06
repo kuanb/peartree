@@ -8,8 +8,8 @@ Peartree 🍐🌳
 .. image:: https://img.shields.io/travis/kuanb/peartree.svg?branch=master
         :target: https://travis-ci.org/kuanb/peartree
 
-.. image:: https://coveralls.io/repos/github/kuanb/peartree/badge.svg?branch=master
-        :target: https://coveralls.io/github/kuanb/peartree?branch=master
+.. image:: https://codecov.io/gh/kuanb/peartree/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/kuanb/peartree
 
 Peartree is a library for converting `GTFS <https://developers.google.com/transit/gtfs/>`_ feed schedules into a representative directed network graph. The tool uses `Partridge <https://github.com/remix/partridge>`__ to convert the target operator schedule data into `Pandas <https://github.com/pandas-dev/pandas>`__ dataframes and then `NetworkX <https://networkx.github.io/>`_ to hold the manipulated schedule data as a directed multigraph.
 
