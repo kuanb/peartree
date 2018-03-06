@@ -163,7 +163,7 @@ def test_feed_to_graph_path():
     assert connector_edge_count == 9
 
     # Now reload in the synthetic graph geojson
-    geojson_path = fixture('synthetic_east_bay.geojson')
+    geojson_path = fixture('synthetic_san_bruno.geojson')
     with open(geojson_path, 'r') as gjf:
         reference_geojson = json.load(gjf)
 
@@ -173,6 +173,10 @@ def test_feed_to_graph_path():
     # And make sure it connected correctly
     node_len_3 = len(G.nodes())
     edge_len_3 = len(G.edges())
+    print('node_len_3, node_len_2')
+    print(node_len_3, node_len_2)
+    print('edge_len_3, edge_len_2')
+    print(edge_len_3, edge_len_2)
     assert node_len_3 - node_len_2 == 16
     # 0 connector edges should have been created since the
     # example fixture is too far away
