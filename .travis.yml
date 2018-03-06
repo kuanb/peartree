@@ -14,6 +14,7 @@ python:
 
 before_install:
   - sudo apt-get -y update
+  - pip install --user codecov
   - pip install --upgrade pip
   - pip install --upgrade wheel
 
@@ -26,4 +27,4 @@ script:
 
 after_success:
   - coverage report -m
-  - coveralls
+  - codecov
