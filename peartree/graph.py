@@ -230,12 +230,6 @@ def make_synthetic_system_network(
         for key, val in sid_lookup_sub.items():
             sid_lookup[key] = val
 
-        # TODO(kuanb): Can this be consolidated with _add_nodes_and_edges?
-        # Update node stop_id name to prepare it for generate_cross_feed_edges
-        # check steps, which require name to include graph name as well
-        nodes['orig_stop_id'] = nodes['stop_id'].copy()
-        nodes['stop_id'] = '{}_'.format(name) + nodes['stop_id']
-
         # Then add to the running tally of nodes
         if all_nodes is None:
             all_nodes = nodes.copy()
@@ -247,11 +241,6 @@ def make_synthetic_system_network(
     cross_feed_edges = generate_cross_feed_edges(G, all_nodes,
                                                  exempt_nodes,
                                                  connection_threshold)
-
-    # TODO(kuanb): This is a hack to deal with the inconsistent use of the
-    #              sid_lookup table - should see if we can remove its need
-    #              at this stage and just have full stop_id already here
-    nodes['stop_id'] = nodes['orig_stop_id'].copy()
     # Mutates the G network object
     _add_cross_feed_edges(G, sid_lookup, cross_feed_edges, walk_speed_kmph)
 
