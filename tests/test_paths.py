@@ -173,11 +173,5 @@ def test_feed_to_graph_path():
     # And make sure it connected correctly
     node_len_3 = len(G.nodes())
     edge_len_3 = len(G.edges())
-    print('node_len_3, node_len_2')
-    print(node_len_3, node_len_2)
-    print('edge_len_3, edge_len_2')
-    print(edge_len_3, edge_len_2)
-    assert node_len_3 - node_len_2 == 16
-    # 0 connector edges should have been created since the
-    # example fixture is too far away
-    assert edge_len_3 - edge_len_2 == 15
+    assert node_len_3 - node_len_2 == 74
+    assert edge_len_3 - edge_len_2 == 80
