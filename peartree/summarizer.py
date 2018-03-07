@@ -9,8 +9,13 @@ from .utilities import log
 
 
 def calculate_average_wait(direction_times: pd.DataFrame) -> float:
-    first = direction_times.arrival_time[1:].values
-    second = direction_times.arrival_time[:-1].values
+    # Exit early if we do not have enough values to calculate a mean
+    at = direction_times.arrival_time
+    if len(at) < 2:
+        return None
+
+    first = at[1:].values
+    second = at[:-1].values
     wait_seconds = (first - second)
 
     # TODO: Can implement something more substantial here that takes into
