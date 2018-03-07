@@ -10,6 +10,12 @@ from peartree.paths import (InvalidGTFS, InvalidTimeBracket,
                             get_representative_feed, load_feed_as_graph,
                             load_synthetic_network_as_graph)
 from peartree.toolkit import generate_random_name
+from peartree.utilities import config
+
+
+# Make sure the we set logger on to test logging utilites
+# as well, related to each test
+config(log_console=True)
 
 
 def fixture(filename):
@@ -107,6 +113,10 @@ def test_synthetic_network():
     edges = list(G1.edges())
     assert len(edges) == 15
 
+    # Since this is a one-way graph, with no other context, the
+    # graph will be weakly connected
+    assert nx.is_strongly_connected(G1) is False
+
     # Go back to the GeoJSON and set optional bidirectional flag
     for i in range(len(reference_geojson['features'])):
         reference_geojson['features'][i]['properties']['bidirectional'] = True
@@ -120,6 +130,9 @@ def test_synthetic_network():
     # Double the number of edges as before
     edges = list(G2.edges())
     assert len(edges) == 15 * 2
+
+    # But now, by asking for a bidirectional graph, we can assert strong
+    assert nx.is_strongly_connected(G2)
 
 
 def test_feed_to_graph_path():
