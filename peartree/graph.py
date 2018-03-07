@@ -4,7 +4,7 @@ import networkx as nx
 import pandas as pd
 import partridge as ptg
 from fiona import crs
-from shapely.geometry import LineString, Point, shape
+from shapely.geometry import shape
 
 from .settings import WGS84
 from .summarizer import (generate_edge_and_wait_values,
@@ -140,7 +140,8 @@ def _add_cross_feed_edges(G: nx.MultiDiGraph,
 def _add_nodes_and_edges(G: nx.MultiDiGraph,
                          name: str,
                          stops_df: pd.DataFrame,
-                         summary_edge_costs: pd.DataFrame) -> Dict[str, str]:
+                         summary_edge_costs: pd.DataFrame,
+                         bidirectional: bool=False) -> Dict[str, str]:
     # As we convert stop ids to actual nodes, let's keep track of those names
     # here so that we can reference them when we add connector edges across
     # the various feeds loaded into the graph
@@ -161,9 +162,13 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
     for i, row in summary_edge_costs.iterrows():
         sid_fr = nameify_stop_id(name, row.from_stop_id)
         sid_to = nameify_stop_id(name, row.to_stop_id)
-        G.add_edge(sid_fr,
-                   sid_to,
-                   length=row.edge_cost)
+        G.add_edge(sid_fr, sid_to, length=row.edge_cost)
+
+        # If want to add both directions in this step, we can
+        # by reversing the to/from node order on edge
+        if bidirectional:
+            G.add_edge(sid_to, sid_fr, length=row.edge_cost)
+
 
     return sid_lookup
 
@@ -217,41 +222,38 @@ def make_synthetic_system_network(
         avg_speed = props['average_speed']
         stop_dist = props['stop_distance_distribution']
 
-        ref_shape_1 = shape(feat['geometry'])
-        ref_shapes = [ref_shape_1]
+        ref_shape = shape(feat['geometry'])
+
+        # Generate reference geometry data
+        chunks = generate_meter_projected_chunks(ref_shape, stop_dist)
+        all_pts = generate_stop_points(chunks)
+
+        # Give each stop a unique id
+        stop_ids = generate_stop_ids(len(all_pts))
+
+        # Produce graph components
+        nodes = generate_nodes_df(stop_ids, all_pts, headway)
+        edges = generate_edges_df(stop_ids, all_pts, chunks, avg_speed)
 
         # Check if want to do bidirectional (optional)
-        if 'bidirectional' in props and bool(props['bidirectional']):
-            coord_array = [Point(p) for p in ref_shape_1.coords]
-            ref_shape_2 = LineString(reversed(coord_array))
-            ref_shapes.append(ref_shape_2)
+        bidirectional = False
+        if 'bidirectional' in props:
+            # If true, each edge will be added both directions
+            bidirectional = bool(props['bidirectional'])
 
-        # For either the one specified direction or both, create
-        # and add imputed nodes and edges from supplied shape
-        for ref_shape in ref_shapes:
-            # Generate reference geometry data
-            chunks = generate_meter_projected_chunks(ref_shape, stop_dist)
-            all_pts = generate_stop_points(chunks)
+        # Mutates the G network object
+        sid_lookup_sub = _add_nodes_and_edges(
+            G, name, nodes, edges, bidirectional)
 
-            # Give each stop a unique id
-            stop_ids = generate_stop_ids(len(all_pts))
+        # Update the parent sid with new values
+        for key, val in sid_lookup_sub.items():
+            sid_lookup[key] = val
 
-            # Produce graph components
-            nodes = generate_nodes_df(stop_ids, all_pts, headway)
-            edges = generate_edges_df(stop_ids, all_pts, chunks, avg_speed)
-
-            # Mutates the G network object
-            sid_lookup_sub = _add_nodes_and_edges(G, name, nodes, edges)
-
-            # Update the parent sid with new values
-            for key, val in sid_lookup_sub.items():
-                sid_lookup[key] = val
-
-            # Then add to the running tally of nodes
-            if all_nodes is None:
-                all_nodes = nodes.copy()
-            else:
-                all_nodes = all_nodes.append(nodes)
+        # Then add to the running tally of nodes
+        if all_nodes is None:
+            all_nodes = nodes.copy()
+        else:
+            all_nodes = all_nodes.append(nodes)
 
     # Generate cross feed edge values
     exempt_nodes = []
