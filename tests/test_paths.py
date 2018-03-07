@@ -10,7 +10,7 @@ from peartree.paths import (InvalidGTFS, InvalidTimeBracket,
                             get_representative_feed, load_feed_as_graph,
                             load_synthetic_network_as_graph)
 from peartree.toolkit import generate_random_name
-from peartree.utilites import config
+from peartree.utilities import config
 
 
 # Make sure the we set logger on to test logging utilites
