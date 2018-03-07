@@ -166,14 +166,12 @@ def generate_summary_wait_times(df: pd.DataFrame) -> pd.DataFrame:
         mask = df_sub[col].isnull()
         df_sub.loc[mask, col] = np.nan
 
-    # Convert anything that is 0 or less seconds to a NaN as well
-    # as there should not be negative or 0 second waits in the system
-    df_sub.loc[~(df_sub.wait_dir_0 > 0), 'wait_dir_0'] = np.nan
-    df_sub.loc[~(df_sub.wait_dir_1 > 0), 'wait_dir_1'] = np.nan
+        # Convert anything that is 0 or less seconds to a NaN as well
+        # to remove negative or 0 second waits in the system
+        df_sub.loc[~(df_sub[col] > 0), col] = np.nan
 
-    # Convert to type float (which support float)
-    df_sub.wait_dir_0 = df_sub.wait_dir_0.astype(float)
-    df_sub.wait_dir_1 = df_sub.wait_dir_1.astype(float)
+        # With all null types converted to NaN, we can cast col as float
+        df_sub[col] = df_sub[col].astype(float)
 
     # Clean out the None values
     dir_0_mask = ~np.isnan(df_sub.wait_dir_0)
