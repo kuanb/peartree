@@ -160,15 +160,11 @@ def generate_summary_wait_times(df: pd.DataFrame) -> pd.DataFrame:
                  'wait_dir_1']].reset_index(drop=True)
     init_of_stop_ids = df_sub.stop_id.unique()
 
-    # TODO: Use NaN upstream so we don't have this sort of
-    #       hacky typing (floats support NaNs) and None conditioning
-
-    # First convert all None values to NaN so we can handle them
-    # in vector format
-    dir0_mask = df_sub.wait_dir_0.isnull()
-    dir1_mask = df_sub.wait_dir_1.isnull()
-    df_sub.loc[dir0_mask, 'wait_dir_0'] = np.nan
-    df_sub.loc[dir1_mask, 'wait_dir_1'] = np.nan
+    # Default values for average waits with not enough data should be
+    # NaN types, but let's make sure all null types are NaNs to be safe
+    for col in ['wait_dir_0', 'wait_dir_1']:
+        mask = df_sub[col].isnull()
+        df_sub.loc[mask, col] = np.nan
 
     # Convert anything that is 0 or less seconds to a NaN as well
     # as there should not be negative or 0 second waits in the system
