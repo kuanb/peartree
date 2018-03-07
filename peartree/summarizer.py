@@ -12,7 +12,7 @@ def calculate_average_wait(direction_times: pd.DataFrame) -> float:
     # Exit early if we do not have enough values to calculate a mean
     at = direction_times.arrival_time
     if len(at) < 2:
-        return None
+        return np.nan
 
     first = at[1:].values
     second = at[:-1].values
@@ -45,7 +45,7 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame
             # Only run if each direction is contained
             # in the same trip id
             if direction_subset.empty:
-                average_wait = None
+                average_wait = np.nan
             else:
                 average_wait = calculate_average_wait(direction_subset)
 
