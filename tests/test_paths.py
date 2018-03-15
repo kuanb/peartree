@@ -155,7 +155,7 @@ def test_feed_edge_types():
     # include walk edges as well
     transit_count = 0
     walk_count = 0
-    for _, _, e in G.edges(data=True):
+    for _, _, e in G2.edges(data=True):
         if e['mode'] == 'transit':
             transit_count += 1
         if e['mode'] == 'walk':
