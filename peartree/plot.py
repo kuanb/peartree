@@ -6,8 +6,8 @@ import osmnx as ox
 
 # Check if the display has already been set and, if not...
 cmd = 'python -c "import matplotlib.pyplot as plt;plt.figure()"'
-r = os.system(cmd)
-if r != 0:
+check = os.system(cmd)
+if check != 0:
     # Force matplotlib to not use any Xwindows backend
     matplotlib.use('Agg')
 
