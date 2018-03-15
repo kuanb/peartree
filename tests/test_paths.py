@@ -135,6 +135,34 @@ def test_synthetic_network():
     assert nx.is_strongly_connected(G2)
 
 
+def test_feed_edge_types():
+    path = fixture('samtrans-2017-11-28.zip')
+    feed = get_representative_feed(path)
+    G1 = load_feed_as_graph(feed, start, end)
+
+    # In the base case, all should be transit
+    for _, _, e in G1.edges(data=True):
+        assert e['mode'] == 'transit'
+
+    # Now perform a second check where we impute walk edges
+    G2 = pt.load_feed_as_graph(
+        feed, start, end, exempt_internal_edge_imputation=False)
+
+    # Count the number of edge types by mode, which should now
+    # include walk edges as well
+    transit_count = 0
+    walk_count = 0
+    for _, _, e in G.edges(data=True):
+        if e['mode'] == 'transit':
+            transit_count += 1
+        if e['mode'] == 'walk':
+            walk_count += 1
+
+    # And make sure the correct number were made
+    assert transit_count == 1940
+    assert walk_count == 864
+
+
 def test_feed_to_graph_path():
     path_1 = fixture('caltrain-2017-07-24.zip')
     feed_1 = get_representative_feed(path_1)
