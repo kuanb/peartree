@@ -138,6 +138,9 @@ def test_synthetic_network():
 def test_feed_edge_types():
     path = fixture('samtrans-2017-11-28.zip')
     feed = get_representative_feed(path)
+
+    start = 7 * 60 * 60
+    end = 10 * 60 * 60
     G1 = load_feed_as_graph(feed, start, end)
 
     # In the base case, all should be transit
