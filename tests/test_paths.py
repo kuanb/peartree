@@ -148,7 +148,7 @@ def test_feed_edge_types():
         assert e['mode'] == 'transit'
 
     # Now perform a second check where we impute walk edges
-    G2 = pt.load_feed_as_graph(
+    G2 = load_feed_as_graph(
         feed, start, end, exempt_internal_edge_imputation=False)
 
     # Count the number of edge types by mode, which should now
