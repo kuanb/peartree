@@ -90,6 +90,16 @@ def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
             # Use .values to strip existing indices
             edge_costs = np.subtract(arrs.values, deps.values)
 
+            # TODO(kuanb): Negative values can result here!
+            # HACK: There are times when the arrival and departure data
+            #       are "out of order" which results in negative values.
+            #       From the values I've looked at, these are edge cases
+            #       that have to do with start/end overlaps. I don't have
+            #       a good answer for dealing with these but, since they
+            #       are possible noise, they can be override by taking
+            #       their absolute value.
+            edge_costs = np.absolute(edge_costs)
+
             # Add each resulting list to the running array totals
             all_edge_costs += list(edge_costs)
 

@@ -134,7 +134,7 @@ def _add_cross_feed_edges(G: nx.MultiDiGraph,
         in_seconds = kmph * 60 * 60
 
         # And then add it to the graph
-        G.add_edge(full_sid, to, length=in_seconds)
+        G.add_edge(full_sid, to, length=in_seconds, mode='walk')
 
 
 def _add_nodes_and_edges(G: nx.MultiDiGraph,
@@ -162,12 +162,12 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
     for i, row in summary_edge_costs.iterrows():
         sid_fr = nameify_stop_id(name, row.from_stop_id)
         sid_to = nameify_stop_id(name, row.to_stop_id)
-        G.add_edge(sid_fr, sid_to, length=row.edge_cost)
+        G.add_edge(sid_fr, sid_to, length=row.edge_cost, mode='transit')
 
         # If want to add both directions in this step, we can
         # by reversing the to/from node order on edge
         if bidirectional:
-            G.add_edge(sid_to, sid_fr, length=row.edge_cost)
+            G.add_edge(sid_to, sid_fr, length=row.edge_cost, mode='transit')
 
 
     return sid_lookup
