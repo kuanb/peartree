@@ -4,6 +4,7 @@ from peartree.paths import (
         get_representative_feed,
         load_synthetic_network_as_graph)  # noqa: F401
 from peartree.plot import generate_plot  # noqa: F401
+from peartree.toolkit import reproject  # noqa: F401
 
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     'get_representative_feed',
     'load_feed_as_graph',
     'load_synthetic_network_as_graph',
+    'reproject',
 ]
