@@ -12,7 +12,6 @@ from peartree.paths import (InvalidGTFS, InvalidTimeBracket,
 from peartree.toolkit import generate_random_name
 from peartree.utilities import config
 
-
 # Make sure the we set logger on to test logging utilites
 # as well, related to each test
 config(log_console=True)
@@ -149,7 +148,7 @@ def test_feed_edge_types():
 
     # Now perform a second check where we impute walk edges
     G2 = load_feed_as_graph(
-        feed, start, end, exempt_internal_edge_imputation=False)
+        feed, start, end, impute_walk_transfers=True)
 
     # Count the number of edge types by mode, which should now
     # include walk edges as well
