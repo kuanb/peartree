@@ -57,7 +57,7 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                        connection_threshold: float=50.0,
                        walk_speed_kmph: float=4.5,
                        interpolate_times: bool=True,
-                       exempt_internal_edge_imputation: bool=True):
+                       impute_walk_transfers: bool=False):
     """
     Convert a feed object into a NetworkX Graph, connect to an existing
     NetworkX graph if one is supplied
@@ -86,6 +86,16 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
     connection_threshold : float
         Treshold by which to create a connection with an existing stop
         in the existing_graph graph, measured in meters
+    walk_speed_kmph : float
+        Walk speed in km/h, that is used to determine the cost in time when
+        walking between two nodes that get an internal connection created
+    interpolate_times : bool
+        A boolean flag to indicate whether or not to infill intermediary stops
+        that do not have all intermediary stop arrival times specified in the
+        GTFS schedule.
+    impute_walk_transfers : bool
+        A flag to indicate whether to add in walk connections between nodes
+        that are close enough, as measured using connection_trheshold
 
     Returns
     -------
@@ -133,7 +143,7 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                           summary_edge_costs,
                           connection_threshold,
                           walk_speed_kmph,
-                          exempt_internal_edge_imputation)
+                          impute_walk_transfers)
 
 
 def load_synthetic_network_as_graph(
@@ -142,7 +152,7 @@ def load_synthetic_network_as_graph(
         existing_graph: nx.MultiDiGraph=None,
         connection_threshold: float=50.0,
         walk_speed_kmph: float=4.5,
-        exempt_internal_edge_imputation: bool=False):
+        impute_walk_transfers: bool=True):
 
     # Generate a random name for name if it is None
     if not name:
@@ -168,4 +178,4 @@ def load_synthetic_network_as_graph(
         reference_geojson,
         connection_threshold,
         walk_speed_kmph,
-        exempt_internal_edge_imputation)
+        impute_walk_transfers)

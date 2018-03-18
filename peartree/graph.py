@@ -169,7 +169,6 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
         if bidirectional:
             G.add_edge(sid_to, sid_fr, length=row.edge_cost, mode='transit')
 
-
     return sid_lookup
 
 
@@ -180,7 +179,7 @@ def populate_graph(G: nx.MultiDiGraph,
                    summary_edge_costs: pd.DataFrame,
                    connection_threshold: Union[int, float],
                    walk_speed_kmph: float=4.5,
-                   exempt_internal_edge_imputation: bool=False):
+                   impute_walk_transfers: bool=True):
     # Generate a merge of the wait time data and the feed stops data that will
     # be used for both the addition of new stop nodes and the addition of
     # cross feed edges later on (that join one feeds stops to the other if
@@ -190,10 +189,12 @@ def populate_graph(G: nx.MultiDiGraph,
     # Mutates the G network object
     sid_lookup = _add_nodes_and_edges(G, name, stops_df, summary_edge_costs)
 
-    # Generate cross feed edge values
-    exempt_nodes = []
-    if exempt_internal_edge_imputation:
-        exempt_nodes = sid_lookup.values()
+    # Default to exempt new edges created, unless imputing internal
+    # walk transfers is requested as well
+    exempt_nodes = sid_lookup.values()
+    if impute_walk_transfers:
+        # In which case, we do not have any exempt nodes
+        exempt_nodes = []
     cross_feed_edges = generate_cross_feed_edges(G, name, stops_df,
                                                  exempt_nodes,
                                                  connection_threshold)
@@ -210,7 +211,7 @@ def make_synthetic_system_network(
         reference_geojson: Dict,
         connection_threshold: Union[int, float],
         walk_speed_kmph: float=4.5,
-        exempt_internal_edge_imputation: bool=False):
+        impute_walk_transfers: bool=True):
     # Same as populate_graph, we use this dict to monitor the stop ids
     # that are created
     sid_lookup = {}
@@ -255,10 +256,12 @@ def make_synthetic_system_network(
         else:
             all_nodes = all_nodes.append(nodes)
 
-    # Generate cross feed edge values
-    exempt_nodes = []
-    if exempt_internal_edge_imputation:
-        exempt_nodes = sid_lookup.values()
+    # Default to exempt new edges created, unless imputing internal
+    # walk transfers is requested as well
+    exempt_nodes = sid_lookup.values()
+    if impute_walk_transfers:
+        # In which case, we do not have any exempt nodes
+        exempt_nodes = []
     cross_feed_edges = generate_cross_feed_edges(G, name, all_nodes,
                                                  exempt_nodes,
                                                  connection_threshold)
