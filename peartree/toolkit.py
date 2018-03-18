@@ -2,9 +2,12 @@ import random
 import string
 from typing import Tuple
 
+import geopandas as gpd
+import networkx as nx
 import numpy as np
 import osmnx as ox
 import pandas as pd
+from shapely.geometry import Point
 
 
 def great_circle_vec(lat1: float,
@@ -112,3 +115,33 @@ def nan_helper(y):
     """
 
     return (np.isnan(y), lambda z: z.nonzero()[0])
+
+
+def reproject(G: nx.MultiDiGraph, to_epsg: int=2163) -> nx.MultiDiGraph:
+    # Avoid upstream mutation of the graph
+    G = G.copy()
+
+    # First extract current crs
+    orig_crs = G.graph['crs']
+
+    # And get the array of nodes from original graph
+    ref_node_array = list(G.nodes(data=True))
+
+    all_pts = []
+    for i, node in ref_node_array:
+        all_pts.append(Point(node['x'], node['y']))
+
+    # Convert the collected nodes to GeoSeries
+    gs = gpd.GeoSeries(all_pts)
+    # And then reproject from original crs to new
+    gs.crs = orig_crs
+    gs = gs.to_crs(epsg=to_epsg)
+
+    # Now iterate back through the reprojected points
+    # and add each to it's respected node
+    for (i, node), new_pt in zip(ref_node_array, gs):
+        G.nodes[i]['x'] = new_pt.x
+        G.nodes[i]['y'] = new_pt.y
+
+    # Return the reprojected copy
+    return G
