@@ -3,11 +3,13 @@ import pytest
 from peartree.toolkit import coalesce, reproject
 
 
-def _assert_dict(got, want):
+def _dict_equal(got, want):
+    all_valid = True
     for key in want:
         if not got[key] == want[key]:
-            print(got)
-        assert got[key] == want[key]
+            all_valid = False
+
+    return all_valid
 
 
 def test_feed_to_graph_plot():
@@ -29,9 +31,7 @@ def test_feed_to_graph_plot():
         ys.append(node['y'])
 
     # TODO: Can we improve how this is assessed? Seems like G.nodes()
-    #       does not retun the nodes in the same order each time; there
-    #       is a component of the node and edge creation that is not
-    #       deterministic and this is a hack to circumvent that issue.
+    #       does not return nodes in same order in Py 3.6 as in 3.5
     expected_xs = [-1932968.345, -1932884.818]
     for x in xs:
         a = (x == pytest.approx(expected_xs[0], abs=0.01))
@@ -61,13 +61,17 @@ def test_coalesce_operation():
     G2c = coalesce(G2, 200)
     G2c.nodes(data=True), G2c.edges(data=True)
 
-    _assert_dict(G2c.nodes['foo_0'], {
-                 'x': -1933000, 'y': -543000, 'boarding_cost': 10.0})
-    _assert_dict(G2c.nodes['foo_1'], {
-                 'x': -1932800, 'y': -543400, 'boarding_cost': 13.5})
+    # Same akward situation as before, where edges are returned in
+    # different order between Py 3.5 and 3.6
+    for i, node in G2c.nodes(data=True):
+        a = _dict_equal(node, {
+            'x': -1933000, 'y': -543000, 'boarding_cost': 10.0})
+        b = _dict_equal(node, {
+            'x': -1932800, 'y': -543400, 'boarding_cost': 13.5})
+        assert (a or b)
 
     all_edges = list(G2c.edges(data=True))
     assert len(all_edges) == 1
 
     # Make sure that the one edge came out as expected
-    _assert_dict(all_edges[0][2], {'length': 10, 'mode': 'transit'})
+    assert _dict_equal(all_edges[0][2], {'length': 10, 'mode': 'transit'})
