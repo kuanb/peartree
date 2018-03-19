@@ -145,3 +145,75 @@ def reproject(G: nx.MultiDiGraph, to_epsg: int=2163) -> nx.MultiDiGraph:
 
     # Return the reprojected copy
     return G
+
+
+def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
+    # Avoid upstream mutation of the graph
+    G = G.copy()
+    graph_name = G.name
+
+    # Extract all x, y values
+    grouped = {}
+    for i, node in G.nodes(data=True):
+        x = (round(node['x'] / resolution) * resolution)
+        y = (round(node['y'] / resolution) * resolution)
+
+        # Build the dictionary as needed
+        if x not in grouped:
+            grouped[x] = {}
+        if y not in grouped[x]:
+            grouped[x][y] = []
+
+        # Append each node under its approx. area grouping
+        grouped[x][y].append(i)
+
+    # Generate a series of reference dictionaries that allow us
+    # to assign a new node name to each grouping of nodes
+    counter = 0
+    new_node_coords = {}
+    lookup = {}
+    for x in grouped:
+        for y in grouped[x]:
+            new_node_name = '{}_{}'.format(graph_name, counter)
+            new_node_coords[new_node_name] = {'x': x, 'y': y}
+            for n in grouped[x][y]:
+                lookup[n] = new_node_name
+            counter += 1
+
+    # Recast the lookup crosswalk as a series for convenience
+    reference = pd.Series(lookup)
+
+    # Get the average boarding cost for each node grouping
+    for nni in new_node_coords:
+        boarding_costs = []
+        g_nodes = reference.loc[reference == nni].index.values
+        for i in g_nodes:
+            bc = G.nodes[i]['boarding_cost']
+            boarding_costs.append(bc)
+        avg_bc = np.array(boarding_costs).mean()
+        new_node_coords[nni]['boarding_cost'] = avg_bc
+
+    # Create a list of replacement edges
+    edges_to_add = []
+    for n1, n2, edge in G.edges(data=True):
+        edges_to_add.append((reference[n1], reference[n2], edge))
+
+    # Add the new edges
+    for n1, n2, edge in edges_to_add:
+        # But avoid edges that now connect to the same node
+        if not n1 == n2:
+            G.add_edge(n1, n2, length=edge['length'], mode=edge['mode'])
+
+    # Now we can remove all edges and nodes that predated the
+    # coalescing operations
+    for n in reference.index:
+        # Note that this will also drop all edges
+        G.remove_node(n)
+
+    # Also make sure to update the new nodes with their summary
+    # stats and locational data
+    for i, node in new_node_coords.items():
+        for key in node:
+            G.nodes[i][key] = node[key]
+
+    return G
