@@ -56,6 +56,9 @@ def test_coalesce_operation():
     G.add_edge('a', 'b', length=10, mode='transit')
     G.add_edge('b', 'c', length=1, mode='walk')
 
+    # Add a node that won't be preserved (no edges connected to it)
+    G.add_node('d', x=-122.28, y=37.7, boarding_cost=200)
+
     G2 = reproject(G)
 
     G2c = coalesce(G2, 200)

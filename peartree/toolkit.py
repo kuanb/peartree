@@ -213,6 +213,8 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Also make sure to update the new nodes with their summary
     # stats and locational data
     for i, node in new_node_coords.items():
+        if i not in G.nodes():
+            continue
         for key in node:
             G.nodes[i][key] = node[key]
 
