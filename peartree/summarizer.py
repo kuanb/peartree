@@ -333,6 +333,8 @@ def generate_edge_and_wait_values(
     for i, route in feed.routes.iterrows():
         (tst_sub,
          edge_costs) = _process_route_edges_and_wait_times(route,
+                                                           target_time_start,
+                                                           target_time_end,
                                                            ftrips,
                                                            stop_times,
                                                            all_stops)
@@ -354,6 +356,8 @@ def generate_edge_and_wait_values(
 
 def _process_route_edges_and_wait_times(
         route: pd.Series,
+        target_time_start: int,
+        target_time_end: int,
         ftrips: pd.DataFrame,
         stop_times: pd.DataFrame,
         all_stops: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
