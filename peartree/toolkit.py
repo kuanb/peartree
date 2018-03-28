@@ -202,7 +202,7 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         edge_df_mtx.append([reference[n1], reference[n2], edge['length']])
     
     # This takes the resulting matrix and converts it to a pandas DataFrame
-    edges_df = pd.DataFrame(m, columns=['fr', 'to', 'weight'])
+    edges_df = pd.DataFrame(edge_df_mtx, columns=['fr', 'to', 'weight'])
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
     # With the resulting groupings, we extract values 
