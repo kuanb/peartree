@@ -222,8 +222,7 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         if i not in G.nodes():
             continue
 
-        # For all other nodes, preserve them by re-populating into
-        # the graph from the saved nodes reference dictionary
+        # For all other nodes, preserve them by re-populating
         for key in node:
             G.nodes[i][key] = node[key]
 
