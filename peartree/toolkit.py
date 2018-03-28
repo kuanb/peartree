@@ -215,8 +215,15 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Also make sure to update the new nodes with their summary
     # stats and locational data
     for i, node in new_node_coords.items():
+        # Some nodes are completely dropped in this operation
+        # with no replacement edges (e.g. nodes that would have
+        # connected to another node that ended up getting coalesced
+        # into the same single node)
         if i not in G.nodes():
             continue
+
+        # For all other nodes, preserve them by re-populating into
+        # the graph from the saved nodes reference dictionary
         for key in node:
             G.nodes[i][key] = node[key]
 
