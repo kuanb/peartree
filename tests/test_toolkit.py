@@ -59,7 +59,7 @@ def test_coalesce_operation():
     # Also add a node, and edge that is a more expensive variant
     # of effectively the same edge to make sure this more expensive edge
     # gets tossed during the coalesce
-    G.add_node('b_alt', x=-122.2711039, y=37.7660709, boarding_cost=15)
+    G.add_node('b_alt', x=-122.2711039, y=37.7660709, boarding_cost=13.5)
     G.add_edge('a', 'b_alt', length=100, mode='transit')
 
     # Add a node that won't be preserved (no edges connected to it)
