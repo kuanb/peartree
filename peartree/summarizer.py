@@ -324,6 +324,9 @@ def generate_edge_and_wait_values(
 
     all_edge_costs = None
     all_wait_times = None
+
+    # Note: Each route can be evaluated in isolation from other routes;
+    #       thus, this operation is embarassingly parallelizable
     for i, route in feed.routes.iterrows():
         log('Processing on route {}.'.format(route.route_id))
 
