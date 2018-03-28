@@ -195,10 +195,46 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         avg_bc = np.array(boarding_costs).mean()
         new_node_coords[nni]['boarding_cost'] = avg_bc
 
-    # Create a list of replacement edges
+    # First step to creating a list of replacement edges
+    edge_df_mtx = []
+    for n1, n2, edge in G.edges(data=True):
+        # This will be used to parse out which edges to keep
+        edge_df_mtx.append([reference[n1], reference[n2], edge['length']])
+    
+    # This takes the resulting matrix and converts it to a pandas DataFrame
+    edges_df = pd.DataFrame(m, columns=['fr', 'to', 'weight'])
+    # Next we group by the edge pattern (from -> to)
+    grouped = edges_df.groupby(['fr', 'to'], sort=False)
+    # With the resulting groupings, we extract values 
+    min_edges = grouped['weight'].min()
+    
+    # Second step; which uses results from edge_df grouping/parsing
     edges_to_add = []
     for n1, n2, edge in G.edges(data=True):
-        edges_to_add.append((reference[n1], reference[n2], edge))
+        rn1 = reference[n1]
+        rn2 = reference[n2]
+
+        # Make sure that this is the min edge
+        min_length = min_edges.loc[rn1, rn2]
+
+        # Skip this edge if it is not the minimum edge length
+        if not edge['length'] == min_length:
+            continue
+
+        # If we pass the first check, we should also make sure that
+        # the edge has not already been added by another minimum edge
+        try:
+            # If this works, then the edge already exists
+            existing_edge = G[rn1][rn2]
+            # Also sanity check that it is the min length value
+            if not existing_edge['length'] == min_length:
+                raise ValueError('Edge should have had minimum length of '
+                    '{}, but instead had value of {}'.format(min_length))
+
+        # If this happens, then this is the first time this edge
+        # is being added
+        except KeyError:
+            edges_to_add.append((rn1, rn2, edge))
 
     # Add the new edges
     for n1, n2, edge in edges_to_add:
