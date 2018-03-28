@@ -313,6 +313,9 @@ def generate_edge_and_wait_values(
     ftrips = ftrips[~ftrips['route_id'].isnull()]
     ftrips = ftrips.set_index('route_id', drop=False)
 
+    # Take a copy of all stops
+    all_stops = feed.stops.copy()
+
     # Flags whether we interpolate intermediary stops or not
     if interpolate_times:
         # Prepare the stops times dataframe by also infilling
@@ -328,61 +331,17 @@ def generate_edge_and_wait_values(
     # Note: Each route can be evaluated in isolation from other routes;
     #       thus, this operation is embarassingly parallelizable
     for i, route in feed.routes.iterrows():
-        log('Processing on route {}.'.format(route.route_id))
-
-        # Get all the subset of trips that are related to this route
-        trips = ftrips.loc[route.route_id]
-
-        # Pandas will try and make returned result a Series if there
-        # is only one result - prevent this from happening
-        if isinstance(trips, pd.Series):
-            trips = trips.to_frame().T
-
-        # Get just the stop times related to this trip
-        st_trip_id_mask = stop_times.trip_id.isin(trips.trip_id)
-        stimes_init = stop_times[st_trip_id_mask]
-
-        # Then subset further by just the time period that we care about
-        start_time_mask = (stimes_init.arrival_time >= target_time_start)
-        end_time_mask = (stimes_init.arrival_time <= target_time_end)
-        stimes = stimes_init[start_time_mask & end_time_mask]
-
-        # Report on progress if requested
-        a = len(stimes_init.trip_id.unique())
-        b = len(stimes.trip_id.unique())
-        log('\tReduced trips in consideration from {} to {}.'.format(a, b))
-
-        trips_and_stop_times = pd.merge(trips,
-                                        stimes,
-                                        how='inner',
-                                        on='trip_id')
-
-        trips_and_stop_times = pd.merge(trips_and_stop_times,
-                                        feed.stops,
-                                        how='inner',
-                                        on='stop_id')
-
-        sort_list = ['stop_sequence',
-                     'arrival_time',
-                     'departure_time']
-        trips_and_stop_times = trips_and_stop_times.sort_values(sort_list)
-
-        wait_times = generate_wait_times(trips_and_stop_times)
-        trips_and_stop_times['wait_dir_0'] = wait_times[0]
-        trips_and_stop_times['wait_dir_1'] = wait_times[1]
-
-        tst_sub = trips_and_stop_times[['stop_id',
-                                        'wait_dir_0',
-                                        'wait_dir_1']]
+        (tst_sub,
+         edge_costs) = _process_route_edges_and_wait_times(route,
+                                                           ftrips,
+                                                           stop_times,
+                                                           all_stops)
 
         # Add to the running total for wait times in this feed subset
         if all_wait_times is None:
             all_wait_times = tst_sub
         else:
             all_wait_times = all_wait_times.append(tst_sub)
-
-        # Get all edge costs for this route and add to the running total
-        edge_costs = generate_all_observed_edge_costs(trips_and_stop_times)
 
         # Add to the running total in this feed subset
         if all_edge_costs is None:
@@ -391,3 +350,61 @@ def generate_edge_and_wait_values(
             all_edge_costs = all_edge_costs.append(edge_costs)
 
     return (all_edge_costs, all_wait_times)
+
+
+def _process_route_edges_and_wait_times(
+        route: pd.Series,
+        ftrips: pd.DataFrame,
+        stop_times: pd.DataFrame,
+        all_stops: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    log('Processing on route {}.'.format(route.route_id))
+
+    # Get all the subset of trips that are related to this route
+    trips = ftrips.loc[route.route_id]
+
+    # Pandas will try and make returned result a Series if there
+    # is only one result - prevent this from happening
+    if isinstance(trips, pd.Series):
+        trips = trips.to_frame().T
+
+    # Get just the stop times related to this trip
+    st_trip_id_mask = stop_times.trip_id.isin(trips.trip_id)
+    stimes_init = stop_times[st_trip_id_mask]
+
+    # Then subset further by just the time period that we care about
+    start_time_mask = (stimes_init.arrival_time >= target_time_start)
+    end_time_mask = (stimes_init.arrival_time <= target_time_end)
+    stimes = stimes_init[start_time_mask & end_time_mask]
+
+    # Report on progress if requested
+    a = len(stimes_init.trip_id.unique())
+    b = len(stimes.trip_id.unique())
+    log('\tReduced trips in consideration from {} to {}.'.format(a, b))
+
+    trips_and_stop_times = pd.merge(trips,
+                                    stimes,
+                                    how='inner',
+                                    on='trip_id')
+
+    trips_and_stop_times = pd.merge(trips_and_stop_times,
+                                    all_stops,
+                                    how='inner',
+                                    on='stop_id')
+
+    sort_list = ['stop_sequence',
+                 'arrival_time',
+                 'departure_time']
+    trips_and_stop_times = trips_and_stop_times.sort_values(sort_list)
+
+    wait_times = generate_wait_times(trips_and_stop_times)
+    trips_and_stop_times['wait_dir_0'] = wait_times[0]
+    trips_and_stop_times['wait_dir_1'] = wait_times[1]
+
+    tst_sub = trips_and_stop_times[['stop_id',
+                                    'wait_dir_0',
+                                    'wait_dir_1']]
+
+    # Get all edge costs for this route and add to the running total
+    edge_costs = generate_all_observed_edge_costs(trips_and_stop_times)
+
+    return (tst_sub, edge_costs)
