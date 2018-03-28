@@ -62,8 +62,11 @@ def test_coalesce_operation():
     G.add_node('b_alt', x=-122.2711039, y=37.7660709, boarding_cost=13.5)
     G.add_edge('a', 'b_alt', length=100, mode='transit')
 
+    # Also add a second edge between the same nodes, but with an equal weight
+    G.add_edge('a', 'b_alt', length=100, mode='transit')
+
     # Add a node that won't be preserved (no edges connected to it)
-    G.add_node('d', x=-122.28, y=37.7, boarding_cost=200)
+    G.add_edge('a', 'b_alt', length=10, mode='transit')
 
     G2 = reproject(G)
 
