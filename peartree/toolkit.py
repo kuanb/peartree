@@ -150,7 +150,6 @@ def reproject(G: nx.MultiDiGraph, to_epsg: int=2163) -> nx.MultiDiGraph:
 def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Avoid upstream mutation of the graph
     G = G.copy()
-    graph_name = G.name
 
     # Extract all x, y values
     grouped = {}
@@ -172,9 +171,12 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     counter = 0
     new_node_coords = {}
     lookup = {}
+
+
+    # Populate the fresh reference dictionaries
     for x in grouped:
         for y in grouped[x]:
-            new_node_name = '{}_{}'.format(graph_name, counter)
+            new_node_name = '{}_{}'.format(G.name, counter)
             new_node_coords[new_node_name] = {'x': x, 'y': y}
             for n in grouped[x][y]:
                 lookup[n] = new_node_name
