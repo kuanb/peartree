@@ -1,5 +1,7 @@
 from typing import Dict, List, Tuple, Union
 
+import dask
+from distributed import Client, LocalCluster
 import numpy as np
 import pandas as pd
 import partridge as ptg
@@ -116,7 +118,7 @@ def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
         return pd.DataFrame({
             'edge_cost': all_edge_costs,
             'from_stop_id': all_from_stop_ids,
-            'to_stop_id': all_to_stop_ids})
+            'to_stop_id': all_to_stop_ids}).values
 
     # Otherwise a None value should be returned
     else:
@@ -325,36 +327,48 @@ def generate_edge_and_wait_values(
     else:
         stop_times = feed.stop_times.copy()
 
-    all_edge_costs = None
-    all_wait_times = None
-
     # Note: Each route can be evaluated in isolation from other routes;
-    #       thus, this operation is embarassingly parallelizable
+    #       thus, this operation is embarassingly parallelizable, as a
+    #       result, we first set up a local Dask cluster to distribute this
+    #       worker amongst available workers
+    cluster = LocalCluster()
+    client = Client(cluster)
+
+    array_bag = {
+        all_edge_costs: [],
+        all_wait_times: []
+    }
     for i, route in feed.routes.iterrows():
-        (tst_sub,
-         edge_costs) = _process_route_edges_and_wait_times(route,
-                                                           target_time_start,
-                                                           target_time_end,
-                                                           ftrips,
-                                                           stop_times,
-                                                           all_stops)
+        # Create a generator function to produce the results for this
+        # route in the routes dataframe
+        def generate_edges_and_waits():
+            return process_route_edges_and_wait_times(
+                route,
+                target_time_start,
+                target_time_end,
+                ftrips,
+                stop_times,
+                all_stops)
+
+        # Queue up, with a delayed action
+        (tst_sub, edge_costs) = dask.delayed(generate_edges_and_waits)
 
         # Add to the running total for wait times in this feed subset
-        if all_wait_times is None:
-            all_wait_times = tst_sub
-        else:
-            all_wait_times = all_wait_times.append(tst_sub)
-
+        array_bag['all_wait_times'].append(tst_sub)
         # Add to the running total in this feed subset
-        if all_edge_costs is None:
-            all_edge_costs = edge_costs
-        else:
-            all_edge_costs = all_edge_costs.append(edge_costs)
+        array_bag['all_edge_costs'].append(edge_costs)
 
-    return (all_edge_costs, all_wait_times)
+    # Trigger dask computation
+    array_bag = dask.persist(*array_bag)
+
+    all_wait_times_df = pd.DataFrame(all_wait_times,
+        columns=['stop_id', 'wait_dir_0', 'wait_dir_1'])
+    all_edge_costs_df = pd.DataFrame(all_edge_costs,
+        columns=['edge_cost', 'from_stop_id', 'to_stop_id'])
+    return (all_edge_costs_df, all_wait_times_df)
 
 
-def _process_route_edges_and_wait_times(
+def process_route_edges_and_wait_times(
         route: pd.Series,
         target_time_start: int,
         target_time_end: int,
@@ -406,7 +420,7 @@ def _process_route_edges_and_wait_times(
 
     tst_sub = trips_and_stop_times[['stop_id',
                                     'wait_dir_0',
-                                    'wait_dir_1']]
+                                    'wait_dir_1']].values
 
     # Get all edge costs for this route and add to the running total
     edge_costs = generate_all_observed_edge_costs(trips_and_stop_times)
