@@ -1,3 +1,4 @@
+import time
 from typing import Dict, List, Tuple, Union
 
 import dask
@@ -333,10 +334,12 @@ def generate_edge_and_wait_values(
     #       worker amongst available workers
     cluster = LocalCluster()
     client = Client(cluster)
+    log('Running route-wise wait and edge costing using '
+        'dask distributed client: {}.'.format(route.route_id))
 
     array_bag = {
-        all_edge_costs: [],
-        all_wait_times: []
+        'all_edge_costs': [],
+        'all_wait_times': []
     }
     for i, route in feed.routes.iterrows():
         # Create a generator function to produce the results for this
@@ -359,11 +362,15 @@ def generate_edge_and_wait_values(
         array_bag['all_edge_costs'].append(edge_costs)
 
     # Trigger dask computation
+    start_time = time.time()
     array_bag = dask.persist(*array_bag)
+    elapsed = time.time() - start_time
+    log('Wait and edges succesfully computed via '
+        'dask distributed: {}s.'.format(elapsed))
 
-    all_wait_times_df = pd.DataFrame(all_wait_times,
+    all_wait_times_df = pd.DataFrame(array_bag['all_wait_times'],
         columns=['stop_id', 'wait_dir_0', 'wait_dir_1'])
-    all_edge_costs_df = pd.DataFrame(all_edge_costs,
+    all_edge_costs_df = pd.DataFrame(array_bag['all_edge_costs'],
         columns=['edge_cost', 'from_stop_id', 'to_stop_id'])
     return (all_edge_costs_df, all_wait_times_df)
 
