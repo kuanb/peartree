@@ -368,6 +368,9 @@ def generate_edge_and_wait_values(
     log('Wait and edges succesfully computed via '
         'dask distributed: {}s.'.format(elapsed))
 
+    # Close out the cluster
+    client.close()
+
     all_wait_times_df = pd.DataFrame(array_bag['all_wait_times'],
         columns=['stop_id', 'wait_dir_0', 'wait_dir_1'])
     all_edge_costs_df = pd.DataFrame(array_bag['all_edge_costs'],
