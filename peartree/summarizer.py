@@ -339,17 +339,24 @@ def generate_edge_and_wait_values(
 
     # Similarly, convert all reference dataframes to dask equivalents
     # TODO: Specify partitions (how to? allow user input? programmatic?)
-    ftrips_ddf = dask.datafrom_pandas(ftrips)
-    stop_times_ddf = dask.datafrom_pandas(stop_times)
-    all_stops_ddf = dask.datafrom_pandas(all_stops)
+    stop_times_ddf = dask.from_pandas(stop_times)
+    all_stops_ddf = dask.from_pandas(all_stops)
 
     array_bag = {
         'all_edge_costs': [],
         'all_wait_times': []
     }
     for i, route in feed.routes.iterrows():
+        # Get all the subset of trips that are related to this route
+        rtrips = ftrips.loc[route_id]
+        # Pandas will try and make returned result a Series if there
+        # is only one result - prevent this from happening
+        if isinstance(rtrips, pd.Series):
+            rtrips = rtrips.to_frame().T
+
         # For each, convert related components to dask and dask-safe variants
         route_id = route.to_dict()['route_id']
+        rtrips = dask.from_pandas(rtrips)
 
         # Queue up, with a delayed action
         (tst_sub, edge_costs) = dask.delayed(
@@ -392,18 +399,10 @@ def process_route_edges_and_wait_times(
         route_id: str,
         target_time_start: int,
         target_time_end: int,
-        ftrips: dask.dataframe,
+        trips: dask.dataframe,
         stop_times: dask.dataframe,
         all_stops: dask.dataframe) -> Tuple[dask.dataframe, dask.dataframe]:
     log('Processing on route {}.'.format(route_id))
-
-    # Get all the subset of trips that are related to this route
-    trips = ftrips.loc[route_id]
-
-    # Pandas will try and make returned result a Series if there
-    # is only one result - prevent this from happening
-    if isinstance(trips, pd.Series):
-        trips = trips.to_frame().T
 
     # Get just the stop times related to this trip
     st_trip_id_mask = stop_times.trip_id.isin(trips.trip_id)
