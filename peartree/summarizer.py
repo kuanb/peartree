@@ -335,7 +335,7 @@ def generate_edge_and_wait_values(
     cluster = LocalCluster()
     client = Client(cluster)
     log('Running route-wise wait and edge costing using '
-        'dask distributed client: {}.'.format(route.route_id))
+        'dask distributed client: {}.'.format(client))
 
     array_bag = {
         'all_edge_costs': [],
