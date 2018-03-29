@@ -2,10 +2,10 @@ import time
 from typing import Dict, List, Tuple, Union
 
 import dask
-from distributed import Client, LocalCluster
 import numpy as np
 import pandas as pd
 import partridge as ptg
+from distributed import Client, LocalCluster
 
 from .toolkit import nan_helper
 from .utilities import log
@@ -335,26 +335,22 @@ def generate_edge_and_wait_values(
     cluster = LocalCluster()
     client = Client(cluster)
     log('Running route-wise wait and edge costing using '
-        'dask distributed client: {}.'.format(client))
+        'dask distributed client:\n{}.'.format(client))
 
     array_bag = {
         'all_edge_costs': [],
         'all_wait_times': []
     }
     for i, route in feed.routes.iterrows():
-        # Create a generator function to produce the results for this
-        # route in the routes dataframe
-        def generate_edges_and_waits():
-            return process_route_edges_and_wait_times(
+        # Queue up, with a delayed action
+        (tst_sub, edge_costs) = dask.delayed(
+            process_route_edges_and_wait_times)(
                 route,
                 target_time_start,
                 target_time_end,
                 ftrips,
                 stop_times,
                 all_stops)
-
-        # Queue up, with a delayed action
-        (tst_sub, edge_costs) = dask.delayed(generate_edges_and_waits)
 
         # Add to the running total for wait times in this feed subset
         array_bag['all_wait_times'].append(tst_sub)
@@ -372,12 +368,17 @@ def generate_edge_and_wait_values(
     client.close()
 
     all_wait_times_df = pd.DataFrame(array_bag['all_wait_times'],
-        columns=['stop_id', 'wait_dir_0', 'wait_dir_1'])
+                                     columns=['stop_id',
+                                              'wait_dir_0',
+                                              'wait_dir_1'])
     all_edge_costs_df = pd.DataFrame(array_bag['all_edge_costs'],
-        columns=['edge_cost', 'from_stop_id', 'to_stop_id'])
+                                     columns=['edge_cost',
+                                              'from_stop_id',
+                                              'to_stop_id'])
     return (all_edge_costs_df, all_wait_times_df)
 
 
+@dask.delayed
 def process_route_edges_and_wait_times(
         route: pd.Series,
         target_time_start: int,
