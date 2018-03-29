@@ -337,6 +337,12 @@ def generate_edge_and_wait_values(
     log('Running route-wise wait and edge costing using '
         'dask distributed client:\n{}.'.format(client))
 
+    # Similarly, convert all reference dataframes to dask equivalents
+    # TODO: Specify partitions (how to? allow user input? programmatic?)
+    ftrips_ddf = dask.datafrom_pandas(ftrips)
+    stop_times_ddf = dask.datafrom_pandas(stop_times)
+    all_stops_ddf = dask.datafrom_pandas(all_stops)
+
     array_bag = {
         'all_edge_costs': [],
         'all_wait_times': []
@@ -351,9 +357,9 @@ def generate_edge_and_wait_values(
                 route_id,
                 target_time_start,
                 target_time_end,
-                ftrips,
-                stop_times,
-                all_stops)
+                ftrips_ddf,
+                stop_times_ddf,
+                all_stops_ddf)
 
         # Add to the running total for wait times in this feed subset
         array_bag['all_wait_times'].append(tst_sub)
@@ -386,9 +392,9 @@ def process_route_edges_and_wait_times(
         route_id: str,
         target_time_start: int,
         target_time_end: int,
-        ftrips: pd.DataFrame,
-        stop_times: pd.DataFrame,
-        all_stops: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        ftrips: dask.dataframe,
+        stop_times: dask.dataframe,
+        all_stops: dask.dataframe) -> Tuple[dask.dataframe, dask.dataframe]:
     log('Processing on route {}.'.format(route_id))
 
     # Get all the subset of trips that are related to this route
