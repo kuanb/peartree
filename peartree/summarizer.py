@@ -342,10 +342,13 @@ def generate_edge_and_wait_values(
         'all_wait_times': []
     }
     for i, route in feed.routes.iterrows():
+        # For each, convert related components to dask and dask-safe variants
+        route_id = route.to_dict()['route_id']
+
         # Queue up, with a delayed action
         (tst_sub, edge_costs) = dask.delayed(
             process_route_edges_and_wait_times)(
-                route,
+                route_id,
                 target_time_start,
                 target_time_end,
                 ftrips,
@@ -380,16 +383,16 @@ def generate_edge_and_wait_values(
 
 @dask.delayed
 def process_route_edges_and_wait_times(
-        route: pd.Series,
+        route_id: str,
         target_time_start: int,
         target_time_end: int,
         ftrips: pd.DataFrame,
         stop_times: pd.DataFrame,
         all_stops: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    log('Processing on route {}.'.format(route.route_id))
+    log('Processing on route {}.'.format(route_id))
 
     # Get all the subset of trips that are related to this route
-    trips = ftrips.loc[route.route_id]
+    trips = ftrips.loc[route_id]
 
     # Pandas will try and make returned result a Series if there
     # is only one result - prevent this from happening
