@@ -54,7 +54,7 @@ def config(log_console=settings.log_console):
 
     # if logging is turned on, log that we are configured
     if settings.log_file or settings.log_console:
-        log('Configured osmnx')
+        log('Configured peartree')
 
 
 def make_str(value):
