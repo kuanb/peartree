@@ -153,7 +153,6 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
 
         # Add to the lookup crosswalk dictionary
         sid_lookup[sid] = full_sid
-
         G.add_node(full_sid,
                    boarding_cost=row.avg_cost,
                    y=row.stop_lat,
