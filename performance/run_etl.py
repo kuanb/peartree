@@ -2,7 +2,6 @@ import os
 import tempfile
 from urllib.request import urlopen
 
-import partridge as ptg
 import peartree as pt
 
 pt.utilities.config(log_console=True)
@@ -24,7 +23,7 @@ if __name__ == '__main__':
     with open(filepath, 'wb') as f:
         f.write(zipcontent)
 
-    feed = ptg.get_representative_feed(filepath)
+    feed = pt.get_representative_feed(filepath)
 
     start = 7 * 60 * 60  # 7:00 AM
     end = 10 * 60 * 60  # 10:00 AM
