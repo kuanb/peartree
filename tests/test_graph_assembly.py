@@ -18,6 +18,7 @@ def test_feed_to_graph_performance():
     start = 7 * 60 * 60
     end = 10 * 60 * 60
     interpolate_times = True
+    use_multiprocessing = True
 
     print('Running time profiles on each major '
           'function in graph generation workflow')
@@ -36,7 +37,8 @@ def test_feed_to_graph_performance():
      all_wait_times) = generate_edge_and_wait_values(feed,
                                                      start,
                                                      end,
-                                                     interpolate_times)
+                                                     interpolate_times,
+                                                     use_multiprocessing)
     elapsed = round(time() - a, 2)
     print('Perf of generate_edge_and_wait_values: {}s'.format(elapsed))
 
