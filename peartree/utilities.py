@@ -97,12 +97,6 @@ def log(message: str, level=None, name=None, filename=None):
     # If logging to console is turned on, convert message to ascii and print to
     # the console
     if settings.log_console:
-        # Capture current stdout, then switch it to the console, print the
-        # message, then switch back to what had been the stdout. this prevents
-        # logging to notebook - instead, it goes to console
-        standard_out = sys.stdout
-        sys.stdout = sys.__stdout__
-
         # Convert message to ascii for console display so it doesn't break
         # windows terminals
         str_msg = make_str(message)
@@ -110,4 +104,3 @@ def log(message: str, level=None, name=None, filename=None):
         encoded = normalized.encode('ascii', errors='replace')
         decoded = encoded.decode()
         print(decoded)
-        sys.stdout = standard_out
