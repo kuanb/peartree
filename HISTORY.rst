@@ -1,7 +1,7 @@
 History
 =======
 
-0.4.0 (2018-04-01)
+0.3.0 (2018-04-01)
 ------------------
 
 * Parallelization of route segments processing
@@ -12,7 +12,7 @@ History
 * Bidirectional synthetic networks
 
 
-0.2.0 (2018-03-06	)
+0.2.0 (2018-03-06)
 ------------------
 
 * Refactor graph creation
