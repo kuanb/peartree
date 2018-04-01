@@ -1,16 +1,12 @@
-import math
+import multiprocessing as mp
 from typing import Dict, List, Tuple, Union
 
-import dask.bag as dbag
-from dask.diagnostics import Profiler, ResourceProfiler, CacheProfiler
 import numpy as np
 import pandas as pd
 import partridge as ptg
 
 from .toolkit import nan_helper
 from .utilities import log
-
-MAX_DASK_ARRAY_LENGTH = 10
 
 
 def calculate_average_wait(direction_times: pd.DataFrame) -> float:
@@ -312,7 +308,8 @@ def generate_edge_and_wait_values(
         feed: ptg.gtfs.feed,
         target_time_start: int,
         target_time_end: int,
-        interpolate_times: bool) -> Tuple[pd.DataFrame]:
+        interpolate_times: bool,
+        use_multiprocessing: bool) -> Tuple[pd.DataFrame]:
     # Initialize the trips dataframe to be worked with
     ftrips = feed.trips.copy()
     ftrips = ftrips[~ftrips['route_id'].isnull()]
@@ -334,19 +331,24 @@ def generate_edge_and_wait_values(
         stop_times,
         feed.stops.copy())
 
-    partition_count = math.ceil(len(feed.routes) / MAX_DASK_ARRAY_LENGTH)
-    route_id_list = dbag.from_sequence(feed.routes.route_id, npartitions=partition_count)
-
-    # Run profilers while executing
-    with Profiler() as prof, \
-            ResourceProfiler(dt=0.25) as rprof, \
-            CacheProfiler() as cprof:
-        res = dbag.map(route_analyzer.generate_route_costs,
-                       route_id_list).compute()
+    if use_multiprocessing is True:
+        cpu_count = mp.cpu_count()
+        log('Running parallelized route costing on '
+            '{} processes'.format(cpu_count))
+        pool = mp.Pool(processes=cpu_count)
+        route_ids = feed.routes.route_id
+        results = [
+            pool.apply_async(route_analyzer.generate_route_costs,
+                             args=[route_id, ]) for route_id in route_ids]
+        results = [process.get() for process in results]
+    else:
+        results = []
+        for rid in feed.routes.route_id:
+            results.append(route_analyzer.generate_route_costs(rid))
 
     all_edge_costs = None
     all_wait_times = None
-    for tst_sub, edge_costs in res:
+    for tst_sub, edge_costs in results:
         # Add to the running total for wait times in this feed subset
         if all_wait_times is None:
             all_wait_times = tst_sub
@@ -358,17 +360,6 @@ def generate_edge_and_wait_values(
             all_edge_costs = edge_costs
         else:
             all_edge_costs = all_edge_costs.append(edge_costs)
-
-    # Now perform some subsetting operation to clear out extra values;
-    # this occurs because the dask bag reduces equal length arrays
-    # from all operations, which is why we need to prune out NaNs
-    wt_mask_0 = all_wait_times['wait_dir_0'].isnull()
-    wt_mask_1 = all_wait_times['wait_dir_1'].isnull()
-    wt_mask_combined = (wt_mask_0 & wt_mask_1)
-    all_wait_times = all_wait_times[~wt_mask_combined]
-
-    ec_mask = all_edge_costs['edge_cost'].isnull()
-    all_edge_costs = all_edge_costs[~ec_mask]
 
     return (all_edge_costs, all_wait_times)
 
@@ -388,11 +379,15 @@ class RouteProcessor(object):
         self.target_time_end = target_time_end
         self.trips = feed_trips.copy()
         self.stop_times = stop_times.copy()
-        self.all_stops = all_stops.copy()
+
+        # Ensure that stop_ids are cast as string
+        astops = all_stops.copy()
+        astops['stop_id'] = astops['stop_id'].astype(str)
+        self.all_stops = astops
 
     def generate_route_costs(self, route_id: str):
         # Get all the subset of trips that are related to this route
-        trips = self.trips.loc[route_id]
+        trips = self.trips.loc[route_id].copy()
 
         # Pandas will try and make returned result a Series if there
         # is only one result - prevent this from happening
@@ -401,7 +396,7 @@ class RouteProcessor(object):
 
         # Get just the stop times related to this trip
         st_trip_id_mask = self.stop_times.trip_id.isin(trips.trip_id)
-        stimes_init = self.stop_times[st_trip_id_mask]
+        stimes_init = self.stop_times[st_trip_id_mask].copy()
 
         # Then subset further by just the time period that we care about
         start_time_mask = (stimes_init.arrival_time >= self.target_time_start)
@@ -420,7 +415,7 @@ class RouteProcessor(object):
                                         on='trip_id')
 
         trips_and_stop_times = pd.merge(trips_and_stop_times,
-                                        self.all_stops,
+                                        self.all_stops.copy(),
                                         how='inner',
                                         on='stop_id')
 
