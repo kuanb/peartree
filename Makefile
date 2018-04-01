@@ -1,4 +1,4 @@
-test:
+gtest:
 	PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose
 
 performance:
@@ -13,6 +13,11 @@ docker-clean:
 	docker network prune --force
 	docker volume prune --force
 	docker image prune --force
+
+cprofile:
+	pip install snakeviz
+	python -m cProfile -o performance/cprof-output.py performance/run_etl.py
+	snakeviz performance/cprof-output.py
 
 install-graph-tool:
 	sed -i -e '$$a\
