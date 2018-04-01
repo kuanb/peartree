@@ -1,12 +1,16 @@
+import math
 from typing import Dict, List, Tuple, Union
 
 import dask.bag as dbag
+from dask.diagnostics import Profiler, ResourceProfiler, CacheProfiler
 import numpy as np
 import pandas as pd
 import partridge as ptg
 
 from .toolkit import nan_helper
 from .utilities import log
+
+MAX_DASK_ARRAY_LENGTH = 10
 
 
 def calculate_average_wait(direction_times: pd.DataFrame) -> float:
@@ -330,8 +334,15 @@ def generate_edge_and_wait_values(
         stop_times,
         feed.stops.copy())
 
-    route_id_list = dbag.from_sequence(feed.routes.route_id)
-    res = route_id_list.map(route_analyzer.generate_route_costs).compute()
+    partition_count = math.ceil(len(feed.routes) / MAX_DASK_ARRAY_LENGTH)
+    route_id_list = dbag.from_sequence(feed.routes.route_id, npartitions=partition_count)
+
+    # Run profilers while executing
+    with Profiler() as prof, \
+            ResourceProfiler(dt=0.25) as rprof, \
+            CacheProfiler() as cprof:
+        res = dbag.map(route_analyzer.generate_route_costs,
+                       route_id_list).compute()
 
     all_edge_costs = None
     all_wait_times = None
@@ -347,6 +358,17 @@ def generate_edge_and_wait_values(
             all_edge_costs = edge_costs
         else:
             all_edge_costs = all_edge_costs.append(edge_costs)
+
+    # Now perform some subsetting operation to clear out extra values;
+    # this occurs because the dask bag reduces equal length arrays
+    # from all operations, which is why we need to prune out NaNs
+    wt_mask_0 = all_wait_times['wait_dir_0'].isnull()
+    wt_mask_1 = all_wait_times['wait_dir_1'].isnull()
+    wt_mask_combined = (wt_mask_0 & wt_mask_1)
+    all_wait_times = all_wait_times[~wt_mask_combined]
+
+    ec_mask = all_edge_costs['edge_cost'].isnull()
+    all_edge_costs = all_edge_costs[~ec_mask]
 
     return (all_edge_costs, all_wait_times)
 
