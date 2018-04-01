@@ -330,7 +330,7 @@ def generate_edge_and_wait_values(
         stop_times,
         feed.stops.copy())
 
-    route_id_list = dbag.from_sequence(feed.routes.route_id.head())
+    route_id_list = dbag.from_sequence(feed.routes.route_id)
     res = route_id_list.map(route_analyzer.generate_route_costs).compute()
 
     all_edge_costs = None
