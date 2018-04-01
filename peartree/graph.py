@@ -34,12 +34,14 @@ def nameify_stop_id(name, sid):
 def generate_summary_graph_elements(feed: ptg.gtfs.feed,
                                     target_time_start: int,
                                     target_time_end: int,
-                                    interpolate_times: bool):
+                                    interpolate_times: bool,
+                                    use_multiprocessing: bool):
     (all_edge_costs,
      all_wait_times) = generate_edge_and_wait_values(feed,
                                                      target_time_start,
                                                      target_time_end,
-                                                     interpolate_times)
+                                                     interpolate_times,
+                                                     use_multiprocessing)
 
     # Handle if there are no valid edges returned (or wait times)
     if all_edge_costs is None or len(all_edge_costs) == 0:
@@ -153,7 +155,6 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
 
         # Add to the lookup crosswalk dictionary
         sid_lookup[sid] = full_sid
-
         G.add_node(full_sid,
                    boarding_cost=row.avg_cost,
                    y=row.stop_lat,

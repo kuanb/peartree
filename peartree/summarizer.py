@@ -1,3 +1,4 @@
+import multiprocessing as mp
 from typing import Dict, List, Tuple, Union
 
 import numpy as np
@@ -307,7 +308,8 @@ def generate_edge_and_wait_values(
         feed: ptg.gtfs.feed,
         target_time_start: int,
         target_time_end: int,
-        interpolate_times: bool) -> Tuple[pd.DataFrame]:
+        interpolate_times: bool,
+        use_multiprocessing: bool) -> Tuple[pd.DataFrame]:
     # Initialize the trips dataframe to be worked with
     ftrips = feed.trips.copy()
     ftrips = ftrips[~ftrips['route_id'].isnull()]
@@ -322,13 +324,70 @@ def generate_edge_and_wait_values(
     else:
         stop_times = feed.stop_times.copy()
 
+    route_analyzer = RouteProcessor(
+        target_time_start,
+        target_time_end,
+        ftrips,
+        stop_times,
+        feed.stops.copy())
+
+    if use_multiprocessing is True:
+        cpu_count = mp.cpu_count()
+        log('Running parallelized route costing on '
+            '{} processes'.format(cpu_count))
+        pool = mp.Pool(processes=cpu_count)
+        route_ids = feed.routes.route_id
+        results = [
+            pool.apply_async(route_analyzer.generate_route_costs,
+                             args=[route_id, ]) for route_id in route_ids]
+        results = [process.get() for process in results]
+    else:
+        results = []
+        for rid in feed.routes.route_id:
+            results.append(route_analyzer.generate_route_costs(rid))
+
     all_edge_costs = None
     all_wait_times = None
-    for i, route in feed.routes.iterrows():
-        log('Processing on route {}.'.format(route.route_id))
+    for tst_sub, edge_costs in results:
+        # Add to the running total for wait times in this feed subset
+        if all_wait_times is None:
+            all_wait_times = tst_sub
+        else:
+            all_wait_times = all_wait_times.append(tst_sub)
 
+        # Add to the running total in this feed subset
+        if all_edge_costs is None:
+            all_edge_costs = edge_costs
+        else:
+            all_edge_costs = all_edge_costs.append(edge_costs)
+
+    return (all_edge_costs, all_wait_times)
+
+
+class RouteProcessor(object):
+
+    def __init__(
+            self,
+            target_time_start: int,
+            target_time_end: int,
+            feed_trips: pd.DataFrame,
+            stop_times: pd.DataFrame,
+            all_stops: pd.DataFrame):
+
+        # Initialize common parameters
+        self.target_time_start = target_time_start
+        self.target_time_end = target_time_end
+        self.trips = feed_trips.copy()
+        self.stop_times = stop_times.copy()
+
+        # Ensure that stop_ids are cast as string
+        astops = all_stops.copy()
+        astops['stop_id'] = astops['stop_id'].astype(str)
+        self.all_stops = astops
+
+    def generate_route_costs(self, route_id: str):
         # Get all the subset of trips that are related to this route
-        trips = ftrips.loc[route.route_id]
+        trips = self.trips.loc[route_id].copy()
 
         # Pandas will try and make returned result a Series if there
         # is only one result - prevent this from happening
@@ -336,18 +395,19 @@ def generate_edge_and_wait_values(
             trips = trips.to_frame().T
 
         # Get just the stop times related to this trip
-        st_trip_id_mask = stop_times.trip_id.isin(trips.trip_id)
-        stimes_init = stop_times[st_trip_id_mask]
+        st_trip_id_mask = self.stop_times.trip_id.isin(trips.trip_id)
+        stimes_init = self.stop_times[st_trip_id_mask].copy()
 
         # Then subset further by just the time period that we care about
-        start_time_mask = (stimes_init.arrival_time >= target_time_start)
-        end_time_mask = (stimes_init.arrival_time <= target_time_end)
+        start_time_mask = (stimes_init.arrival_time >= self.target_time_start)
+        end_time_mask = (stimes_init.arrival_time <= self.target_time_end)
         stimes = stimes_init[start_time_mask & end_time_mask]
 
         # Report on progress if requested
         a = len(stimes_init.trip_id.unique())
         b = len(stimes.trip_id.unique())
-        log('\tReduced trips in consideration from {} to {}.'.format(a, b))
+        log('\tReduced selected trips on route {} from {} to {}.'.format(
+            route_id, a, b))
 
         trips_and_stop_times = pd.merge(trips,
                                         stimes,
@@ -355,7 +415,7 @@ def generate_edge_and_wait_values(
                                         on='trip_id')
 
         trips_and_stop_times = pd.merge(trips_and_stop_times,
-                                        feed.stops,
+                                        self.all_stops.copy(),
                                         how='inner',
                                         on='stop_id')
 
@@ -372,19 +432,7 @@ def generate_edge_and_wait_values(
                                         'wait_dir_0',
                                         'wait_dir_1']]
 
-        # Add to the running total for wait times in this feed subset
-        if all_wait_times is None:
-            all_wait_times = tst_sub
-        else:
-            all_wait_times = all_wait_times.append(tst_sub)
-
         # Get all edge costs for this route and add to the running total
         edge_costs = generate_all_observed_edge_costs(trips_and_stop_times)
 
-        # Add to the running total in this feed subset
-        if all_edge_costs is None:
-            all_edge_costs = edge_costs
-        else:
-            all_edge_costs = all_edge_costs.append(edge_costs)
-
-    return (all_edge_costs, all_wait_times)
+        return (tst_sub, edge_costs)
