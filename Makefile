@@ -1,4 +1,4 @@
-gtest:
+test:
 	PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose
 
 performance:
@@ -25,3 +25,7 @@ install-graph-tool:
 	deb-src http://downloads.skewed.de/apt/stretch stretch main' /etc/apt/sources.list && \
 	apt-get update && \
 	apt-get install python3-graph-tool
+
+pypi-release:
+	python setup.py bdist_wheel
+	twine upload dist/*
