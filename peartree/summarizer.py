@@ -1,8 +1,11 @@
+import time
 from typing import Dict, List, Tuple, Union
 
+import dask
 import numpy as np
 import pandas as pd
 import partridge as ptg
+from distributed import Client, LocalCluster
 
 from .toolkit import nan_helper
 from .utilities import log
@@ -116,7 +119,7 @@ def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
         return pd.DataFrame({
             'edge_cost': all_edge_costs,
             'from_stop_id': all_from_stop_ids,
-            'to_stop_id': all_to_stop_ids})
+            'to_stop_id': all_to_stop_ids}).values
 
     # Otherwise a None value should be returned
     else:
@@ -313,6 +316,9 @@ def generate_edge_and_wait_values(
     ftrips = ftrips[~ftrips['route_id'].isnull()]
     ftrips = ftrips.set_index('route_id', drop=False)
 
+    # Take a copy of all stops
+    all_stops = feed.stops.copy()
+
     # Flags whether we interpolate intermediary stops or not
     if interpolate_times:
         # Prepare the stops times dataframe by also infilling
@@ -322,69 +328,120 @@ def generate_edge_and_wait_values(
     else:
         stop_times = feed.stop_times.copy()
 
-    all_edge_costs = None
-    all_wait_times = None
+    # Note: Each route can be evaluated in isolation from other routes;
+    #       thus, this operation is embarassingly parallelizable, as a
+    #       result, we first set up a local Dask cluster to distribute this
+    #       worker amongst available workers
+    cluster = LocalCluster()
+    client = Client(cluster)
+    log('Running route-wise wait and edge costing using '
+        'dask distributed client:\n{}.'.format(client))
+
+    # Similarly, convert all reference dataframes to dask equivalents
+    # TODO: Specify partitions (how to? allow user input? programmatic?)
+    stop_times_ddf = dask.from_pandas(stop_times)
+    all_stops_ddf = dask.from_pandas(all_stops)
+
+    array_bag = {
+        'all_edge_costs': [],
+        'all_wait_times': []
+    }
     for i, route in feed.routes.iterrows():
-        log('Processing on route {}.'.format(route.route_id))
-
         # Get all the subset of trips that are related to this route
-        trips = ftrips.loc[route.route_id]
-
+        rtrips = ftrips.loc[route_id]
         # Pandas will try and make returned result a Series if there
         # is only one result - prevent this from happening
-        if isinstance(trips, pd.Series):
-            trips = trips.to_frame().T
+        if isinstance(rtrips, pd.Series):
+            rtrips = rtrips.to_frame().T
 
-        # Get just the stop times related to this trip
-        st_trip_id_mask = stop_times.trip_id.isin(trips.trip_id)
-        stimes_init = stop_times[st_trip_id_mask]
+        # For each, convert related components to dask and dask-safe variants
+        route_id = route.to_dict()['route_id']
+        rtrips = dask.from_pandas(rtrips)
 
-        # Then subset further by just the time period that we care about
-        start_time_mask = (stimes_init.arrival_time >= target_time_start)
-        end_time_mask = (stimes_init.arrival_time <= target_time_end)
-        stimes = stimes_init[start_time_mask & end_time_mask]
-
-        # Report on progress if requested
-        a = len(stimes_init.trip_id.unique())
-        b = len(stimes.trip_id.unique())
-        log('\tReduced trips in consideration from {} to {}.'.format(a, b))
-
-        trips_and_stop_times = pd.merge(trips,
-                                        stimes,
-                                        how='inner',
-                                        on='trip_id')
-
-        trips_and_stop_times = pd.merge(trips_and_stop_times,
-                                        feed.stops,
-                                        how='inner',
-                                        on='stop_id')
-
-        sort_list = ['stop_sequence',
-                     'arrival_time',
-                     'departure_time']
-        trips_and_stop_times = trips_and_stop_times.sort_values(sort_list)
-
-        wait_times = generate_wait_times(trips_and_stop_times)
-        trips_and_stop_times['wait_dir_0'] = wait_times[0]
-        trips_and_stop_times['wait_dir_1'] = wait_times[1]
-
-        tst_sub = trips_and_stop_times[['stop_id',
-                                        'wait_dir_0',
-                                        'wait_dir_1']]
+        # Queue up, with a delayed action
+        (tst_sub, edge_costs) = dask.delayed(
+            process_route_edges_and_wait_times)(
+                route_id,
+                target_time_start,
+                target_time_end,
+                ftrips_ddf,
+                stop_times_ddf,
+                all_stops_ddf)
 
         # Add to the running total for wait times in this feed subset
-        if all_wait_times is None:
-            all_wait_times = tst_sub
-        else:
-            all_wait_times = all_wait_times.append(tst_sub)
-
-        # Get all edge costs for this route and add to the running total
-        edge_costs = generate_all_observed_edge_costs(trips_and_stop_times)
-
+        array_bag['all_wait_times'].append(tst_sub)
         # Add to the running total in this feed subset
-        if all_edge_costs is None:
-            all_edge_costs = edge_costs
-        else:
-            all_edge_costs = all_edge_costs.append(edge_costs)
+        array_bag['all_edge_costs'].append(edge_costs)
 
-    return (all_edge_costs, all_wait_times)
+    # Trigger dask computation
+    start_time = time.time()
+    array_bag = dask.persist(*array_bag)
+    elapsed = time.time() - start_time
+    log('Wait and edges succesfully computed via '
+        'dask distributed: {}s.'.format(elapsed))
+
+    # Close out the cluster
+    client.close()
+
+    all_wait_times_df = pd.DataFrame(array_bag['all_wait_times'],
+                                     columns=['stop_id',
+                                              'wait_dir_0',
+                                              'wait_dir_1'])
+    all_edge_costs_df = pd.DataFrame(array_bag['all_edge_costs'],
+                                     columns=['edge_cost',
+                                              'from_stop_id',
+                                              'to_stop_id'])
+    return (all_edge_costs_df, all_wait_times_df)
+
+
+@dask.delayed
+def process_route_edges_and_wait_times(
+        route_id: str,
+        target_time_start: int,
+        target_time_end: int,
+        trips: dask.dataframe,
+        stop_times: dask.dataframe,
+        all_stops: dask.dataframe) -> Tuple[dask.dataframe, dask.dataframe]:
+    log('Processing on route {}.'.format(route_id))
+
+    # Get just the stop times related to this trip
+    st_trip_id_mask = stop_times.trip_id.isin(trips.trip_id)
+    stimes_init = stop_times[st_trip_id_mask]
+
+    # Then subset further by just the time period that we care about
+    start_time_mask = (stimes_init.arrival_time >= target_time_start)
+    end_time_mask = (stimes_init.arrival_time <= target_time_end)
+    stimes = stimes_init[start_time_mask & end_time_mask]
+
+    # Report on progress if requested
+    a = len(stimes_init.trip_id.unique())
+    b = len(stimes.trip_id.unique())
+    log('\tReduced trips in consideration from {} to {}.'.format(a, b))
+
+    trips_and_stop_times = pd.merge(trips,
+                                    stimes,
+                                    how='inner',
+                                    on='trip_id')
+
+    trips_and_stop_times = pd.merge(trips_and_stop_times,
+                                    all_stops,
+                                    how='inner',
+                                    on='stop_id')
+
+    sort_list = ['stop_sequence',
+                 'arrival_time',
+                 'departure_time']
+    trips_and_stop_times = trips_and_stop_times.sort_values(sort_list)
+
+    wait_times = generate_wait_times(trips_and_stop_times)
+    trips_and_stop_times['wait_dir_0'] = wait_times[0]
+    trips_and_stop_times['wait_dir_1'] = wait_times[1]
+
+    tst_sub = trips_and_stop_times[['stop_id',
+                                    'wait_dir_0',
+                                    'wait_dir_1']].values
+
+    # Get all edge costs for this route and add to the running total
+    edge_costs = generate_all_observed_edge_costs(trips_and_stop_times)
+
+    return (tst_sub, edge_costs)
