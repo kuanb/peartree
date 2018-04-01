@@ -22,7 +22,6 @@ def test_generate_summary_graph_elements():
     start = 7 * 60 * 60
     end = 10 * 60 * 60
     interpolate_times = True
-    use_multiprocessing = True
 
     # Make sure everything works the same with both multiprocessing on/off
     for use_multiprocessing in [True, False]:
