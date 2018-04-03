@@ -336,15 +336,11 @@ def generate_edge_and_wait_values(
         log('Running parallelized route costing on '
             '{} processes'.format(cpu_count))
         pool = mp.Pool(processes=cpu_count)
-        route_ids = feed.routes.route_id
-        results = [
-            pool.apply_async(route_analyzer.generate_route_costs,
-                             args=[route_id, ]) for route_id in route_ids]
-        results = [process.get() for process in results]
+        results = pool.map(route_analyzer.generate_route_costs,
+                           feed.routes.route_id)
     else:
-        results = []
-        for rid in feed.routes.route_id:
-            results.append(route_analyzer.generate_route_costs(rid))
+        results = [route_analyzer.generate_route_costs(rid)
+                   for rid in feed.routes.route_id]
 
     all_edge_costs = None
     all_wait_times = None
