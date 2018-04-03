@@ -1,4 +1,5 @@
 import multiprocessing as mp
+import time
 from typing import Dict, List, Tuple, Union
 
 import numpy as np
@@ -331,6 +332,7 @@ def generate_edge_and_wait_values(
         stop_times,
         feed.stops.copy())
 
+    start_time = time.time()
     if use_multiprocessing is True:
         cpu_count = mp.cpu_count()
         log('Running parallelized route costing on '
@@ -341,6 +343,8 @@ def generate_edge_and_wait_values(
     else:
         results = [route_analyzer.generate_route_costs(rid)
                    for rid in feed.routes.route_id]
+    elapsed = round(time.time() - start_time, 2)
+    log('Route costing complete. Execution time: {}s'.format(elapsed))
 
     all_edge_costs = None
     all_wait_times = None
