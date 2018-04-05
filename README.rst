@@ -59,3 +59,5 @@ I've yet to produce a full how-to guide for this library, but will begin to popu
 `Generating comparative acyclic route graphs <http://kuanbutts.com/2018/03/15/comparative-routes-mpl/>`_
 
 `Coalescing transit network graphs and spectral clustering methods <http://kuanbutts.com/2018/04/01/spectral-cluster-transit/>`_
+
+`Exploratory graph analysis with betweenness and load centrality <http://simplistic.me/playing-with-gtfs-iii-geo-graphs.html>`_
