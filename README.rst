@@ -57,3 +57,5 @@ I've yet to produce a full how-to guide for this library, but will begin to popu
 `Calcualting betweeness centrality with Brooklyn bus network <http://kuanbutts.com/2017/12/13/betweenness-centrality-peartree/>`_
 
 `Generating comparative acyclic route graphs <http://kuanbutts.com/2018/03/15/comparative-routes-mpl/>`_
+
+`Coalescing transit network graphs and spectral clustering methods <http://kuanbutts.com/2018/04/01/spectral-cluster-transit/>`_
