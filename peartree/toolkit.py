@@ -172,7 +172,6 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     new_node_coords = {}
     lookup = {}
 
-
     # Populate the fresh reference dictionaries
     for x in grouped:
         for y in grouped[x]:
@@ -204,7 +203,7 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         replacement_edges_fr.append(reference[n1])
         replacement_edges_to.append(reference[n2])
         replacement_edges_len.append(edge['length'])
-    
+
     # This takes the resulting matrix and converts it to a pandas DataFrame
     edges_df = pd.DataFrame({
         'fr': replacement_edges_fr,
@@ -212,9 +211,9 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         'len': replacement_edges_len})
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
-    # With the resulting groupings, we extract values 
+    # With the resulting groupings, we extract values
     min_edges = grouped['weight'].min()
-    
+
     # Second step; which uses results from edge_df grouping/parsing
     edges_to_add = []
     for n1, n2, edge in G.edges(data=True):
@@ -236,7 +235,7 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
             # Also sanity check that it is the min length value
             if not existing_edge['length'] == min_length:
                 raise ValueError('Edge should have had minimum length of '
-                    '{}, but instead had value of {}'.format(min_length))
+                                 '{}, but instead had value of {}'.format(min_length))
 
         # If this happens, then this is the first time this edge
         # is being added
