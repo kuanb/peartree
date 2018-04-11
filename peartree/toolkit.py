@@ -196,13 +196,20 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         new_node_coords[nni]['boarding_cost'] = avg_bc
 
     # First step to creating a list of replacement edges
-    edge_df_mtx = []
+    replacement_edges_fr = []
+    replacement_edges_to = []
+    replacement_edges_len = []
     for n1, n2, edge in G.edges(data=True):
         # This will be used to parse out which edges to keep
-        edge_df_mtx.append([reference[n1], reference[n2], edge['length']])
+        replacement_edges_fr.append(reference[n1])
+        replacement_edges_to.append(reference[n2])
+        replacement_edges_len.append(edge['length'])
     
     # This takes the resulting matrix and converts it to a pandas DataFrame
-    edges_df = pd.DataFrame(edge_df_mtx, columns=['fr', 'to', 'weight'])
+    edges_df = pd.DataFrame({
+        'fr': replacement_edges_fr,
+        'to': replacement_edges_to,
+        'len': replacement_edges_len})
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
     # With the resulting groupings, we extract values 
