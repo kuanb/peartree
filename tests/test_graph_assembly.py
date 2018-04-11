@@ -18,7 +18,7 @@ def test_feed_to_graph_performance():
     start = 7 * 60 * 60
     end = 10 * 60 * 60
     interpolate_times = True
-    use_multiprocessing = True
+    use_multiprocessing = False
 
     print('Running time profiles on each major '
           'function in graph generation workflow')
