@@ -212,7 +212,7 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
     # With the resulting groupings, we extract values
-    min_edges = grouped['weight'].min()
+    min_edges = grouped['len'].min()
 
     # Second step; which uses results from edge_df grouping/parsing
     edges_to_add = []
@@ -234,8 +234,9 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
             existing_edge = G[rn1][rn2]
             # Also sanity check that it is the min length value
             if not existing_edge['length'] == min_length:
-                raise ValueError('Edge should have had minimum length of '
-                                 '{}, but instead had value of {}'.format(min_length))
+                raise ValueError(
+                    'Edge should have had minimum length of '
+                    '{}, but instead had value of {}'.format(min_length))
 
         # If this happens, then this is the first time this edge
         # is being added
