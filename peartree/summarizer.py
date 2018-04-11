@@ -6,8 +6,7 @@ import numpy as np
 import pandas as pd
 import partridge as ptg
 
-from .parallel import (RouteProcessor, RouteProcessorManager,
-                       make_new_route_processor_manager)
+from .parallel import RouteProcessor, make_new_route_processor_manager
 from .toolkit import nan_helper
 from .utilities import log
 
@@ -237,13 +236,13 @@ def generate_edge_and_wait_values(
         stop_times = feed.stop_times.copy()
 
     start_time = time.time()
-    target_route_ids = feed.routes.route_id.head(20)
+    target_route_ids = feed.routes.route_id
     if use_multiprocessing is True:
         cpu_count = mp.cpu_count()
         log('Running parallelized route costing on '
             '{} processes'.format(cpu_count))
 
-        manager = make_new_route_processor_manager(RouteProcessor)
+        manager = make_new_route_processor_manager()
         route_analyzer = manager.RouteProcessor(
             target_time_start,
             target_time_end,
@@ -252,10 +251,11 @@ def generate_edge_and_wait_values(
             feed.stops.copy())
 
         with mp.Pool(processes=cpu_count) as pool:
-            pool.starmap(_route_analyzer_pool_map,
-                         [(route_analyzer,
-                           route_id) for route_id in target_route_ids])
+            results = pool.starmap(_route_analyzer_pool_map,
+                                   [(route_analyzer, route_id)
+                                    for route_id in target_route_ids])
     else:
+        log('Running serialized route costing (no parallelization)')
         route_analyzer = RouteProcessor(
             target_time_start,
             target_time_end,
