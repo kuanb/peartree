@@ -22,9 +22,10 @@ if __name__ == '__main__':
     zipcontent = response.read()
     with open(filepath, 'wb') as f:
         f.write(zipcontent)
-
     feed = pt.get_representative_feed(filepath)
 
     start = 7 * 60 * 60  # 7:00 AM
     end = 10 * 60 * 60  # 10:00 AM
-    G = pt.load_feed_as_graph(feed, start, end, interpolate_times=True)
+    G = pt.load_feed_as_graph(feed, start, end,
+                              interpolate_times=True,
+                              use_multiprocessing=False)

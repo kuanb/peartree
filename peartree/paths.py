@@ -58,7 +58,7 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                        walk_speed_kmph: float=4.5,
                        interpolate_times: bool=True,
                        impute_walk_transfers: bool=False,
-                       use_multiprocessing: bool=True):
+                       use_multiprocessing: bool=False):
     """
     Convert a feed object into a NetworkX Graph, connect to an existing
     NetworkX graph if one is supplied

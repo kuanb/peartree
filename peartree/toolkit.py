@@ -172,7 +172,6 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     new_node_coords = {}
     lookup = {}
 
-
     # Populate the fresh reference dictionaries
     for x in grouped:
         for y in grouped[x]:
@@ -196,18 +195,25 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         new_node_coords[nni]['boarding_cost'] = avg_bc
 
     # First step to creating a list of replacement edges
-    edge_df_mtx = []
+    replacement_edges_fr = []
+    replacement_edges_to = []
+    replacement_edges_len = []
     for n1, n2, edge in G.edges(data=True):
         # This will be used to parse out which edges to keep
-        edge_df_mtx.append([reference[n1], reference[n2], edge['length']])
-    
+        replacement_edges_fr.append(reference[n1])
+        replacement_edges_to.append(reference[n2])
+        replacement_edges_len.append(edge['length'])
+
     # This takes the resulting matrix and converts it to a pandas DataFrame
-    edges_df = pd.DataFrame(edge_df_mtx, columns=['fr', 'to', 'weight'])
+    edges_df = pd.DataFrame({
+        'fr': replacement_edges_fr,
+        'to': replacement_edges_to,
+        'len': replacement_edges_len})
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
-    # With the resulting groupings, we extract values 
-    min_edges = grouped['weight'].min()
-    
+    # With the resulting groupings, we extract values
+    min_edges = grouped['len'].min()
+
     # Second step; which uses results from edge_df grouping/parsing
     edges_to_add = []
     for n1, n2, edge in G.edges(data=True):
@@ -228,7 +234,8 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
             existing_edge = G[rn1][rn2]
             # Also sanity check that it is the min length value
             if not existing_edge['length'] == min_length:
-                raise ValueError('Edge should have had minimum length of '
+                raise ValueError(
+                    'Edge should have had minimum length of '
                     '{}, but instead had value of {}'.format(min_length))
 
         # If this happens, then this is the first time this edge
