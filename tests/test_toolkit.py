@@ -115,4 +115,5 @@ def test_simplify_graph():
     assert edge_30['mode'] == 'transit'
 
     # And make sure the geometry is compose of the same node count
+    print(edge_30)
     assert len(edge_30['geometry'].coords.xy[0]) == 4
