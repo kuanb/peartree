@@ -1,7 +1,8 @@
+import os
+
 import networkx as nx
 import pytest
-
-from peartree.paths import get_representative_feed
+from peartree.paths import get_representative_feed, load_feed_as_graph
 from peartree.toolkit import coalesce, reproject, simplify_graph
 
 
@@ -106,10 +107,10 @@ def test_simplify_graph():
     # Run simplification
     Gs = simplify_graph(G)
 
-    assert len(Gs2.nodes()) == 347
-    assert len(Gs2.edges()) == 559
+    assert len(Gs.nodes()) == 347
+    assert len(Gs.edges()) == 559
 
-    (e30_fr, e30_to, edge_30) = list(Gs2.edges(data=True))[30]
+    (e30_fr, e30_to, edge_30) = list(Gs.edges(data=True))[30]
     assert edge_30['length'] == 120.0
     assert edge_30['mode'] == 'transit'
 
