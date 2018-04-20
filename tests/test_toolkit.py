@@ -1,6 +1,13 @@
+import os
+
 import networkx as nx
 import pytest
-from peartree.toolkit import coalesce, reproject
+from peartree.paths import get_representative_feed, load_feed_as_graph
+from peartree.toolkit import coalesce, reproject, simplify_graph
+
+
+def fixture(filename):
+    return os.path.join(os.path.dirname(__file__), 'fixtures', filename)
 
 
 def _dict_equal(got, want):
@@ -87,3 +94,22 @@ def test_coalesce_operation():
 
     # Make sure that the one edge came out as expected
     assert _dict_equal(all_edges[0][2], {'length': 10, 'mode': 'transit'})
+
+
+def test_simplify_graph():
+    path = fixture('samtrans-2017-11-28.zip')
+    feed = get_representative_feed(path)
+
+    # Shorter amount of time to speed up the test
+    start = 7 * 60 * 60
+    end = 8 * 60 * 60
+    G = load_feed_as_graph(feed, start, end)
+
+    # Run simplification
+    Gs = simplify_graph(G)
+
+    # TODO: We have this ongoing issue where we can't
+    #       consistently test by index for edges, so we need
+    #       to figure out _how_ to test for a specific edge
+    assert len(Gs.nodes()) == 298
+    assert len(Gs.edges()) == 466
