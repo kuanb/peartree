@@ -7,7 +7,9 @@ import networkx as nx
 import numpy as np
 import osmnx as ox
 import pandas as pd
-from shapely.geometry import Point
+from shapely.geometry import LineString, Point
+
+from .utilities import log
 
 
 def great_circle_vec(lat1: float,
@@ -269,4 +271,107 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         for key in node:
             G.nodes[i][key] = node[key]
 
+    return G
+
+
+def _path_has_consistent_mode_type(G, path):
+    # Makes sure that no mixed transit+walk network components
+    # made it through the get_paths... method - we do not want to
+    # mix modes during the simplification process
+    path_modes = []
+    for u, v in zip(path[:-1], path[1:]):
+        edge_count = G.number_of_edges(u, v)
+        for i in range(edge_count):
+            edge = G.edges[u, v, i]
+            path_modes.append(edge['mode'])
+    path_clear = all(x == path_modes[0] for x in path_modes)
+    return path_clear
+
+
+def simplify_graph(G_orig: nx.MultiDiGraph) -> nx.MultiDiGraph:
+    # Note: This operation borrows heavily from the operation of 
+    #       the same name in OSMnx, as it existed in this state/commit:
+    #       github.com/gboeing/osmnx/blob/
+    #       c5916aab5c9b94c951c8fb1964c841899c9467f8/osmnx/simplify.py
+    #       Function on line 203
+    
+    # Prevent upstream mutation, always copy
+    G = G_orig.copy()
+    
+    # Take some statistics for logging changes later
+    initial_node_count = len(list(G.nodes()))
+    initial_edge_count = len(list(G.edges()))
+    
+    # Used to track updates to execute
+    all_nodes_to_remove = []
+    all_edges_to_add = []
+
+    # TODO: Improve this method to not produce any mixed mode path
+    #       removal proposals
+    # Utilize the recursive function from OSMnx that identifies paths based
+    # on isolated successor nodes
+    paths = ox.simplify.get_paths_to_simplify(G)
+
+    # Iterate through the resulting path arrays to target
+    for path in paths:
+        # If the path is not all one mode of travel, skip the
+        # proposed simplification
+        if not _path_has_consistent_mode_type(G, path):
+            continue
+        
+        # Keep track of the edges to be removed so we can
+        # assemble a LineString geometry with all of them
+        edge_attributes = {}
+        
+        # Work from the last edge through, "wrapped around," to the beginning
+        for u, v in zip(path[:-1], path[1:]):
+            # Should not be multiple edges between interstitial nodes
+            only_one_edge = G.number_of_edges(u, v) == 1
+            if not only_one_edge:
+                log(('Multiple edges between "{}" and "{}" '
+                     'found when simplifying').format(u, v))
+
+            # We ask for the 0th edge as we assume there is only one
+            edge = G.edges[u, v, 0]
+            for key in edge:
+                if key in edge_attributes:
+                    # If key already exists in dict, append
+                    edge_attributes[key].append(edge[key])
+                else:
+                    # Otherwise, initialize a list
+                    edge_attributes[key] = [edge[key]]
+
+        # Note: In peartree, we opt to not preserve any other elements;
+        #       we only keep length, mode and - in the case of simplified
+        #       geometries - the shape of the simplified route
+        edge_attributes['mode'] = edge_attributes['mode'][0]
+        edge_attributes['length'] = sum(edge_attributes['length'])
+
+        # Construct the geometry from the points array
+        points_array = []
+        for node in path:
+            p = Point((G.nodes[node]['x'], G.nodes[node]['y']))
+            points_array.append(p)
+        edge_attributes['geometry'] = LineString(points_array)
+
+        # Add nodes and edges to respective lists for processing
+        all_nodes_to_remove.extend(path[1:-1])
+        all_edges_to_add.append({'origin':path[0],
+                                 'destination':path[-1],
+                                 'attr_dict': edge_attributes})
+
+    # For each edge to add in the list we assembled, create a new edge between
+    # the origin and destination
+    for edge in all_edges_to_add:
+        G.add_edge(edge['origin'], edge['destination'], **edge['attr_dict'])
+
+    # Remove all the interstitial nodes between the new edges, which will also
+    # knock out the related edges from the graph
+    G.remove_nodes_from(set(all_nodes_to_remove))
+
+    log(('Simplified graph (from {:,} to {:,} nodes and from {:,} to {:,} '
+         'edges)').format(initial_node_count,
+                          len(list(G.nodes())),
+                          initial_edge_count,
+                          len(list(G.edges()))))
     return G
