@@ -1,6 +1,12 @@
 import networkx as nx
 import pytest
-from peartree.toolkit import coalesce, reproject
+
+from peartree.paths import get_representative_feed
+from peartree.toolkit import coalesce, reproject, simplify_graph
+
+
+def fixture(filename):
+    return os.path.join(os.path.dirname(__file__), 'fixtures', filename)
 
 
 def _dict_equal(got, want):
@@ -87,3 +93,25 @@ def test_coalesce_operation():
 
     # Make sure that the one edge came out as expected
     assert _dict_equal(all_edges[0][2], {'length': 10, 'mode': 'transit'})
+
+
+def test_simplify_graph():
+    path = fixture('samtrans-2017-11-28.zip')
+    feed = get_representative_feed(path)
+
+    start = 7 * 60 * 60
+    end = 10 * 60 * 60
+    G = load_feed_as_graph(feed, start, end)
+
+    # Run simplification
+    Gs = simplify_graph(G)
+
+    assert len(Gs2.nodes()) == 347
+    assert len(Gs2.edges()) == 559
+
+    (e30_fr, e30_to, edge_30) = list(Gs2.edges(data=True))[30]
+    assert edge_30['length'] == 120.0
+    assert edge_30['mode'] == 'transit'
+
+    # And make sure the geometry is compose of the same node count
+    assert len(edge_30['geometry'].coords.xy[0]) == 4
