@@ -289,19 +289,15 @@ def _path_has_consistent_mode_type(G, path):
 
 
 def simplify_graph(G_orig: nx.MultiDiGraph) -> nx.MultiDiGraph:
-    # Note: This operation borrows heavily from the operation of 
+    # Note: This operation borrows heavily from the operation of
     #       the same name in OSMnx, as it existed in this state/commit:
     #       github.com/gboeing/osmnx/blob/
     #       c5916aab5c9b94c951c8fb1964c841899c9467f8/osmnx/simplify.py
     #       Function on line 203
-    
+
     # Prevent upstream mutation, always copy
     G = G_orig.copy()
-    
-    # Take some statistics for logging changes later
-    initial_node_count = len(list(G.nodes()))
-    initial_edge_count = len(list(G.edges()))
-    
+
     # Used to track updates to execute
     all_nodes_to_remove = []
     all_edges_to_add = []
@@ -318,11 +314,11 @@ def simplify_graph(G_orig: nx.MultiDiGraph) -> nx.MultiDiGraph:
         # proposed simplification
         if not _path_has_consistent_mode_type(G, path):
             continue
-        
+
         # Keep track of the edges to be removed so we can
         # assemble a LineString geometry with all of them
         edge_attributes = {}
-        
+
         # Work from the last edge through, "wrapped around," to the beginning
         for u, v in zip(path[:-1], path[1:]):
             # Should not be multiple edges between interstitial nodes
@@ -356,8 +352,8 @@ def simplify_graph(G_orig: nx.MultiDiGraph) -> nx.MultiDiGraph:
 
         # Add nodes and edges to respective lists for processing
         all_nodes_to_remove.extend(path[1:-1])
-        all_edges_to_add.append({'origin':path[0],
-                                 'destination':path[-1],
+        all_edges_to_add.append({'origin': path[0],
+                                 'destination': path[-1],
                                  'attr_dict': edge_attributes})
 
     # For each edge to add in the list we assembled, create a new edge between
@@ -368,10 +364,4 @@ def simplify_graph(G_orig: nx.MultiDiGraph) -> nx.MultiDiGraph:
     # Remove all the interstitial nodes between the new edges, which will also
     # knock out the related edges from the graph
     G.remove_nodes_from(set(all_nodes_to_remove))
-
-    log(('Simplified graph (from {:,} to {:,} nodes and from {:,} to {:,} '
-         'edges)').format(initial_node_count,
-                          len(list(G.nodes())),
-                          initial_edge_count,
-                          len(list(G.edges()))))
     return G
