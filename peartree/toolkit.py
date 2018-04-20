@@ -306,10 +306,10 @@ def simplify_graph(G_orig: nx.MultiDiGraph) -> nx.MultiDiGraph:
     #       removal proposals
     # Utilize the recursive function from OSMnx that identifies paths based
     # on isolated successor nodes
-    paths = ox.simplify.get_paths_to_simplify(G)
+    paths_to_consider = ox.simplify.get_paths_to_simplify(G)
 
     # Iterate through the resulting path arrays to target
-    for path in paths:
+    for path in paths_to_consider:
         # If the path is not all one mode of travel, skip the
         # proposed simplification
         if not _path_has_consistent_mode_type(G, path):
