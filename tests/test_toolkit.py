@@ -100,20 +100,16 @@ def test_simplify_graph():
     path = fixture('samtrans-2017-11-28.zip')
     feed = get_representative_feed(path)
 
+    # Shorter amount of time to speed up the test
     start = 7 * 60 * 60
-    end = 10 * 60 * 60
+    end = 8 * 60 * 60
     G = load_feed_as_graph(feed, start, end)
 
     # Run simplification
     Gs = simplify_graph(G)
 
-    assert len(Gs.nodes()) == 347
-    assert len(Gs.edges()) == 559
-
-    (e30_fr, e30_to, edge_30) = list(Gs.edges(data=True))[30]
-    assert edge_30['length'] == 120.0
-    assert edge_30['mode'] == 'transit'
-
-    # And make sure the geometry is compose of the same node count
-    print(edge_30)
-    assert len(edge_30['geometry'].coords.xy[0]) == 4
+    # TODO: We have this ongoing issue where we can't
+    #       consistently test by index for edges, so we need
+    #       to figure out _how_ to test for a specific edge
+    assert len(Gs.nodes()) == 298
+    assert len(Gs.edges()) == 466
