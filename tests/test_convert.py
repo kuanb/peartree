@@ -1,5 +1,6 @@
 import os
 
+import networkx as nx
 from peartree.paths import get_representative_feed, load_feed_as_graph
 from peartree.convert import convert_to_digraph
 
