@@ -54,7 +54,7 @@ def test_feed_to_graph_plot():
 
 def test_coalesce_operation():
     # Create a simple graph
-    G = nx.Graph(crs={'init': 'epsg:4326', 'no_defs': True}, name='foo')
+    G = nx.MultiDiGraph(crs={'init': 'epsg:4326', 'no_defs': True}, name='foo')
 
     # And add two nodes to it
     G.add_node('a', x=-122.2729918, y=37.7688136, boarding_cost=10)
@@ -76,9 +76,7 @@ def test_coalesce_operation():
     G.add_edge('a', 'b_alt', length=10, mode='transit')
 
     G2 = reproject(G)
-
     G2c = coalesce(G2, 200)
-    G2c.nodes(data=True), G2c.edges(data=True)
 
     # Same akward situation as before, where edges are returned in
     # different order between Py 3.5 and 3.6
@@ -90,7 +88,7 @@ def test_coalesce_operation():
         assert (a or b)
 
     all_edges = list(G2c.edges(data=True))
-    assert len(all_edges) == 1
+    assert len(all_edges) == 2
 
     # Make sure that the one edge came out as expected
     assert _dict_equal(all_edges[0][2], {'length': 10, 'mode': 'transit'})

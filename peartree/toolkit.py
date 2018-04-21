@@ -149,9 +149,18 @@ def reproject(G: nx.MultiDiGraph, to_epsg: int=2163) -> nx.MultiDiGraph:
     return G
 
 
-def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
+def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
+    # Make sure our resolution satisfies basic requirement
+    if resolution < 1:
+        raise ValueError('Resolution parameters must be >= 1')
+
     # Avoid upstream mutation of the graph
-    G = G.copy()
+    G = G_orig.copy()
+
+    # Before we continue, attempt to simplfy the current network
+    # such that we won't generate isolated nodes that become disconnected
+    # from key coalesced nodes (because too many intermediary nodes)
+    G = simplify_graph(G)
 
     # Extract all x, y values
     grouped = {}
@@ -179,8 +188,14 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         for y in grouped[x]:
             new_node_name = '{}_{}'.format(G.name, counter)
             new_node_coords[new_node_name] = {'x': x, 'y': y}
+
+            # Pair each newly generate name to the original node id,
+            # preserved from the original groupings resulting array
             for n in grouped[x][y]:
                 lookup[n] = new_node_name
+
+            # Update the counter so each new synthetic
+            # node name will be different
             counter += 1
 
     # Recast the lookup crosswalk as a series for convenience
@@ -188,18 +203,28 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
 
     # Get the average boarding cost for each node grouping
     for nni in new_node_coords:
+        # Initialize an empty list
         boarding_costs = []
+
+        # Get all original nodes that have been grouped
         g_nodes = reference.loc[reference == nni].index.values
+
+        # Iterate through and add gather costs
         for i in g_nodes:
             bc = G.nodes[i]['boarding_cost']
             boarding_costs.append(bc)
+
+        # Calculate the mean of the boarding costs
         avg_bc = np.array(boarding_costs).mean()
+
+        # And assign it to the new nodes objects
         new_node_coords[nni]['boarding_cost'] = avg_bc
 
     # First step to creating a list of replacement edges
     replacement_edges_fr = []
     replacement_edges_to = []
     replacement_edges_len = []
+
     for n1, n2, edge in G.edges(data=True):
         # This will be used to parse out which edges to keep
         replacement_edges_fr.append(reference[n1])
