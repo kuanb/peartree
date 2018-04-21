@@ -8,6 +8,8 @@ from .graph import (generate_empty_md_graph, generate_summary_graph_elements,
 from .toolkit import generate_random_name
 from .utilities import log
 
+FALLBACK_STOP_COST_DEFAULT = (30 * 60)  # 30 minutes, converted to seconds
+
 
 class InvalidGTFS(Exception):
     # Let's have a custom exception for when we read in GTFS files
@@ -58,7 +60,8 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                        walk_speed_kmph: float=4.5,
                        interpolate_times: bool=True,
                        impute_walk_transfers: bool=False,
-                       use_multiprocessing: bool=False):
+                       use_multiprocessing: bool=False,
+                       fallback_stop_cost: bool=FALLBACK_STOP_COST_DEFAULT):
     """
     Convert a feed object into a NetworkX Graph, connect to an existing
     NetworkX graph if one is supplied
@@ -125,7 +128,8 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                                                            start_time,
                                                            end_time,
                                                            interpolate_times,
-                                                           use_multiprocessing)
+                                                           use_multiprocessing,
+                                                           fallback_stop_cost)
 
     # This is a flag used to check if we need to run any additional steps
     # after the feed is returned to ensure that new nodes and edge can connect

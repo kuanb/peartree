@@ -35,7 +35,8 @@ def generate_summary_graph_elements(feed: ptg.gtfs.feed,
                                     target_time_start: int,
                                     target_time_end: int,
                                     interpolate_times: bool,
-                                    use_multiprocessing: bool):
+                                    use_multiprocessing: bool,
+                                    fallback_stop_cost: float):
     (all_edge_costs,
      all_wait_times) = generate_edge_and_wait_values(feed,
                                                      target_time_start,
@@ -52,7 +53,8 @@ def generate_summary_graph_elements(feed: ptg.gtfs.feed,
                                          'valid wait times from feed object.')
 
     summary_edge_costs = generate_summary_edge_costs(all_edge_costs)
-    wait_times_by_stop = generate_summary_wait_times(all_wait_times)
+    wait_times_by_stop = generate_summary_wait_times(all_wait_times,
+                                                     fallback_stop_cost)
 
     return (summary_edge_costs, wait_times_by_stop)
 
