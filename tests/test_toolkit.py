@@ -103,7 +103,7 @@ def test_simplify_graph():
     # Shorter amount of time to speed up the test
     start = 7 * 60 * 60
     end = 8 * 60 * 60
-    G = load_feed_as_graph(feed, start, end)
+    G = load_feed_as_graph(feed, start, end, name='foobar')
 
     # Run simplification
     Gs = simplify_graph(G)
@@ -113,3 +113,24 @@ def test_simplify_graph():
     #       to figure out _how_ to test for a specific edge
     assert len(Gs.nodes()) == 298
     assert len(Gs.edges()) == 466
+
+    # Pull out a summary list of edges as dicts
+    all_es = []
+    for e_fr, e_to, edge in Gs.edges(data=True):
+        edge['from'] = e_fr
+        edge['to'] = e_to
+
+        # Let's just look at those that have a larger
+        # length associated with them and were coalesced from
+        # other internal ways (so a geometry object is present)
+        if edge['length'] > 110 and 'geometry' in edge.keys():
+            all_es.append(edge)
+
+    # Sort the list and pull the max out, where max is determined
+    # based on the number of coordinates in the LineString
+    target_edge = max(all_es, key=lambda x: len(x['geometry'].coords.xy[0]))
+    assert target_edge['length'] == 5114.0
+    assert target_edge['mode'] == 'transit'
+    assert target_edge['from'] == 'foobar_351008'
+    assert target_edge['to'] == 'foobar_334008'
+    assert len(target_edge['geometry'].coords.xy[0]) == 49
