@@ -148,8 +148,8 @@ def generate_summary_wait_times(df: pd.DataFrame) -> pd.DataFrame:
         a = set(list(init_of_stop_ids))
         b = set(list(end_of_stop_ids))
         unresolved_ids = list(a - b)
-        log('Some unaccounted for stop '
-            'ids. Resolving {}...'.format(len(unresolved_ids)))
+        log('Some unaccounted for stop ids. '
+            'Resolving {}...'.format(len(unresolved_ids)))
 
         # TODO: Perhaps these are start/end stops and should adopt
         #       a cost that is "average" for that route?
