@@ -215,6 +215,7 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     replacement_edges_fr = []
     replacement_edges_to = []
     replacement_edges_len = []
+    
     for n1, n2, edge in G.edges(data=True):
         # This will be used to parse out which edges to keep
         replacement_edges_fr.append(reference[n1])
