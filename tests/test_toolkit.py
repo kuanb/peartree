@@ -76,7 +76,6 @@ def test_coalesce_operation():
     G.add_edge('a', 'b_alt', length=10, mode='transit')
 
     G2 = reproject(G)
-
     G2c = coalesce(G2, 200)
 
     # Same akward situation as before, where edges are returned in
