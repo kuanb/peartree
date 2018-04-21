@@ -3,7 +3,7 @@ import collections
 import networkx as nx
 
 
-def convert_to_digraph(G_orig: nx.MultiDiGraph) -> nx.MultiDiGraph:
+def convert_to_digraph(G_orig: nx.MultiDiGraph) -> nx.DiGraph:
     # Prevent upstream impacts
     G = G_orig.copy()
 
