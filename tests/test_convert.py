@@ -1,7 +1,7 @@
 import os
 
 from peartree.paths import get_representative_feed, load_feed_as_graph
-from peartree.convert import coalesce, reproject, simplify_graph
+from peartree.convert import convert_to_digraph
 
 
 def fixture(filename):
