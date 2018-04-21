@@ -150,6 +150,10 @@ def reproject(G: nx.MultiDiGraph, to_epsg: int=2163) -> nx.MultiDiGraph:
 
 
 def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
+    # Make sure our resolution satisfies basic requirement
+    if resolution < 1:
+        raise ValueError('Resolution parameters must be >= 1')
+
     # Avoid upstream mutation of the graph
     G = G.copy()
 
