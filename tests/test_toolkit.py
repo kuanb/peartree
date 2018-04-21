@@ -78,7 +78,6 @@ def test_coalesce_operation():
     G2 = reproject(G)
 
     G2c = coalesce(G2, 200)
-    G2c.nodes(data=True), G2c.edges(data=True)
 
     # Same akward situation as before, where edges are returned in
     # different order between Py 3.5 and 3.6
