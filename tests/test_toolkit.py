@@ -54,7 +54,7 @@ def test_feed_to_graph_plot():
 
 def test_coalesce_operation():
     # Create a simple graph
-    G = nx.Graph(crs={'init': 'epsg:4326', 'no_defs': True}, name='foo')
+    G = nx.MultiDiGraph(crs={'init': 'epsg:4326', 'no_defs': True}, name='foo')
 
     # And add two nodes to it
     G.add_node('a', x=-122.2729918, y=37.7688136, boarding_cost=10)
