@@ -157,6 +157,11 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Avoid upstream mutation of the graph
     G = G.copy()
 
+    # Before we continue, attempt to simplfy the current network
+    # such that we won't generate isolated nodes that become disconnected
+    # from key coalesced nodes (because too many intermediary nodes)
+    G = simplify_graph(G)
+
     # Extract all x, y values
     grouped = {}
     for i, node in G.nodes(data=True):
@@ -219,7 +224,7 @@ def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     replacement_edges_fr = []
     replacement_edges_to = []
     replacement_edges_len = []
-    
+
     for n1, n2, edge in G.edges(data=True):
         # This will be used to parse out which edges to keep
         replacement_edges_fr.append(reference[n1])
