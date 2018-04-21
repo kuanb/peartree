@@ -149,13 +149,13 @@ def reproject(G: nx.MultiDiGraph, to_epsg: int=2163) -> nx.MultiDiGraph:
     return G
 
 
-def coalesce(G: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
+def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Make sure our resolution satisfies basic requirement
     if resolution < 1:
         raise ValueError('Resolution parameters must be >= 1')
 
     # Avoid upstream mutation of the graph
-    G = G.copy()
+    G = G_orig.copy()
 
     # Before we continue, attempt to simplfy the current network
     # such that we won't generate isolated nodes that become disconnected
