@@ -88,7 +88,7 @@ def test_coalesce_operation():
         assert (a or b)
 
     all_edges = list(G2c.edges(data=True))
-    assert len(all_edges) == 1
+    assert len(all_edges) == 2
 
     # Make sure that the one edge came out as expected
     assert _dict_equal(all_edges[0][2], {'length': 10, 'mode': 'transit'})
