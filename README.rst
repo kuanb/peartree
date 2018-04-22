@@ -2,6 +2,9 @@
 Peartree 🍐🌳
 =============
 
+.. image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
+        :target: https://gitter.im/peartree_transit
+
 .. image:: https://img.shields.io/pypi/v/peartree.svg
         :target: https://pypi.python.org/pypi/peartree
 
