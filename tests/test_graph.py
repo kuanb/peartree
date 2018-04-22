@@ -2,7 +2,7 @@ import os
 
 from peartree.graph import (generate_empty_md_graph,
                             generate_summary_graph_elements)
-from peartree.paths import get_representative_feed
+from peartree.paths import FALLBACK_STOP_COST_DEFAULT, get_representative_feed
 
 
 def fixture(filename):
@@ -30,6 +30,7 @@ def test_generate_summary_graph_elements():
             feed_1,
             start,
             end,
+            FALLBACK_STOP_COST_DEFAULT,
             interpolate_times,
             use_multiprocessing)
 

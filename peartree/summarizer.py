@@ -70,7 +70,9 @@ def summarize_waits_at_one_stop(stop_df: pd.DataFrame) -> float:
     return calculated
 
 
-def generate_summary_wait_times(df: pd.DataFrame) -> pd.DataFrame:
+def generate_summary_wait_times(
+        df: pd.DataFrame,
+        fallback_stop_cost: float) -> pd.DataFrame:
     df_sub = df[['stop_id',
                  'wait_dir_0',
                  'wait_dir_1']].reset_index(drop=True)
@@ -148,8 +150,8 @@ def generate_summary_wait_times(df: pd.DataFrame) -> pd.DataFrame:
         a = set(list(init_of_stop_ids))
         b = set(list(end_of_stop_ids))
         unresolved_ids = list(a - b)
-        log('Some unaccounted for stop '
-            'ids. Resolving {}...'.format(len(unresolved_ids)))
+        log('Some unaccounted for stop ids. '
+            'Resolving {}...'.format(len(unresolved_ids)))
 
         # TODO: Perhaps these are start/end stops and should adopt
         #       a cost that is "average" for that route?
@@ -161,7 +163,7 @@ def generate_summary_wait_times(df: pd.DataFrame) -> pd.DataFrame:
         acst = list(summed_reset.avg_cost)
         for i in unresolved_ids:
             sids.append(i)
-            acst.append(30 * 60)  # 30 minutes, converted to seconds
+            acst.append(fallback_stop_cost)
 
         # Rebuild the dataframe
         summed_reset = pd.DataFrame({'stop_id': sids, 'avg_cost': acst})

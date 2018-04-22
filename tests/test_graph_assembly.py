@@ -2,7 +2,7 @@ import os
 from time import time
 
 from peartree.graph import generate_empty_md_graph, populate_graph
-from peartree.paths import get_representative_feed
+from peartree.paths import FALLBACK_STOP_COST_DEFAULT, get_representative_feed
 from peartree.summarizer import (generate_edge_and_wait_values,
                                  generate_summary_edge_costs,
                                  generate_summary_wait_times)
@@ -48,7 +48,8 @@ def test_feed_to_graph_performance():
     print('Perf of generate_summary_edge_costs: {}s'.format(elapsed))
 
     a = time()
-    wait_times_by_stop = generate_summary_wait_times(all_wait_times)
+    wait_times_by_stop = generate_summary_wait_times(
+        all_wait_times, FALLBACK_STOP_COST_DEFAULT)
     elapsed = round(time() - a, 2)
     print('Perf of generate_summary_wait_times: {}s'.format(elapsed))
 

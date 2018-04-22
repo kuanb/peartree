@@ -8,6 +8,8 @@ from .graph import (generate_empty_md_graph, generate_summary_graph_elements,
 from .toolkit import generate_random_name
 from .utilities import log
 
+FALLBACK_STOP_COST_DEFAULT = (30 * 60)  # 30 minutes, converted to seconds
+
 
 class InvalidGTFS(Exception):
     # Let's have a custom exception for when we read in GTFS files
@@ -56,6 +58,7 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                        existing_graph: nx.MultiDiGraph=None,
                        connection_threshold: float=50.0,
                        walk_speed_kmph: float=4.5,
+                       fallback_stop_cost: bool=FALLBACK_STOP_COST_DEFAULT,
                        interpolate_times: bool=True,
                        impute_walk_transfers: bool=False,
                        use_multiprocessing: bool=False):
@@ -90,6 +93,11 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
     walk_speed_kmph : float
         Walk speed in km/h, that is used to determine the cost in time when
         walking between two nodes that get an internal connection created
+    fallback_stop_cost: bool
+        Cost in seconds to board a line at a stop if no other data is able
+        to be calculated from schedule data for that stop to determine
+        what wait time is. Example of this situation would be when
+        there is only one scheduled stop time found for the stop id.
     interpolate_times : bool
         A boolean flag to indicate whether or not to infill intermediary stops
         that do not have all intermediary stop arrival times specified in the
@@ -124,6 +132,7 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
      wait_times_by_stop) = generate_summary_graph_elements(feed,
                                                            start_time,
                                                            end_time,
+                                                           fallback_stop_cost,
                                                            interpolate_times,
                                                            use_multiprocessing)
 
