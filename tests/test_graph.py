@@ -22,6 +22,7 @@ def test_generate_summary_graph_elements():
     start = 7 * 60 * 60
     end = 10 * 60 * 60
     interpolate_times = True
+    fallback_stop_cost = 30 * 60
 
     # Make sure everything works the same with both multiprocessing on/off
     for use_multiprocessing in [True, False]:
@@ -31,7 +32,8 @@ def test_generate_summary_graph_elements():
             start,
             end,
             interpolate_times,
-            use_multiprocessing)
+            use_multiprocessing,
+            fallback_stop_cost)
 
         # Ensure that the summary edge cost dataframe looks as it should
         ec_cols = ['edge_cost', 'from_stop_id', 'to_stop_id']
