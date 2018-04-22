@@ -1,6 +1,14 @@
 History
 =======
 
+0.4.0 (2018-04-22)
+------------------
+
+* Refactor map operation for multiprocessing pool
+* MultiDiGraph to DiGraph converter
+* Simplify graph method
+* Refactor of coalesce to deal with lost edges problem
+
 0.3.0 (2018-04-01)
 ------------------
 
