@@ -34,9 +34,9 @@ def nameify_stop_id(name, sid):
 def generate_summary_graph_elements(feed: ptg.gtfs.feed,
                                     target_time_start: int,
                                     target_time_end: int,
+                                    fallback_stop_cost: float,
                                     interpolate_times: bool,
-                                    use_multiprocessing: bool,
-                                    fallback_stop_cost: float):
+                                    use_multiprocessing: bool):
     (all_edge_costs,
      all_wait_times) = generate_edge_and_wait_values(feed,
                                                      target_time_start,
