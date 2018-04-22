@@ -2,7 +2,7 @@ import os
 
 from peartree.graph import (generate_empty_md_graph,
                             generate_summary_graph_elements)
-from peartree.paths import get_representative_feed
+from peartree.paths import FALLBACK_STOP_COST_DEFAULT, get_representative_feed
 
 
 def fixture(filename):
@@ -22,7 +22,6 @@ def test_generate_summary_graph_elements():
     start = 7 * 60 * 60
     end = 10 * 60 * 60
     interpolate_times = True
-    fallback_stop_cost = 30 * 60
 
     # Make sure everything works the same with both multiprocessing on/off
     for use_multiprocessing in [True, False]:
@@ -31,7 +30,7 @@ def test_generate_summary_graph_elements():
             feed_1,
             start,
             end,
-            fallback_stop_cost,
+            FALLBACK_STOP_COST_DEFAULT,
             interpolate_times,
             use_multiprocessing)
 
