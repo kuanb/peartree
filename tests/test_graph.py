@@ -31,9 +31,9 @@ def test_generate_summary_graph_elements():
             feed_1,
             start,
             end,
+            fallback_stop_cost,
             interpolate_times,
-            use_multiprocessing,
-            fallback_stop_cost)
+            use_multiprocessing)
 
         # Ensure that the summary edge cost dataframe looks as it should
         ec_cols = ['edge_cost', 'from_stop_id', 'to_stop_id']
