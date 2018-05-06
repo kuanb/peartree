@@ -27,5 +27,6 @@ install-graph-tool:
 	apt-get install python3-graph-tool
 
 pypi-release:
+	if [ -d dist ]; then rm -Rf dist; fi
 	python setup.py bdist_wheel
 	twine upload dist/*
