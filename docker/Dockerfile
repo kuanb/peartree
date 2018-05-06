@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
       nano \
       unzip \
       vim \
+      htop \
       gcc \
       libgeos-dev \
       zlib1g-dev && \
