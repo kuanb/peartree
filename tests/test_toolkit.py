@@ -114,7 +114,7 @@ def test_simplify_graph():
     #       consistently test by index for edges, so we need
     #       to figure out _how_ to test for a specific edge
     assert len(Gs.nodes()) == 298
-    assert len(Gs.edges()) == 466
+    assert len(Gs.edges()) == 451
 
     # Pull out a summary list of edges as dicts
     all_es = []
