@@ -24,8 +24,11 @@ class RouteProcessor(object):
         # Initialize common parameters
         self.target_time_start = target_time_start
         self.target_time_end = target_time_end
-        self.trips = feed_trips.copy()
         self.stop_times = stop_times.copy()
+
+        # We use route_id as the index to ensure that subselection by
+        # route_id from target_route_ids more performant
+        self.trips = feed_trips.copy().set_index('route_id', drop=False)
 
         # Ensure that stop_ids are cast as string
         astops = all_stops.copy()
