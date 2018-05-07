@@ -82,9 +82,13 @@ def test_coalesce_operation():
     # different order between Py 3.5 and 3.6
     for i, node in G2c.nodes(data=True):
         a = _dict_equal(node, {
-            'x': -1933000, 'y': -543000, 'boarding_cost': 10.0})
+            'x': -1933000,
+            'y': -543000,
+            'boarding_cost': 10.0})
         b = _dict_equal(node, {
-            'x': -1932800, 'y': -543400, 'boarding_cost': 13.5})
+            'x': -1932800,
+            'y': -543400,
+            'boarding_cost': 13.5})
         assert (a or b)
 
     all_edges = list(G2c.edges(data=True))
