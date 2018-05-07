@@ -226,7 +226,6 @@ def generate_edge_and_wait_values(
     # Initialize the trips dataframe to be worked with
     ftrips = feed.trips.copy()
     ftrips = ftrips[~ftrips['route_id'].isnull()]
-    ftrips = ftrips.set_index('route_id', drop=False)
 
     # Flags whether we interpolate intermediary stops or not
     if interpolate_times:

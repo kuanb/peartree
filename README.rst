@@ -57,7 +57,7 @@ Examples
 
 I've yet to produce a full how-to guide for this library, but will begin to populate this section with any blog posts or notebooks that I or others produce, that include workflows using Peartree.
 
-`Calcualting betweeness centrality with Brooklyn bus network <http://kuanbutts.com/2017/12/13/betweenness-centrality-peartree/>`_
+`Calculating betweeness centrality with Brooklyn bus network <http://kuanbutts.com/2017/12/13/betweenness-centrality-peartree/>`_
 
 `Generating comparative acyclic route graphs <http://kuanbutts.com/2018/03/15/comparative-routes-mpl/>`_
 

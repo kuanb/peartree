@@ -44,13 +44,8 @@ def generate_summary_graph_elements(feed: ptg.gtfs.feed,
                                                      interpolate_times,
                                                      use_multiprocessing)
 
-    # Handle if there are no valid edges returned (or wait times)
-    if all_edge_costs is None or len(all_edge_costs) == 0:
-        raise InsufficientSummaryResults('The target time frame returned no '
-                                         'valid edge costs from feed object.')
-    if all_wait_times is None or len(all_wait_times) == 0:
-        raise InsufficientSummaryResults('The target time frame returned no '
-                                         'valid wait times from feed object.')
+    # Same sanity checks on the output before we continue
+    _verify_outputs(all_edge_costs, all_wait_times)
 
     summary_edge_costs = generate_summary_edge_costs(all_edge_costs)
     wait_times_by_stop = generate_summary_wait_times(all_wait_times,
@@ -106,6 +101,17 @@ def generate_cross_feed_edges(G: nx.MultiDiGraph,
     return pd.DataFrame({'stop_id': stop_ids,
                          'to_node': to_nodes,
                          'distance': edge_costs})
+
+
+def _verify_outputs(all_edge_costs: pd.DataFrame,
+                    all_wait_times: pd.DataFrame) -> None:
+    # Handle if there are no valid edges returned (or wait times)
+    if all_edge_costs is None or len(all_edge_costs) == 0:
+        raise InsufficientSummaryResults('The target time frame returned no '
+                                         'valid edge costs from feed object.')
+    if all_wait_times is None or len(all_wait_times) == 0:
+        raise InsufficientSummaryResults('The target time frame returned no '
+                                         'valid wait times from feed object.')
 
 
 def _merge_stop_waits_and_attributes(wait_times_by_stop: pd.DataFrame,

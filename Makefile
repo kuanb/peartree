@@ -19,11 +19,17 @@ cprofile:
 	python -m cProfile -o performance/cprof-output.py performance/run_etl.py
 	snakeviz performance/cprof-output.py
 
+install-graph-viz:
+	apt-get udpate && \
+	apt-get install xdg-utils && \
+	apt-get install graphviz && \
+	pip install pygraphviz
+
 install-graph-tool:
 	sed -i -e '$$a\
 	deb http://downloads.skewed.de/apt/stretch stretch main\
 	deb-src http://downloads.skewed.de/apt/stretch stretch main' /etc/apt/sources.list && \
-	apt-get update && \
+	apt-get udpate && \
 	apt-get install python3-graph-tool
 
 pypi-release:
