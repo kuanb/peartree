@@ -82,13 +82,17 @@ def test_coalesce_operation():
     # different order between Py 3.5 and 3.6
     for i, node in G2c.nodes(data=True):
         a = _dict_equal(node, {
-            'x': -1933000, 'y': -543000, 'boarding_cost': 10.0})
+            'x': -1933000,
+            'y': -543000,
+            'boarding_cost': 10.0})
         b = _dict_equal(node, {
-            'x': -1932800, 'y': -543400, 'boarding_cost': 13.5})
+            'x': -1932800,
+            'y': -543400,
+            'boarding_cost': 13.5})
         assert (a or b)
 
     all_edges = list(G2c.edges(data=True))
-    assert len(all_edges) == 2
+    assert len(all_edges) == 1
 
     # Make sure that the one edge came out as expected
     assert _dict_equal(all_edges[0][2], {'length': 10, 'mode': 'transit'})
@@ -110,7 +114,7 @@ def test_simplify_graph():
     #       consistently test by index for edges, so we need
     #       to figure out _how_ to test for a specific edge
     assert len(Gs.nodes()) == 298
-    assert len(Gs.edges()) == 466
+    assert len(Gs.edges()) == 451
 
     # Pull out a summary list of edges as dicts
     all_es = []
