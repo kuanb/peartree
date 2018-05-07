@@ -22,7 +22,7 @@ class InvalidTimeBracket(Exception):
 
 def get_representative_feed(file_loc: str,
                             day_type: str='busiest'):
-
+    # Extract service ids and then trip counts by those dates
     service_ids_by_date = ptg.read_service_ids_by_date(file_loc)
     trip_counts_by_date = ptg.read_trip_counts_by_date(file_loc)
 
@@ -35,6 +35,7 @@ def get_representative_feed(file_loc: str,
     # At this point, different methods can be implemented to help select how
     # to pick which date/schedule id to use
     if day_type == 'busiest':
+        # Choose the service id that has the most trips associated with it
         (selected_date,
          trip_count) = max(trip_counts_by_date.items(), key=lambda p: p[1])
     else:
