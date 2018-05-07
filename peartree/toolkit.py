@@ -389,4 +389,34 @@ def simplify_graph(G_orig: nx.MultiDiGraph) -> nx.MultiDiGraph:
     # Remove all the interstitial nodes between the new edges, which will also
     # knock out the related edges from the graph
     G.remove_nodes_from(set(all_nodes_to_remove))
+
+    # TODO: This step could be significantly optimized (as well as
+    # parameterized, made optional)
+    # A final step that cleans out all duplicate edges (not desired in a
+    # simplified network)
+    mult_edges = []
+    mult_edges_full = []
+    for fr, to, edge in G.edges(data=True):
+        if G.number_of_edges(fr, to) > 1:
+            mult_edges.append((fr, to))
+            mult_edges_full.append((fr, to, edge))
+
+    # Clean out the permutations to just one of each
+    mult_edges = set(mult_edges)
+
+    # TODO: This nested for loop is sloppy; clean up (numpy scalars, perhaps)
+    for fr1, to1 in mult_edges:
+        subset_edges = []
+        for fr2, to2, edge in mult_edges_full:
+            if fr1 == fr2 and to1 == to2:
+                subset_edges.append(edge)
+        keep = max(subset_edges, key=lambda x: x['length'])
+
+        # Drop all the edges
+        edge_ct = len(subset_edges)
+        G.remove_edges_from([(fr1, to1)] * edge_ct)
+
+        # Then just re-add the one that we want
+        G.add_edge(fr1, to1, **keep)
+
     return G
