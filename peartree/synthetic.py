@@ -21,13 +21,32 @@ def generate_meter_projected_chunks(
         pyproj.Proj(init='epsg:2163'))  # destination coordinate system
 
     rs2 = transform(project, route_shape)  # apply projection
-    stop_count = round(rs2.length / stop_distance_distribution)
 
-    # Create the array of break points/joints
-    mp_array = []
-    for i in range(1, stop_count):
-        fr = (i / stop_count)
-        mp_array.append(rs2.interpolate(fr, normalized=True))
+    # Two ways to break apart this route into chunks:
+    #   1. Using custom stops as break points (this one takes precedence)
+    #   2. Using a custom distance to segment out the route
+
+    # In either case, we need to generate mp_array such that we have
+    # target stops or "break points" for the route line shape
+
+    # Path 1 if available
+    if custom_stops is not None:
+        mp_array = []
+        for custom_stop in custom_stops:
+            # Now reproject with cast point geometry
+            custom_stop_proj = transform(project, Point(custom_stop))
+            interp_stop = rs2.interpolate(rs2.project(custom_stop_proj))
+            mp_array.append(interp_stop)
+
+    # Otherwise we go with path 2
+    else:
+        stop_count = round(rs2.length / stop_distance_distribution)
+
+        # Create the array of break points/joints
+        mp_array = []
+        for i in range(1, stop_count):
+            fr = (i / stop_count)
+            mp_array.append(rs2.interpolate(fr, normalized=True))
 
     # Cast array as a Shapely object
     splitter = MultiPoint(mp_array)

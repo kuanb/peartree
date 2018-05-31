@@ -146,8 +146,14 @@ def test_synthetic_network_with_custom_stops():
                     [-122.2701072692871,37.83005652796547]]
     reference_geojson['features'][0]['properties']['stops'] = custom_stops
 
-    G1 = load_synthetic_network_as_graph(reference_geojson)
-    raise e
+    G = load_synthetic_network_as_graph(reference_geojson)
+
+    nodes = list(G.nodes())
+    assert len(nodes) == (len(custom_stops) + 2)
+
+    # Double the number of edges as before
+    edges = list(G.edges())
+    assert len(edges) == (len(custom_stops) + 1)
 
 
 def test_feed_edge_types():
