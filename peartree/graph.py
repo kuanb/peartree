@@ -234,7 +234,10 @@ def make_synthetic_system_network(
 
         ref_shape = shape(feat['geometry'])
 
-        # Generate reference geometry data
+        # Generate reference geometry data, note (and this is confusing) but
+        # chunks is in meter projection and all_pts is in web mercator
+        # this is because we only need (from chunks) the length value
+        # and do not actually preserve the geometry beyond these operations
         chunks = generate_meter_projected_chunks(ref_shape, stop_dist)
         all_pts = generate_stop_points(chunks)
 
@@ -243,7 +246,7 @@ def make_synthetic_system_network(
 
         # Produce graph components
         nodes = generate_nodes_df(stop_ids, all_pts, headway)
-        edges = generate_edges_df(stop_ids, all_pts, chunks, avg_speed)
+        edges = generate_edges_df(stop_ids, chunks, avg_speed)
 
         # Check if want to do bidirectional (optional)
         bidirectional = False
