@@ -214,6 +214,32 @@ def populate_graph(G: nx.MultiDiGraph,
     return G
 
 
+def _validate_feature_properties(props: Dict) -> Dict:
+    fresh_props = {}
+    fresh_props['headway'] = float(props['headway'])
+    fresh_props['average_speed'] = float(props['average_speed'])
+
+    # We require this GeoJSON coordinate component to be valid format
+    fresh_props['route_path'] = shape(feat['geometry'])
+
+    # If the user supplied custom stops, let's try and use them
+    # otherwise this attribute will be passed as a Nonetype
+    fresh_props['custom_stops'] = props.get('stops', None)
+
+    # Similarly, if there are stops distance instead, then we can use that
+    fresh_props['stop_dist'] = props.get('stop_distance_distribution', None)
+
+    # Sanity check; if both custom stops and stops distance are None
+    # then we cannot proceed
+    no_stops = fresh_props['custom_stops'] is None
+    no_dist = fresh_props['stop_dist'] is None
+    if no_stops and no_dist:
+        raise ValueError('Synthetic network addition must have either '
+                         'custom stops or stops distance default set.')
+
+    return fresh_props
+
+
 def make_synthetic_system_network(
         G: nx.MultiDiGraph,
         name: str,
@@ -227,18 +253,20 @@ def make_synthetic_system_network(
     all_nodes = None
     for feat in reference_geojson['features']:
         # Pull out required properties
-        props = feat['properties']
+        props = _validate_feature_properties(feat['properties'])
         headway = props['headway']
         avg_speed = props['average_speed']
-        stop_dist = props['stop_distance_distribution']
-
-        ref_shape = shape(feat['geometry'])
+        ref_shape = props['route_path']
+        stop_dist = props['stop_dist']
+        custom_stops = props['custom_stops']
 
         # Generate reference geometry data, note (and this is confusing) but
         # chunks is in meter projection and all_pts is in web mercator
         # this is because we only need (from chunks) the length value
         # and do not actually preserve the geometry beyond these operations
-        chunks = generate_meter_projected_chunks(ref_shape, stop_dist)
+        chunks = generate_meter_projected_chunks(ref_shape,
+                                                 stop_dist,
+                                                 custom_stops)
         all_pts = generate_stop_points(chunks)
 
         # Give each stop a unique id
