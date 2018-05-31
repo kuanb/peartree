@@ -11,7 +11,8 @@ from .toolkit import generate_random_name
 
 def generate_meter_projected_chunks(
         route_shape: LineString,
-        stop_distance_distribution: int) -> List[LineString]:
+        custom_stops: List[List[float]]=None,
+        stop_distance_distribution: int=None) -> List[LineString]:
 
     # Reproject 4326 lat/lon coordinates to equal area
     project = partial(
