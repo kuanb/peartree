@@ -119,7 +119,6 @@ def generate_nodes_df(
 
 def generate_edges_df(
         stop_ids: List[str],
-        all_points: List[Point],
         chunks: List[LineString],
         avg_speed: float) -> pd.DataFrame:
     from_stop_ids = []
