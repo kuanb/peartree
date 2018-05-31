@@ -187,6 +187,9 @@ def load_synthetic_network_as_graph(
     else:
         G = generate_empty_md_graph(name)
 
+    # TODO: Refactor reference_geojson to become a class that includes
+    #       validation on instantiation
+
     return make_synthetic_system_network(
         G,
         name,
