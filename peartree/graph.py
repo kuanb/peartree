@@ -219,6 +219,9 @@ def _validate_feature_properties(props: Dict) -> Dict:
     fresh_props['headway'] = float(props['headway'])
     fresh_props['average_speed'] = float(props['average_speed'])
 
+    # Check if want to do bidirectional (optional)
+    fresh_props['bidirectional'] = props.get('bidirectional', False)
+
     # If the user supplied custom stops, let's try and use them
     # otherwise this attribute will be passed as a Nonetype
     fresh_props['custom_stops'] = props.get('stops', None)
@@ -275,15 +278,9 @@ def make_synthetic_system_network(
         nodes = generate_nodes_df(stop_ids, all_pts, headway)
         edges = generate_edges_df(stop_ids, chunks, avg_speed)
 
-        # Check if want to do bidirectional (optional)
-        bidirectional = False
-        if 'bidirectional' in props:
-            # If true, each edge will be added both directions
-            bidirectional = bool(props['bidirectional'])
-
         # Mutates the G network object
         sid_lookup_sub = _add_nodes_and_edges(
-            G, name, nodes, edges, bidirectional)
+            G, name, nodes, edges, props['bidirectional'])
 
         # Update the parent sid with new values
         for key, val in sid_lookup_sub.items():
