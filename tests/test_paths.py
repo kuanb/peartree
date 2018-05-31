@@ -134,6 +134,41 @@ def test_synthetic_network():
     assert nx.is_strongly_connected(G2)
 
 
+def test_synthetic_network_with_custom_stops():
+    # Load in the GeoJSON as a JSON and convert to a dictionary
+    geojson_path = fixture('synthetic_east_bay.geojson')
+    with open(geojson_path, 'r') as gjf:
+        reference_geojson = json.load(gjf)
+
+    # Add in specific, custom stops under new properties key
+    custom_stops = [[-122.29225158691406,37.80876678753658],
+                    [-122.28886127471924,37.82341261847038],
+                    [-122.2701072692871,37.83005652796547]]
+    reference_geojson['features'][0]['properties']['stops'] = custom_stops
+
+    G1 = load_synthetic_network_as_graph(reference_geojson)
+
+    # Sanity check the outputs against the custom stops input
+    assert len(list(G1.nodes())) == (len(custom_stops) + 2)
+    assert len(list(G1.edges())) == (len(custom_stops) + 1)
+
+    # Go back to the GeoJSON and set optional bidirectional flag
+    reference_geojson['features'][0]['properties']['bidirectional'] = True
+
+    G2 = load_synthetic_network_as_graph(reference_geojson)
+
+    # We re-use the same stop nodes for both directions
+    nodes = list(G2.nodes())
+    assert len(nodes) == (len(custom_stops) + 2)
+
+    # Double the number of edges as before
+    edges = list(G2.edges())
+    assert len(edges) == (len(custom_stops) + 1) * 2
+
+    # But now, by asking for a bidirectional graph, we can assert strong
+    assert nx.is_strongly_connected(G2)
+
+
 def test_feed_edge_types():
     path = fixture('samtrans-2017-11-28.zip')
     feed = get_representative_feed(path)

@@ -4,9 +4,13 @@ Gemfile
 *.pyc
 __pycache__/
 ptenv/
+venv/
 .cache/
 build/
 dist/
 peartree.egg-info/
 notebooks/
 performance/cprof-output.py
+.eggs/
+.pytest_cache/
+profile/
