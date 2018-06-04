@@ -1,14 +1,16 @@
 import os
 
-import matplotlib
 import networkx as nx
 import osmnx as ox
 
-# Force matplotlib to not use any Xwindows backend
-matplotlib.use('Agg')
 
+def generate_plot(G: nx.MultiDiGraph, use_agg=False):
+    # Load matplotlib only when plot requested
+    import matplotlib  # noqa
+    if use_agg:
+        # Force matplotlib to not use any Xwindows backend
+        matplotlib.use('Agg')
 
-def generate_plot(G: nx.MultiDiGraph):
     # TODO: Build out custom plotting configurations but,
     #       in the meantime, use OSMnx's plotting configurations
     #       since they work well for the current use case and I
