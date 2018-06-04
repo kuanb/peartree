@@ -17,4 +17,4 @@ def test_feed_to_graph_plot():
 
     G = load_feed_as_graph(feed, start, end)
 
-    fig, ax = generate_plot(G)
+    fig, ax = generate_plot(G, use_agg=True)
