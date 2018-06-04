@@ -168,6 +168,14 @@ def load_synthetic_network_as_graph(
         connection_threshold: float=50.0,
         walk_speed_kmph: float=4.5,
         impute_walk_transfers: bool=True):
+    """
+    Convert a formatter transit FeatureCollection into a directed network graph.
+
+    Utilizing a correctly formatted transit FeatureCollection, generate a
+    directed networ graph (or add to an existing one), based off of features
+    included in the reference_geojson parameter.
+    """
+
 
     # Generate a random name for name if it is None
     if not name:
