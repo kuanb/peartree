@@ -16,8 +16,7 @@ Peartree 🍐🌳
 
 Peartree is a library for converting `GTFS <https://developers.google.com/transit/gtfs/>`_ feed schedules into a representative directed network graph. The tool uses `Partridge <https://github.com/remix/partridge>`__ to convert the target operator schedule data into `Pandas <https://github.com/pandas-dev/pandas>`__ dataframes and then `NetworkX <https://networkx.github.io/>`_ to hold the manipulated schedule data as a directed multigraph.
 
-.. figure:: examples/example.gif
-   :alt: graph loader animation
+.. image:: https://raw.githubusercontent.com/kuanb/peartree/master/examples/example.gif
 
 Above, an example of multiple Bay Area transit operators being incrementally loaded into Peartree.
 
