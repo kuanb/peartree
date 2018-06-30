@@ -1,5 +1,6 @@
 Gemfile
 .DS_Store
+.coverage
 .env
 *.pyc
 __pycache__/
