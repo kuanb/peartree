@@ -44,6 +44,13 @@ class TripTimesInterpolator(object):
         if isinstance(sub_df, pd.Series):
             sub_df = sub_df.to_frame().T
 
+            # We again want to make sure these columns are
+            # typed right and the pivot itself will just leave
+            # them as object type columns, which will cause errors
+            # when we check the row for NaN values later on
+            for col in ['arrival_time', 'departure_time']:
+                col_array = sub_df[col].astype(float)
+
         # TODO: Should we be able to assume that this column is
         #   present by the time we arrive here? If so, we should
         #   be able to move this check upstream, earlier in tool
@@ -64,8 +71,8 @@ class TripTimesInterpolator(object):
         sub_df = sub_df.sort_values(by=['stop_sequence'])
 
         # Extract the arrival and departure times as independent arrays
-        sub_df['arrival_time'] = apply_interpolation(sub_df['arrival_time'])
-        sub_df['departure_time'] = apply_interpolation(sub_df['departure_time'])
+        for col in ['arrival_time', 'departure_time']:
+            sub_df[col] = apply_interpolation(sub_df[col])
 
         # Re-add the trip_id as column at this point
         sub_df['trip_id'] = trip_id
