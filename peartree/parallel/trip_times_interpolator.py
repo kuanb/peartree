@@ -26,7 +26,14 @@ class TripTimesInterpolator(object):
 
         # Set index on trip id so we can quicly subset the dataframe
         # during iteration of generate_infilled_times
-        self.stop_times = stop_times.set_index('trip_id')
+        stop_times = stop_times.set_index('trip_id')
+
+        # Also avoid having these be object column types
+        for col in ['arrival_time', 'departure_time']:
+            stop_times[col] = stop_times[col].astype(float)
+
+        # Now we can set to self
+        self.stop_times = stop_times
 
     def generate_infilled_times(self, trip_id: str):
         # Get all the subset of trips that are related to this route
