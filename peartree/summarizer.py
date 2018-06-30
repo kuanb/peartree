@@ -7,7 +7,6 @@ import pandas as pd
 import partridge as ptg
 
 from .parallel import RouteProcessor, make_new_route_processor_manager
-from .toolkit import nan_helper
 from .utilities import log
 
 
@@ -171,10 +170,52 @@ def generate_summary_wait_times(
     return summed_reset
 
 
-def linearly_interpolate_infill_times(stops_orig_df):
+def _trip_interpolator_pool_map(
+        trip_interpolator_proxy: RouteProcessor,
+        target_trip_id: str):
+    return route_analyzer_proxy.generate_route_costs(target_route_id)
+
+
+def linearly_interpolate_infill_times(
+        stops_orig_df: pd.DataFrame,
+        use_multiprocessing: bool):
     # Prevent any upstream modification of this object
     stops_df = stops_orig_df.copy()
-    cleaned = stops_df.groupby('trip_id').apply(fill_in_times)
+
+    # Extract a list of all unqiue trip ids attached to the stops
+    target_trip_ids = stops_df['trip_id'].unique().tolist()
+
+    # Monitor run time performance
+    start_time = time.time()
+    if use_multiprocessing is True:
+        cpu_count = mp.cpu_count()
+        log('Running parallelized trip times interpolation on '
+            '{} processes'.format(cpu_count))
+
+        manager = make_new_trip_time_interpolator_manager()
+        trip_interpolator = manager.TripTimesInterpolator(stops_df)
+
+        with mp.Pool(processes=cpu_count) as pool:
+            results = pool.starmap(_trip_interpolator_pool_map,
+                                   [(trip_interpolator, trip_id)
+                                    for trip_id in target_trip_ids])
+    else:
+        log('Running serialized trip times interpolation (no parallelization)')
+        trip_interpolator = TripTimesInterpolator(stops_df)
+        results = [trip_interpolator.generate_route_costs(trip_id)
+                   for trip_id in target_trip_ids]
+    elapsed = round(time.time() - start_time, 2)
+    log('Trip times interpolation complete. Execution time: {}s'.format(
+        elapsed))
+
+    # Take all the resulting dataframes and stack them together
+    cleaned = None
+    for times_sub in results:
+        # Add to the running total for wait times in this feed subset
+        if cleaned is None:
+            cleaned = times_sub
+        else:
+            cleaned = cleaned.append(times_sub)
 
     # Result of the apply operation creates a large, nested
     # multi-index which we should drop
@@ -204,10 +245,15 @@ def generate_edge_and_wait_values(
         # Prepare the stops times dataframe by also infilling
         # all stop times that are NaN with their linearly interpolated
         # values based on their nearest numerically valid neighbors
-        stop_times = linearly_interpolate_infill_times(feed.stop_times)
+        stop_times = linearly_interpolate_infill_times(
+            feed.stop_times,
+            use_multiprocessing)
     else:
         stop_times = feed.stop_times.copy()
 
+    # TODO: Just like linearly_interpolate_infill_times contains all these
+    #       operations neatly in an abstracted method, do the same for the
+    #       running of the parallelize route processing
     start_time = time.time()
     target_route_ids = feed.routes.route_id
     if use_multiprocessing is True:
