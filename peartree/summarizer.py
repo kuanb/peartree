@@ -6,8 +6,12 @@ import numpy as np
 import pandas as pd
 import partridge as ptg
 
-from .parallel.route_processor import RouteProcessor, make_new_route_processor_manager
-from .parallel.trip_times_interpolator import RouteProcessor, make_new_route_processor_manager
+from .parallel.route_processor import (
+    RouteProcessor,
+    make_new_route_processor_manager)
+from .parallel.trip_times_interpolator import (
+    TripTimesInterpolator,
+    make_new_trip_time_interpolator_manager)
 from .utilities import log
 
 
