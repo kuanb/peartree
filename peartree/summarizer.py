@@ -178,7 +178,7 @@ def generate_summary_wait_times(
 def _trip_times_interpolator_pool_map(
         trip_times_interpolator_proxy: RouteProcessor,
         target_trip_id: str):
-    return route_analyzer_proxy.generate_route_costs(target_route_id)
+    return trip_times_interpolator_proxy.generate_route_costs(target_route_id)
 
 
 def linearly_interpolate_infill_times(
