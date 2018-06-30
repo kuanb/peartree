@@ -4,7 +4,7 @@ from typing import Dict, List, Union
 import numpy as np
 import pandas as pd
 
-from .utilities import log
+from peartree.utilities import log
 
 
 class RouteProcessorManager(BaseManager):
