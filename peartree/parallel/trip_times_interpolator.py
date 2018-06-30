@@ -4,7 +4,7 @@ from typing import List, Union
 import numpy as np
 import pandas as pd
 
-from .toolkit import nan_helper
+from peartree.toolkit import nan_helper
 
 
 class NonUniqueSequenceSet(Exception):
