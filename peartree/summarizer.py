@@ -179,7 +179,7 @@ def _trip_times_interpolator_pool_map(
         trip_times_interpolator_proxy: RouteProcessor,
         target_trip_id: str):
     return trip_times_interpolator_proxy.generate_infilled_times(
-        target_route_id)
+        target_trip_id)
 
 
 def linearly_interpolate_infill_times(
