@@ -175,20 +175,20 @@ def generate_summary_wait_times(
     return summed_reset
 
 
-def _trip_interpolator_pool_map(
-        trip_interpolator_proxy: RouteProcessor,
+def _trip_times_interpolator_pool_map(
+        trip_times_interpolator_proxy: RouteProcessor,
         target_trip_id: str):
     return route_analyzer_proxy.generate_route_costs(target_route_id)
 
 
 def linearly_interpolate_infill_times(
-        stops_orig_df: pd.DataFrame,
+        stop_times_orig_df: pd.DataFrame,
         use_multiprocessing: bool):
     # Prevent any upstream modification of this object
-    stops_df = stops_orig_df.copy()
+    stops_times_df = stop_times_orig_df.copy()
 
     # Extract a list of all unqiue trip ids attached to the stops
-    target_trip_ids = stops_df['trip_id'].unique().tolist()
+    target_trip_ids = stops_times_df['trip_id'].unique().tolist()
 
     # Monitor run time performance
     start_time = time.time()
@@ -198,16 +198,16 @@ def linearly_interpolate_infill_times(
             '{} processes'.format(cpu_count))
 
         manager = make_new_trip_time_interpolator_manager()
-        trip_interpolator = manager.TripTimesInterpolator(stops_df)
+        trip_times_interpolator = manager.TripTimesInterpolator(stops_times_df)
 
         with mp.Pool(processes=cpu_count) as pool:
-            results = pool.starmap(_trip_interpolator_pool_map,
-                                   [(trip_interpolator, trip_id)
+            results = pool.starmap(_trip_times_interpolator_pool_map,
+                                   [(trip_times_interpolator, trip_id)
                                     for trip_id in target_trip_ids])
     else:
         log('Running serialized trip times interpolation (no parallelization)')
-        trip_interpolator = TripTimesInterpolator(stops_df)
-        results = [trip_interpolator.generate_route_costs(trip_id)
+        trip_times_interpolator = TripTimesInterpolator(stops_times_df)
+        results = [trip_times_interpolator.generate_route_costs(trip_id)
                    for trip_id in target_trip_ids]
     elapsed = round(time.time() - start_time, 2)
     log('Trip times interpolation complete. Execution time: {}s'.format(
