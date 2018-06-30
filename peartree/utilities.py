@@ -189,4 +189,4 @@ def graph_from_zip(path_to_zip_file: str) -> nx.MultiDiGraph:
                             length=edge['length'],
                             mode=edge['mode'])
 
-    return graph_from_zip
+    return G_from_zip
