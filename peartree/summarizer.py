@@ -6,8 +6,11 @@ import numpy as np
 import pandas as pd
 import partridge as ptg
 
-from .parallel import RouteProcessor, make_new_route_processor_manager
-from .toolkit import nan_helper
+from .parallel.route_processor import (RouteProcessor,
+                                       make_route_processor_manager)
+from .parallel.trip_times_interpolator import \
+    make_trip_time_interpolator_manager  # noqa
+from .parallel.trip_times_interpolator import TripTimesInterpolator
 from .utilities import log
 
 
@@ -171,44 +174,62 @@ def generate_summary_wait_times(
     return summed_reset
 
 
-def apply_interpolation(orig_array):
-    nans, x = nan_helper(orig_array)
-    orig_array[nans] = np.interp(x(nans), x(~nans), orig_array[~nans])
-    return orig_array
+def _trip_times_interpolator_pool_map(
+        trip_times_interpolator_proxy: RouteProcessor,
+        target_trip_id: str):
+    return trip_times_interpolator_proxy.generate_infilled_times(
+        target_trip_id)
 
 
-def fill_in_times(sub_df):
-    # First, make sure that there is a set of stop sequence
-    # numbers present in each of the trip_id sub-dataframes
-    if 'stop_sequence' not in sub_df.columns:
-        sub_df['stop_sequence'] = range(len(sub_df))
-
-    uniq_sequence_ids = sub_df.stop_sequence.unique()
-    if not len(uniq_sequence_ids) == len(sub_df):
-        raise Exception('Expected there to be a unique set of '
-                        'stop ids for each trip_id in stop_times.')
-
-    # Next, make sure that the subset dataframe is sorted
-    # stop sequence, incrementing upward
-    sub_df = sub_df.sort_values(by=['stop_sequence'])
-
-    # Extract the arrival and departure times as independent arrays
-    sub_df['arrival_time'] = apply_interpolation(sub_df['arrival_time'])
-    sub_df['departure_time'] = apply_interpolation(sub_df['departure_time'])
-
-    return sub_df
-
-
-def linearly_interpolate_infill_times(stops_orig_df):
+def linearly_interpolate_infill_times(
+        stop_times_orig_df: pd.DataFrame,
+        use_multiprocessing: bool):
     # Prevent any upstream modification of this object
-    stops_df = stops_orig_df.copy()
-    cleaned = stops_df.groupby('trip_id').apply(fill_in_times)
+    stops_times_df = stop_times_orig_df.copy()
 
-    # Result of the apply operation creates a large, nested
-    # multi-index which we should drop
-    cleaned = cleaned.reset_index(drop=True)
+    # Extract a list of all unqiue trip ids attached to the stops
+    target_trip_ids = stops_times_df['trip_id'].unique().tolist()
 
-    return cleaned
+    # Monitor run time performance
+    start_time = time.time()
+    if use_multiprocessing is True:
+        cpu_count = mp.cpu_count()
+        log('Running parallelized trip times interpolation on '
+            '{} processes'.format(cpu_count))
+
+        manager = make_trip_time_interpolator_manager()
+        trip_times_interpolator = manager.TripTimesInterpolator(stops_times_df)
+
+        with mp.Pool(processes=cpu_count) as pool:
+            results = pool.starmap(_trip_times_interpolator_pool_map,
+                                   [(trip_times_interpolator, trip_id)
+                                    for trip_id in target_trip_ids])
+    else:
+        log('Running serialized trip times interpolation (no parallelization)')
+        trip_times_interpolator = TripTimesInterpolator(stops_times_df)
+        results = [trip_times_interpolator.generate_infilled_times(trip_id)
+                   for trip_id in target_trip_ids]
+    elapsed = round(time.time() - start_time, 2)
+    log('Trip times interpolation complete. Execution time: {}s'.format(
+        elapsed))
+
+    # Take all the resulting dataframes and stack them together
+    cleaned = []
+    for times_sub in results:
+        # Note: Extract values as list with the intent of avoiding
+        #       otherwise-expensive append operations (df-to-df)
+        cleaned.extend(times_sub.values.tolist())
+
+    # Prepare for new df creation by getting list of columns
+    cols = stops_times_df.columns.values.tolist()
+    cols.remove('trip_id')
+    cols.append('trip_id')
+
+    # Convert matrices to a pandas DataFrame again
+    cleaned_new_df = pd.DataFrame(cleaned, columns=cols)
+    cleaned_new_df = cleaned_new_df.reset_index(drop=True)
+
+    return cleaned_new_df
 
 
 def _route_analyzer_pool_map(
@@ -232,10 +253,15 @@ def generate_edge_and_wait_values(
         # Prepare the stops times dataframe by also infilling
         # all stop times that are NaN with their linearly interpolated
         # values based on their nearest numerically valid neighbors
-        stop_times = linearly_interpolate_infill_times(feed.stop_times)
+        stop_times = linearly_interpolate_infill_times(
+            feed.stop_times,
+            use_multiprocessing)
     else:
         stop_times = feed.stop_times.copy()
 
+    # TODO: Just like linearly_interpolate_infill_times contains all these
+    #       operations neatly in an abstracted method, do the same for the
+    #       running of the parallelize route processing
     start_time = time.time()
     target_route_ids = feed.routes.route_id
     if use_multiprocessing is True:
@@ -243,7 +269,7 @@ def generate_edge_and_wait_values(
         log('Running parallelized route costing on '
             '{} processes'.format(cpu_count))
 
-        manager = make_new_route_processor_manager()
+        manager = make_route_processor_manager()
         route_analyzer = manager.RouteProcessor(
             target_time_start,
             target_time_end,

@@ -3,8 +3,7 @@ from typing import Dict, List, Union
 
 import numpy as np
 import pandas as pd
-
-from .utilities import log
+from peartree.utilities import log
 
 
 class RouteProcessorManager(BaseManager):
@@ -203,7 +202,7 @@ def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
         return None
 
 
-def make_new_route_processor_manager():
+def make_route_processor_manager():
     manager = RouteProcessorManager()
     manager.start()
     return manager
