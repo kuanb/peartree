@@ -171,34 +171,6 @@ def generate_summary_wait_times(
     return summed_reset
 
 
-def apply_interpolation(orig_array):
-    nans, x = nan_helper(orig_array)
-    orig_array[nans] = np.interp(x(nans), x(~nans), orig_array[~nans])
-    return orig_array
-
-
-def fill_in_times(sub_df):
-    # First, make sure that there is a set of stop sequence
-    # numbers present in each of the trip_id sub-dataframes
-    if 'stop_sequence' not in sub_df.columns:
-        sub_df['stop_sequence'] = range(len(sub_df))
-
-    uniq_sequence_ids = sub_df.stop_sequence.unique()
-    if not len(uniq_sequence_ids) == len(sub_df):
-        raise Exception('Expected there to be a unique set of '
-                        'stop ids for each trip_id in stop_times.')
-
-    # Next, make sure that the subset dataframe is sorted
-    # stop sequence, incrementing upward
-    sub_df = sub_df.sort_values(by=['stop_sequence'])
-
-    # Extract the arrival and departure times as independent arrays
-    sub_df['arrival_time'] = apply_interpolation(sub_df['arrival_time'])
-    sub_df['departure_time'] = apply_interpolation(sub_df['departure_time'])
-
-    return sub_df
-
-
 def linearly_interpolate_infill_times(stops_orig_df):
     # Prevent any upstream modification of this object
     stops_df = stops_orig_df.copy()
