@@ -178,7 +178,8 @@ def generate_summary_wait_times(
 def _trip_times_interpolator_pool_map(
         trip_times_interpolator_proxy: RouteProcessor,
         target_trip_id: str):
-    return trip_times_interpolator_proxy.generate_route_costs(target_route_id)
+    return trip_times_interpolator_proxy.generate_infilled_times(
+        target_route_id)
 
 
 def linearly_interpolate_infill_times(
@@ -207,7 +208,7 @@ def linearly_interpolate_infill_times(
     else:
         log('Running serialized trip times interpolation (no parallelization)')
         trip_times_interpolator = TripTimesInterpolator(stops_times_df)
-        results = [trip_times_interpolator.generate_route_costs(trip_id)
+        results = [trip_times_interpolator.generate_infilled_times(trip_id)
                    for trip_id in target_trip_ids]
     elapsed = round(time.time() - start_time, 2)
     log('Trip times interpolation complete. Execution time: {}s'.format(

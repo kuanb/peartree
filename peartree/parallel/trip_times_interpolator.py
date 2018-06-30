@@ -32,6 +32,11 @@ class TripTimesInterpolator(object):
         # Get all the subset of trips that are related to this route
         sub_df = self.stop_times.loc[trip_id].copy()
 
+        # Pandas will try and make returned result a Series if there
+        # is only one result - prevent this from happening
+        if isinstance(sub_df, pd.Series):
+            sub_df = sub_df.to_frame().T
+
         # TODO: Should we be able to assume that this column is
         #   present by the time we arrive here? If so, we should
         #   be able to move this check upstream, earlier in tool
