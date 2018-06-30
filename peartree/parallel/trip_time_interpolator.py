@@ -11,11 +11,11 @@ class NonUniqueSequenceSet(Exception):
 	pass
 
 
-class TripTimeInterpolatorManager(BaseManager):
+class TripTimesInterpolatorManager(BaseManager):
     pass
 
 
-class TripTimeInterpolator(object):
+class TripTimesInterpolator(object):
 
     def __init__(
             self,
@@ -73,9 +73,9 @@ def apply_interpolation(orig_array: List) -> List:
 
 
 def make_new_trip_time_interpolator_manager():
-    manager = TripTimeInterpolatorManager()
+    manager = TripTimesInterpolatorManager()
     manager.start()
     return manager
 
 
-TripTimeInterpolatorManager.register('TripTimeInterpolator', TripTimeInterpolator)
+TripTimesInterpolatorManager.register('TripTimesInterpolator', TripTimesInterpolator)
