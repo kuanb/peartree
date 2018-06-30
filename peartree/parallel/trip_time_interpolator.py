@@ -1,10 +1,10 @@
 from multiprocessing.managers import BaseManager
-from typing import Dict, List, Union
+from typing import List, Union
 
 import numpy as np
 import pandas as pd
 
-from .utilities import log
+from .toolkit import nan_helper
 
 
 class NonUniqueSequenceSet(Exception):
@@ -54,13 +54,28 @@ class TripTimeInterpolator(object):
 	    # Extract the arrival and departure times as independent arrays
 	    sub_df['arrival_time'] = apply_interpolation(sub_df['arrival_time'])
 	    sub_df['departure_time'] = apply_interpolation(sub_df['departure_time'])
-        return (tst_sub, edge_costs)
+
+	    # Re-add the trip_id as column at this point
+	    sub_df['trip_id'] = trip_id
+
+	    # Also, we dump any index set on this subset to avoid issues
+	    # when returned later
+	    sub_df = sub_df.reset_index(drop=True)
+
+	    # Now free to release/return
+        return sub_df
 
 
-def apply_interpolation(orig_array):
+def apply_interpolation(orig_array: List) -> List:
     nans, x = nan_helper(orig_array)
     orig_array[nans] = np.interp(x(nans), x(~nans), orig_array[~nans])
     return orig_array
 
 
-RouteProcessorManager.register('RouteProcessor', RouteProcessor)
+def make_new_trip_time_interpolator_manager():
+    manager = TripTimeInterpolatorManager()
+    manager.start()
+    return manager
+
+
+TripTimeInterpolatorManager.register('TripTimeInterpolator', TripTimeInterpolator)
