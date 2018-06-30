@@ -6,12 +6,11 @@ import numpy as np
 import pandas as pd
 import partridge as ptg
 
-from .parallel.route_processor import (
-    RouteProcessor,
-    make_new_route_processor_manager)
-from .parallel.trip_times_interpolator import (
-    TripTimesInterpolator,
-    make_new_trip_time_interpolator_manager)
+from .parallel.route_processor import (RouteProcessor,
+                                       make_route_processor_manager)
+from .parallel.trip_times_interpolator import \
+    make_trip_time_interpolator_manager  # noqa
+from .parallel.trip_times_interpolator import TripTimesInterpolator
 from .utilities import log
 
 
@@ -198,7 +197,7 @@ def linearly_interpolate_infill_times(
         log('Running parallelized trip times interpolation on '
             '{} processes'.format(cpu_count))
 
-        manager = make_new_trip_time_interpolator_manager()
+        manager = make_trip_time_interpolator_manager()
         trip_times_interpolator = manager.TripTimesInterpolator(stops_times_df)
 
         with mp.Pool(processes=cpu_count) as pool:
@@ -215,19 +214,22 @@ def linearly_interpolate_infill_times(
         elapsed))
 
     # Take all the resulting dataframes and stack them together
-    cleaned = None
+    cleaned = []
     for times_sub in results:
-        # Add to the running total for wait times in this feed subset
-        if cleaned is None:
-            cleaned = times_sub
-        else:
-            cleaned = cleaned.append(times_sub)
+        # Note: Extract values as list with the intent of avoiding
+        #       otherwise-expensive append operations (df-to-df)
+        cleaned.extend(times_sub.values.tolist())
 
-    # Result of the apply operation creates a large, nested
-    # multi-index which we should drop
-    cleaned = cleaned.reset_index(drop=True)
+    # Prepare for new df creation by getting list of columns
+    cols = stops_times_df.columns.values.tolist()
+    cols.remove('trip_id')
+    cols.append('trip_id')
 
-    return cleaned
+    # Convert matrices to a pandas DataFrame again
+    cleaned_new_df = pd.DataFrame(cleaned, columns=cols)
+    cleaned_new_df = cleaned_new_df.reset_index(drop=True)
+
+    return cleaned_new_df
 
 
 def _route_analyzer_pool_map(
@@ -267,7 +269,7 @@ def generate_edge_and_wait_values(
         log('Running parallelized route costing on '
             '{} processes'.format(cpu_count))
 
-        manager = make_new_route_processor_manager()
+        manager = make_route_processor_manager()
         route_analyzer = manager.RouteProcessor(
             target_time_start,
             target_time_end,

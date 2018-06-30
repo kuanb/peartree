@@ -1,9 +1,8 @@
 from multiprocessing.managers import BaseManager
-from typing import List, Union
+from typing import List
 
 import numpy as np
 import pandas as pd
-
 from peartree.toolkit import nan_helper
 
 
@@ -94,10 +93,11 @@ def apply_interpolation(orig_array: List) -> List:
     return target_col_array
 
 
-def make_new_trip_time_interpolator_manager():
+def make_trip_time_interpolator_manager():
     manager = TripTimesInterpolatorManager()
     manager.start()
     return manager
 
 
-TripTimesInterpolatorManager.register('TripTimesInterpolator', TripTimesInterpolator)
+TripTimesInterpolatorManager.register(
+    'TripTimesInterpolator', TripTimesInterpolator)
