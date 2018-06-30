@@ -86,9 +86,12 @@ class TripTimesInterpolator(object):
 
 
 def apply_interpolation(orig_array: List) -> List:
-    nans, x = nan_helper(orig_array)
-    orig_array[nans] = np.interp(x(nans), x(~nans), orig_array[~nans])
-    return orig_array
+    target_col_array = orig_array.copy()
+    nans, x = nan_helper(target_col_array)
+    target_col_array[nans] = np.interp(x(nans),
+                                       x(~nans),
+                                       target_col_array[~nans])
+    return target_col_array
 
 
 def make_new_trip_time_interpolator_manager():
