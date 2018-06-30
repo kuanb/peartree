@@ -2,6 +2,11 @@ import datetime as dt
 import logging as lg
 import os
 import unicodedata
+import zipfile
+from tempfile import TemporaryDirectory
+
+import networkx as nx
+import pandas as pd
 
 from . import settings
 
@@ -103,3 +108,56 @@ def log(message: str, level=None, name=None, filename=None):
         encoded = normalized.encode('ascii', errors='replace')
         decoded = encoded.decode()
         print(decoded)
+
+
+def save_graph_to_zip(G: nx.MultiDiGraph, path: str='peartree_graph.zip'):
+    # Create a temporary workspace to save csvs to
+    with TemporaryDirectory() as dirpath:
+        # Extract the nodes from the graph, with attributes
+        nodes_rows = []
+        for node_id, node in G.nodes(data=True):
+            nodes_rows.append({
+                'id': node_id,
+                'boarding_cost': node['boarding_cost'],
+                'x': node['x'],
+                'y': node['y']})
+
+        # Roll up node rows into a DataFrame
+        nodes_df = pd.DataFrame(nodes_rows)
+
+        # Make sure that the column order is consistent
+        nodes_df = nodes_df[['id', 'boarding_cost', 'x', 'y']]
+
+        # Save that DataFrame to a csv
+        nodes_fpath = '{}/nodes.csv'.format(dirpath)
+        nodes_df.to_csv(nodes_fpath)
+
+        # Extract the nodes from the graph, with attributes
+        edges_rows = []
+        for from_id, to_id, edge in G.edges(data=True):
+            edges_rows.append({
+                'from': from_id,
+                'to': to_id,
+                'length': edge['length'],
+                'mode': edge['mode']})
+
+        # Roll up node rows into a DataFrame
+        edges_df = pd.DataFrame(edges_rows)
+
+        # Make sure that the column order is consistent
+        edges_df = edges_df[['from', 'to', 'length', 'mode']]
+
+        # Save that DataFrame to a csv
+        edges_fpath = '{}/edges.csv'.format(dirpath)
+        edges_df.to_csv(edges_fpath)
+
+        # Produce an output location handler
+        zipf = zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED)
+
+        # Write all components of temp dir to that handler
+        for fpath, fname in [(nodes_fpath, 'nodes.csv'),
+                             (edges_fpath, 'edges.csv')]:
+            zipf.write(fpath, fname)
+
+        # Can now close handler
+        zipf.close()
