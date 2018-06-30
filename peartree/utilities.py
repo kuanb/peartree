@@ -161,3 +161,32 @@ def save_graph_to_zip(G: nx.MultiDiGraph, path: str='peartree_graph.zip'):
 
         # Can now close handler
         zipf.close()
+
+
+def graph_from_zip(path_to_zip_file: str) -> nx.MultiDiGraph:
+    with TemporaryDirectory() as dirpath:
+        zip_ref = zipfile.ZipFile(path_to_zip_file, 'r')
+        zip_ref.extractall(dirpath)
+        zip_ref.close()
+
+        nodes_df = pd.read_csv('{}/nodes.csv'.format(dirpath))
+        edges_df = pd.read_csv('{}/edges.csv'.format(dirpath))
+
+    # Create an empty MDG
+    G_from_zip = nx.MultiDiGraph()
+
+    # First, work through the nodes and add them all
+    for i, node in nodes_df.iterrows():
+        G_from_zip.add_node(node['id'],
+                            boarding_cost=node['boarding_cost'],
+                            x=node['x'],
+                            y=node['y'])
+
+    # Second, work through the edges dataframe
+    for i, edge in edges_df.iterrows():
+        G_from_zip.add_edge(edge['from'],
+                            edge['to'],
+                            length=edge['length'],
+                            mode=edge['mode'])
+
+    return graph_from_zip
