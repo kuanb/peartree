@@ -49,7 +49,7 @@ class TripTimesInterpolator(object):
             # them as object type columns, which will cause errors
             # when we check the row for NaN values later on
             for col in ['arrival_time', 'departure_time']:
-                col_array = sub_df[col].astype(float)
+                sub_df[col] = sub_df[col].astype(float)
 
         # TODO: Should we be able to assume that this column is
         #   present by the time we arrive here? If so, we should
