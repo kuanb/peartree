@@ -5,13 +5,10 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 import partridge as ptg
-
-from .parallel.route_processor import (RouteProcessor,
-                                       make_route_processor_manager)
-from .parallel.trip_times_interpolator import \
-    make_trip_time_interpolator_manager  # noqa
-from .parallel.trip_times_interpolator import TripTimesInterpolator
-from .utilities import log
+from peartree.parallel import (RouteProcessor, TripTimesInterpolator,
+                               make_route_processor_manager,
+                               make_trip_time_interpolator_manager)
+from peartree.utilities import log
 
 
 def calculate_average_wait(direction_times: pd.DataFrame) -> float:

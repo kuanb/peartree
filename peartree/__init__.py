@@ -1,3 +1,5 @@
+from . import parallel  # noqa: F401
+
 from peartree.__version__ import __version__  # noqa: F401
 from peartree.paths import (
         load_feed_as_graph,
