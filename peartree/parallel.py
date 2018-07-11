@@ -102,7 +102,7 @@ def calculate_average_wait(direction_times: pd.DataFrame) -> float:
     #       account divergent/erratic performance or intentional timing
     #       clusters that are not evenly dispersed
     na = np.array(wait_seconds)
-    average_wait = na.mean()
+    average_wait = na.mean() / 2  # half headway
     return average_wait
 
 
