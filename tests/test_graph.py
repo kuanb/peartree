@@ -55,6 +55,9 @@ def test_generate_summary_graph_elements():
         mask = (wait_times_by_stop.avg_cost < 0)
         assert len(wait_times_by_stop[mask]) == 0
 
+        # Just a heuristic for avg_cost mean
+        print('wait_times_by_stop.avg_cost.mean()', wait_times_by_stop.avg_cost.mean())
+
         # Make sure that there are stop ids unique
         u = wait_times_by_stop.stop_id.unique()
         assert len(u) == len(wait_times_by_stop)
