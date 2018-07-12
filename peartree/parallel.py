@@ -75,8 +75,13 @@ class RouteProcessor(object):
         trips_and_stop_times = trips_and_stop_times.sort_values(sort_list)
 
         wait_times = generate_wait_times(trips_and_stop_times)
-        trips_and_stop_times['wait_dir_0'] = wait_times[0]
-        trips_and_stop_times['wait_dir_1'] = wait_times[1]
+
+        # lookup wait time for each stop in wait_times for each direction
+        wait_zero = trips_and_stop_times['stop_id'].apply(lambda x: wait_times[0][x])
+        trips_and_stop_times['wait_dir_0'] = wait_zero
+        
+        wait_one = trips_and_stop_times['stop_id'].apply(lambda x: wait_times[1][x])
+        trips_and_stop_times['wait_dir_1'] = wait_one
 
         tst_sub = trips_and_stop_times[['stop_id',
                                         'wait_dir_0',
@@ -108,9 +113,8 @@ def calculate_average_wait(direction_times: pd.DataFrame) -> float:
 
 def generate_wait_times(trips_and_stop_times: pd.DataFrame
                         ) -> Dict[int, List[float]]:
-    wait_times = {0: [], 1: []}
-    for stop_id in trips_and_stop_times.stop_id:
-
+    wait_times = {0: {}, 1: {}}
+    for stop_id in trips_and_stop_times.stop_id.unique():
         # Handle both inbound and outbound directions
         for direction in [0, 1]:
             # Check if direction_id exists in source data
@@ -130,7 +134,7 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame
                 average_wait = calculate_average_wait(direction_subset)
 
             # Add according to which direction we are working with
-            wait_times[direction].append(average_wait)
+            wait_times[direction][stop_id] = average_wait
 
     return wait_times
 
