@@ -80,4 +80,3 @@ def test_generate_summary_graph_elements():
         # And now we can get the stop ids out from this list
         preserved_from_nulls = summary_edge_costs.from_stop_id[mask].unique()
         assert len(preserved_from_nulls) == 205
-    raise(e)
