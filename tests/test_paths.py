@@ -273,16 +273,14 @@ def test_feed_to_graph_path():
 def test_feeds_with_no_direction_id():
     path = fixture('samtrans-2017-11-28.zip')
     feed = get_representative_feed(path)
-    
-    # Overwrite the stop times so that direction id is null
+
+    # Overwrite the direction id columns in trips df to be nan
     feed.trips['direction_id'] = np.nan
 
-    # Make sure the behavior is as expected
     start = 7 * 60 * 60
     end = 10 * 60 * 60
     G = load_feed_as_graph(feed, start, end)
 
+    # Make sure each node has numeric boarding cost
     for i, node in G.nodes(data=True):
         assert not np.isnan(node['boarding_cost'])
-
-    
