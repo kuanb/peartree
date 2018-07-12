@@ -74,17 +74,13 @@ class RouteProcessor(object):
                      'departure_time']
         trips_and_stop_times = trips_and_stop_times.sort_values(sort_list)
 
-        # Check direction_id column value before 
-        # using trips_and_stop_times to generate wait and edge costs
-        # Note: the advantage to adding the handling here is that it is 
-        #       within a single route. This means that we do not end up 
-        #       tossing direction id if a specific route happens to have 
-        #       all direction id rows filled in. 
-        #       It is possible that a route operator has direction id 
-        #       for one route but not another.
+        # Check direction_id column value before using
+        # trips_and_stop_times to generate wait and edge costs
+        # Note: Advantage to adding handling at route level is that peartree
+        #       avoids tossing direction id if a specific route has all direction
+        #       id rows filled in (while another does not, which is possible).
         if 'direction_id' in trips_and_stop_times:
-            # There is such column
-            # then check if it contains NaN
+            # If there is such column then check if it contains NaN
             has_nan = trips_and_stop_times['direction_id'].isnull()
             if len(trips_and_stop_times[has_nan]) > 0:
                 # If it has no full coverage in direction_id, drop the column
