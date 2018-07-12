@@ -109,7 +109,7 @@ def calculate_average_wait(direction_times: pd.DataFrame) -> float:
 def generate_wait_times(trips_and_stop_times: pd.DataFrame
                         ) -> Dict[int, List[float]]:
     wait_times = {0: [], 1: []}
-    for stop_id in trips_and_stop_times.stop_id:
+    for stop_id in trips_and_stop_times.stop_id.unique():
 
         # Handle both inbound and outbound directions
         for direction in [0, 1]:
