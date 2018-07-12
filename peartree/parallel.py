@@ -76,6 +76,12 @@ class RouteProcessor(object):
 
         # Check direction_id column value before 
         # using trips_and_stop_times to generate wait and edge costs
+        # Note: the advantage to adding the handling here is that it is 
+        #       within a single route. This means that we do not end up 
+        #       tossing direction id if a specific route happens to have 
+        #       all direction id rows filled in. 
+        #       It is possible that a route operator has direction id 
+        #       for one route but not another.
         if 'direction_id' in trips_and_stop_times:
             # There is such column
             # then check if it contains NaN
