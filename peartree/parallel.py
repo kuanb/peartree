@@ -74,9 +74,19 @@ class RouteProcessor(object):
                      'departure_time']
         trips_and_stop_times = trips_and_stop_times.sort_values(sort_list)
 
+        # Check direction_id column value before 
+        # using trips_and_stop_times to generate wait and edge costs
+        if 'direction_id' in trips_and_stop_times:
+            # There is such column
+            # then check if it contains NaN
+            has_nan = trips_and_stop_times['direction_id'].isnull()
+            if len(trips_and_stop_times[has_nan]) > 0:
+                # If it has no full coverage in direction_id, drop the column
+                trips_and_stop_times.drop('direction_id', axis=1, inplace=True)
+
         wait_times = generate_wait_times(trips_and_stop_times)
 
-        # lookup wait time for each stop in wait_times for each direction
+        # Look up wait time for each stop in wait_times for each direction
         wait_zero = trips_and_stop_times['stop_id'].apply(lambda x: wait_times[0][x])
         trips_and_stop_times['wait_dir_0'] = wait_zero
         
@@ -165,7 +175,7 @@ def generate_all_observed_edge_costs(trips_and_stop_times: pd.DataFrame
                 dir_mask = (tst_sub.direction_id == direction)
                 tst_sub_dir = tst_sub[dir_mask]
             else:
-                tst_sub_dir = tst_sub
+                tst_sub_dir = tst_sub.copy()
 
             tst_sub_dir = tst_sub_dir.sort_values('stop_sequence')
             deps = tst_sub_dir.departure_time[:-1]
