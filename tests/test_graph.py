@@ -1,4 +1,5 @@
 import os
+import pytest
 
 from peartree.graph import (generate_empty_md_graph,
                             generate_summary_graph_elements)
@@ -56,7 +57,7 @@ def test_generate_summary_graph_elements():
         assert len(wait_times_by_stop[mask]) == 0
 
         # Just a heuristic for avg_cost mean
-        print('wait_times_by_stop.avg_cost.mean()', wait_times_by_stop.avg_cost.mean())
+        assert wait_times_by_stop.avg_cost.mean() == pytest.approx(1015.59)
 
         # Make sure that there are stop ids unique
         u = wait_times_by_stop.stop_id.unique()
@@ -79,3 +80,4 @@ def test_generate_summary_graph_elements():
         # And now we can get the stop ids out from this list
         preserved_from_nulls = summary_edge_costs.from_stop_id[mask].unique()
         assert len(preserved_from_nulls) == 205
+    raise(e)
