@@ -5,6 +5,7 @@ import geopandas as gpd
 import networkx as nx
 import partridge as ptg
 import pytest
+import numpy as np
 from peartree.graph import InsufficientSummaryResults
 from peartree.paths import (InvalidGTFS, InvalidTimeBracket,
                             get_representative_feed, load_feed_as_graph,
@@ -267,3 +268,21 @@ def test_feed_to_graph_path():
     edge_len_3 = len(G.edges())
     assert node_len_3 - node_len_2 == 74
     assert edge_len_3 - edge_len_2 == 80
+
+
+def test_feeds_with_no_direction_id():
+    path = fixture('samtrans-2017-11-28.zip')
+    feed = get_representative_feed(path)
+    
+    # Overwrite the stop times so that direction id is null
+    feed.trips['direction_id'] = np.nan
+
+    # Make sure the behavior is as expected
+    start = 7 * 60 * 60
+    end = 10 * 60 * 60
+    G = load_feed_as_graph(feed, start, end)
+
+    for i, node in G.nodes(data=True):
+        assert not np.isnan(node['boarding_cost'])
+
+    
