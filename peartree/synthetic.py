@@ -12,15 +12,17 @@ from .toolkit import generate_random_name
 def generate_meter_projected_chunks(
         route_shape: LineString,
         custom_stops: List[List[float]]=None,
-        stop_distance_distribution: int=None) -> List[LineString]:
+        stop_distance_distribution: int=None,
+        from_proj='epsg:4326',
+        to_proj='epsg:2163') -> List[LineString]:
 
     # Reproject 4326 lat/lon coordinates to equal area
     project = partial(
         pyproj.transform,
         # source coordinate system
-        pyproj.Proj(init='epsg:4326', preserve_units=True),
+        pyproj.Proj(init=from_proj, preserve_units=True),
         # destination coordinate system
-        pyproj.Proj(init='epsg:2163', preserve_units=True))
+        pyproj.Proj(init=to_proj, preserve_units=True))
 
     rs2 = transform(project, route_shape)  # apply projection
 
