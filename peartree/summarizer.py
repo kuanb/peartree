@@ -245,16 +245,35 @@ def generate_edge_and_wait_values(
     ftrips = feed.trips.copy()
     ftrips = ftrips[~ftrips['route_id'].isnull()]
 
+    # Trim down stop_times df based on requested time range
+    # before feeding into the interpolation step downstream
+    # Make a copy
+    init_stop_times = feed.stop_times.copy()
+
+    # Create masks for time range
+    start_time_mask = (init_stop_times.arrival_time >= target_time_start)
+    end_time_mask = (init_stop_times.arrival_time <= target_time_end)
+    
+    # Select stop times within the range
+    sub_stop_times = init_stop_times[start_time_mask & end_time_mask]
+
+    # Get unique trip ids associated with those stops
+    want_trip_ids = sub_stop_times.trip_id.unique()
+
+    # If any of the stop of a given trip id is the requested time range, 
+    # perserve all the stops in that trip
+    sub_stop_times = init_stop_times[init_stop_times.trip_id.isin(want_trip_ids)]
+
     # Flags whether we interpolate intermediary stops or not
     if interpolate_times:
         # Prepare the stops times dataframe by also infilling
         # all stop times that are NaN with their linearly interpolated
         # values based on their nearest numerically valid neighbors
         stop_times = linearly_interpolate_infill_times(
-            feed.stop_times,
+            sub_stop_times,
             use_multiprocessing)
     else:
-        stop_times = feed.stop_times.copy()
+        stop_times = sub_stop_times.copy()
 
     # TODO: Just like linearly_interpolate_infill_times contains all these
     #       operations neatly in an abstracted method, do the same for the
