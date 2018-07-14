@@ -17,8 +17,10 @@ def generate_meter_projected_chunks(
     # Reproject 4326 lat/lon coordinates to equal area
     project = partial(
         pyproj.transform,
-        pyproj.Proj(init='epsg:4326', preserve_units=True),  # source coordinate system
-        pyproj.Proj(init='epsg:2163'))  # destination coordinate system
+        # source coordinate system
+        pyproj.Proj(init='epsg:4326', preserve_units=True),
+        # destination coordinate system
+        pyproj.Proj(init='epsg:2163', preserve_units=True))
 
     rs2 = transform(project, route_shape)  # apply projection
 
