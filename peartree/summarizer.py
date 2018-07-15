@@ -281,9 +281,14 @@ def _generate_route_processing_results(
     all_wait_times = []
 
     for tst_sub, edge_costs in results:
-        # Resume the expected adding of each list result to the matrices
-        all_edge_costs.extend(edge_costs.values.tolist())
-        all_wait_times.extend(tst_sub.values.tolist())
+        # For each result, skip if it is empty
+        if not all_edge_costs.empty:
+            # Resume the expected adding of each list result to the matrices
+            all_edge_costs.extend(edge_costs.values.tolist())
+
+        # And again, for the other dataframe
+        if not all_wait_times.empty:
+            all_wait_times.extend(tst_sub.values.tolist())
 
     # Convert matrices to a pandas DataFrame again
     all_edge_costs_columns = ['edge_cost', 'from_stop_id', 'to_stop_id']
