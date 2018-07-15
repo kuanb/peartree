@@ -1,6 +1,6 @@
 import multiprocessing as mp
 import time
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -178,9 +178,9 @@ def _trip_times_interpolator_pool_map(
         target_trip_id)
 
 
-def linearly_interpolate_infill_times(
+def _linearly_interpolate_infill_times(
         stop_times_orig_df: pd.DataFrame,
-        use_multiprocessing: bool):
+        use_multiprocessing: bool) -> pd.DataFrame:
     # Prevent any upstream modification of this object
     stops_times_df = stop_times_orig_df.copy()
 
@@ -235,51 +235,17 @@ def _route_analyzer_pool_map(
     return route_analyzer_proxy.generate_route_costs(target_route_id)
 
 
-def generate_edge_and_wait_values(
-        feed: ptg.gtfs.feed,
+def _generate_route_processing_results(
+        target_route_ids: List,
         target_time_start: int,
         target_time_end: int,
-        interpolate_times: bool,
-        use_multiprocessing: bool) -> Tuple[pd.DataFrame]:
-    # Initialize the trips dataframe to be worked with
-    ftrips = feed.trips.copy()
-    ftrips = ftrips[~ftrips['route_id'].isnull()]
-
-    # Trim down stop_times df based on requested time range
-    # before feeding into the interpolation step downstream
-    # Make a copy
-    init_stop_times = feed.stop_times.copy()
-
-    # Create masks for time range
-    start_time_mask = (init_stop_times.arrival_time >= target_time_start)
-    end_time_mask = (init_stop_times.arrival_time <= target_time_end)
-    
-    # Select stop times within the range
-    sub_stop_times = init_stop_times[start_time_mask & end_time_mask]
-
-    # Get unique trip ids associated with those stops
-    want_trip_ids = sub_stop_times.trip_id.unique()
-
-    # If any of the stop of a given trip id is the requested time range, 
-    # perserve all the stops in that trip
-    sub_stop_times = init_stop_times[init_stop_times.trip_id.isin(want_trip_ids)]
-
-    # Flags whether we interpolate intermediary stops or not
-    if interpolate_times:
-        # Prepare the stops times dataframe by also infilling
-        # all stop times that are NaN with their linearly interpolated
-        # values based on their nearest numerically valid neighbors
-        stop_times = linearly_interpolate_infill_times(
-            sub_stop_times,
-            use_multiprocessing)
-    else:
-        stop_times = sub_stop_times.copy()
-
-    # TODO: Just like linearly_interpolate_infill_times contains all these
-    #       operations neatly in an abstracted method, do the same for the
-    #       running of the parallelize route processing
+        ftrips: pd.DataFrame,
+        stop_times: pd.DataFrame,
+        feed_stops: pd.DataFrame,
+        use_multiprocessing: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    # Track the runtime of this method
     start_time = time.time()
-    target_route_ids = feed.routes.route_id
+
     if use_multiprocessing is True:
         cpu_count = mp.cpu_count()
         log('Running parallelized route costing on '
@@ -291,7 +257,7 @@ def generate_edge_and_wait_values(
             target_time_end,
             ftrips,
             stop_times,
-            feed.stops.copy())
+            feed_stops)
 
         with mp.Pool(processes=cpu_count) as pool:
             results = pool.starmap(_route_analyzer_pool_map,
@@ -304,25 +270,99 @@ def generate_edge_and_wait_values(
             target_time_end,
             ftrips,
             stop_times,
-            feed.stops.copy())
+            feed_stops)
         results = [route_analyzer.generate_route_costs(rid)
                    for rid in target_route_ids]
     elapsed = round(time.time() - start_time, 2)
     log('Route costing complete. Execution time: {}s'.format(elapsed))
 
-    all_edge_costs = None
-    all_wait_times = None
-    for tst_sub, edge_costs in results:
-        # Add to the running total for wait times in this feed subset
-        if all_wait_times is None:
-            all_wait_times = tst_sub
-        else:
-            all_wait_times = all_wait_times.append(tst_sub)
+    # First, create a 2-dimensional matrix for each of the output series
+    all_edge_costs = []
+    all_wait_times = []
 
-        # Add to the running total in this feed subset
-        if all_edge_costs is None:
-            all_edge_costs = edge_costs
-        else:
-            all_edge_costs = all_edge_costs.append(edge_costs)
+    for tst_sub, edge_costs in results:
+
+        # For each result, skip if it is empty
+        if type(edge_costs) is pd.DataFrame and not edge_costs.empty:
+            # Resume the expected adding of each list result to the matrices
+            all_edge_costs.extend(edge_costs.values.tolist())
+
+        # And again, for the other dataframe
+        if type(tst_sub) is pd.DataFrame and not tst_sub.empty:
+            all_wait_times.extend(tst_sub.values.tolist())
+
+    # Convert matrices to a pandas DataFrame again
+    all_edge_costs_columns = ['edge_cost', 'from_stop_id', 'to_stop_id']
+    all_edge_costs_new_df = pd.DataFrame(all_edge_costs,
+                                         columns=all_edge_costs_columns)
+
+    all_wait_times_columns = ['stop_id', 'wait_dir_0', 'wait_dir_1']
+    all_wait_times_new_df = pd.DataFrame(all_wait_times,
+                                         columns=all_wait_times_columns)
+
+    return (all_edge_costs_new_df, all_wait_times_new_df)
+
+
+def _trim_stop_times_by_timeframe(
+        init_stop_times_orig: pd.DataFrame,
+        target_time_start: int,
+        target_time_end: int) -> pd.DataFrame:
+    # Trim down stop_times df based on requested time range
+    # before feeding into the interpolation step downstream
+    init_stop_times = init_stop_times_orig.copy()
+
+    # Create masks for time range
+    start_time_mask = (init_stop_times.arrival_time >= target_time_start)
+    end_time_mask = (init_stop_times.arrival_time <= target_time_end)
+
+    # Select stop times within the range (satisfies both mask constraints)
+    both_mask = (start_time_mask & end_time_mask)
+    within_timeframe_sub = init_stop_times[both_mask]
+
+    # Get unique trip ids associated with those stops
+    want_trip_ids = within_timeframe_sub.trip_id.unique()
+
+    # If any of the stop of a given trip id is the requested time range,
+    # perserve all the stops in that trip
+    want_trips_mask = init_stop_times.trip_id.isin(want_trip_ids)
+    sub_stop_times_final = init_stop_times[want_trips_mask]
+
+    return sub_stop_times_final
+
+
+def generate_edge_and_wait_values(
+        feed: ptg.gtfs.feed,
+        target_time_start: int,
+        target_time_end: int,
+        interpolate_times: bool,
+        use_multiprocessing: bool) -> Tuple[pd.DataFrame]:
+    sub_stop_times = _trim_stop_times_by_timeframe(
+        feed.stop_times, target_time_start, target_time_end)
+
+    # Flags whether we interpolate intermediary stops or not
+    if interpolate_times:
+        # Prepare the stops times dataframe by also infilling
+        # all stop times that are NaN with their linearly interpolated
+        # values based on their nearest numerically valid neighbors
+        stop_times = _linearly_interpolate_infill_times(
+            sub_stop_times,
+            use_multiprocessing)
+    else:
+        stop_times = sub_stop_times.copy()
+
+    # Initialize the trips dataframe to be worked with
+    ftrips = feed.trips.copy()
+    ftrips = ftrips[~ftrips['route_id'].isnull()]
+
+    # Execute the route-level processing operations with prepped data
+    (all_edge_costs,
+     all_wait_times) = _generate_route_processing_results(
+        feed.routes.route_id,
+        target_time_start,
+        target_time_end,
+        ftrips,
+        stop_times,
+        feed.stops.copy(),
+        use_multiprocessing)
 
     return (all_edge_costs, all_wait_times)
