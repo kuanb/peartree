@@ -324,8 +324,8 @@ def generate_edge_and_wait_values(
 
     # If any of the stop of a given trip id is the requested time range,
     # perserve all the stops in that trip
-    sub_stop_times = init_stop_times[
-        init_stop_times.trip_id.isin(want_trip_ids)]
+    want_trips_mask = init_stop_times.trip_id.isin(want_trip_ids)
+    sub_stop_times = init_stop_times[want_trips_mask]
 
     # Flags whether we interpolate intermediary stops or not
     if interpolate_times:
