@@ -338,54 +338,14 @@ def generate_edge_and_wait_values(
     else:
         stop_times = sub_stop_times.copy()
 
-    # TODO: Just like linearly_interpolate_infill_times contains all these
-    #       operations neatly in an abstracted method, do the same for the
-    #       running of the parallelize route processing
-    start_time = time.time()
-    target_route_ids = feed.routes.route_id
-    if use_multiprocessing is True:
-        cpu_count = mp.cpu_count()
-        log('Running parallelized route costing on '
-            '{} processes'.format(cpu_count))
-
-        manager = make_route_processor_manager()
-        route_analyzer = manager.RouteProcessor(
-            target_time_start,
-            target_time_end,
-            ftrips,
-            stop_times,
-            feed.stops.copy())
-
-        with mp.Pool(processes=cpu_count) as pool:
-            results = pool.starmap(_route_analyzer_pool_map,
-                                   [(route_analyzer, route_id)
-                                    for route_id in target_route_ids])
-    else:
-        log('Running serialized route costing (no parallelization)')
-        route_analyzer = RouteProcessor(
-            target_time_start,
-            target_time_end,
-            ftrips,
-            stop_times,
-            feed.stops.copy())
-        results = [route_analyzer.generate_route_costs(rid)
-                   for rid in target_route_ids]
-    elapsed = round(time.time() - start_time, 2)
-    log('Route costing complete. Execution time: {}s'.format(elapsed))
-
-    all_edge_costs = None
-    all_wait_times = None
-    for tst_sub, edge_costs in results:
-        # Add to the running total for wait times in this feed subset
-        if all_wait_times is None:
-            all_wait_times = tst_sub
-        else:
-            all_wait_times = all_wait_times.append(tst_sub)
-
-        # Add to the running total in this feed subset
-        if all_edge_costs is None:
-            all_edge_costs = edge_costs
-        else:
-            all_edge_costs = all_edge_costs.append(edge_costs)
+    (all_edge_costs,
+     all_wait_times) = _generate_route_processing_results(
+        feed.routes.route_id,
+        target_time_start,
+        target_time_end,
+        ftrips,
+        stop_times,
+        feed.stops.copy(),
+        use_multiprocessing)
 
     return (all_edge_costs, all_wait_times)
