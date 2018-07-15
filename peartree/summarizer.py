@@ -1,6 +1,6 @@
 import multiprocessing as mp
 import time
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -178,9 +178,9 @@ def _trip_times_interpolator_pool_map(
         target_trip_id)
 
 
-def linearly_interpolate_infill_times(
+def _linearly_interpolate_infill_times(
         stop_times_orig_df: pd.DataFrame,
-        use_multiprocessing: bool):
+        use_multiprocessing: bool) -> pd.DataFrame:
     # Prevent any upstream modification of this object
     stops_times_df = stop_times_orig_df.copy()
 
@@ -235,6 +235,68 @@ def _route_analyzer_pool_map(
     return route_analyzer_proxy.generate_route_costs(target_route_id)
 
 
+def _generate_route_processing_results(
+        target_route_ids: List,
+        target_time_start: int,
+        target_time_end: int,
+        ftrips: pd.DataFrame,
+        stop_times: pd.DataFrame,
+        feed_stops: pd.DataFrame,
+        use_multiprocessing: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    # Track the runtime of this method
+    start_time = time.time()
+
+    if use_multiprocessing is True:
+        cpu_count = mp.cpu_count()
+        log('Running parallelized route costing on '
+            '{} processes'.format(cpu_count))
+
+        manager = make_route_processor_manager()
+        route_analyzer = manager.RouteProcessor(
+            target_time_start,
+            target_time_end,
+            ftrips,
+            stop_times,
+            feed_stops)
+
+        with mp.Pool(processes=cpu_count) as pool:
+            results = pool.starmap(_route_analyzer_pool_map,
+                                   [(route_analyzer, route_id)
+                                    for route_id in target_route_ids])
+    else:
+        log('Running serialized route costing (no parallelization)')
+        route_analyzer = RouteProcessor(
+            target_time_start,
+            target_time_end,
+            ftrips,
+            stop_times,
+            feed_stops)
+        results = [route_analyzer.generate_route_costs(rid)
+                   for rid in target_route_ids]
+    elapsed = round(time.time() - start_time, 2)
+    log('Route costing complete. Execution time: {}s'.format(elapsed))
+
+    # First, create a 2-dimensional matrix for each of the output series
+    all_edge_costs = []
+    all_wait_times = []
+
+    for tst_sub, edge_costs in results:
+        # Resume the expected adding of each list result to the matrices
+        all_edge_costs.extend(edge_costs.values.tolist())
+        all_wait_times.extend(tst_sub.values.tolist())
+
+    # Convert matrices to a pandas DataFrame again
+    all_edge_costs_columns = ['edge_cost', 'from_stop_id', 'to_stop_id']
+    all_edge_costs_new_df = pd.DataFrame(all_edge_costs,
+                                         columns=all_edge_costs_columns)
+
+    all_wait_times_columns = ['stop_id', 'wait_dir_0', 'wait_dir_1']
+    all_wait_times_new_df = pd.DataFrame(all_wait_times,
+                                         columns=all_wait_times_columns)
+
+    return (all_edge_costs_new_df, all_wait_times_new_df)
+
+
 def generate_edge_and_wait_values(
         feed: ptg.gtfs.feed,
         target_time_start: int,
@@ -253,23 +315,24 @@ def generate_edge_and_wait_values(
     # Create masks for time range
     start_time_mask = (init_stop_times.arrival_time >= target_time_start)
     end_time_mask = (init_stop_times.arrival_time <= target_time_end)
-    
+
     # Select stop times within the range
     sub_stop_times = init_stop_times[start_time_mask & end_time_mask]
 
     # Get unique trip ids associated with those stops
     want_trip_ids = sub_stop_times.trip_id.unique()
 
-    # If any of the stop of a given trip id is the requested time range, 
+    # If any of the stop of a given trip id is the requested time range,
     # perserve all the stops in that trip
-    sub_stop_times = init_stop_times[init_stop_times.trip_id.isin(want_trip_ids)]
+    sub_stop_times = init_stop_times[
+        init_stop_times.trip_id.isin(want_trip_ids)]
 
     # Flags whether we interpolate intermediary stops or not
     if interpolate_times:
         # Prepare the stops times dataframe by also infilling
         # all stop times that are NaN with their linearly interpolated
         # values based on their nearest numerically valid neighbors
-        stop_times = linearly_interpolate_infill_times(
+        stop_times = _linearly_interpolate_infill_times(
             sub_stop_times,
             use_multiprocessing)
     else:
