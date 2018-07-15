@@ -330,10 +330,6 @@ def generate_edge_and_wait_values(
         target_time_end: int,
         interpolate_times: bool,
         use_multiprocessing: bool) -> Tuple[pd.DataFrame]:
-    # Initialize the trips dataframe to be worked with
-    ftrips = feed.trips.copy()
-    ftrips = ftrips[~ftrips['route_id'].isnull()]
-
     sub_stop_times = _trim_stop_times_by_timeframe(
         feed.stop_times, target_time_start, target_time_end)
 
@@ -348,6 +344,11 @@ def generate_edge_and_wait_values(
     else:
         stop_times = sub_stop_times.copy()
 
+    # Initialize the trips dataframe to be worked with
+    ftrips = feed.trips.copy()
+    ftrips = ftrips[~ftrips['route_id'].isnull()]
+
+    # Execute the route-level processing operations with prepped data
     (all_edge_costs,
      all_wait_times) = _generate_route_processing_results(
         feed.routes.route_id,
