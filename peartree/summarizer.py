@@ -297,6 +297,33 @@ def _generate_route_processing_results(
     return (all_edge_costs_new_df, all_wait_times_new_df)
 
 
+def _trim_stop_times_by_timeframe(
+        init_stop_times_orig: pd.DataFrame,
+        target_time_start: int,
+        target_time_end: int) -> pd.DataFrame:
+    # Trim down stop_times df based on requested time range
+    # before feeding into the interpolation step downstream
+    init_stop_times = init_stop_times_orig.copy()
+
+    # Create masks for time range
+    start_time_mask = (init_stop_times.arrival_time >= target_time_start)
+    end_time_mask = (init_stop_times.arrival_time <= target_time_end)
+
+    # Select stop times within the range (satisfies both mask constraints)
+    both_mask = (start_time_mask & end_time_mask)
+    within_timeframe_sub = init_stop_times[both_mask]
+
+    # Get unique trip ids associated with those stops
+    want_trip_ids = within_timeframe_sub.trip_id.unique()
+
+    # If any of the stop of a given trip id is the requested time range,
+    # perserve all the stops in that trip
+    want_trips_mask = init_stop_times.trip_id.isin(want_trip_ids)
+    sub_stop_times_final = init_stop_times[want_trips_mask]
+
+    return sub_stop_times_final
+
+
 def generate_edge_and_wait_values(
         feed: ptg.gtfs.feed,
         target_time_start: int,
@@ -307,25 +334,8 @@ def generate_edge_and_wait_values(
     ftrips = feed.trips.copy()
     ftrips = ftrips[~ftrips['route_id'].isnull()]
 
-    # Trim down stop_times df based on requested time range
-    # before feeding into the interpolation step downstream
-    # Make a copy
-    init_stop_times = feed.stop_times.copy()
-
-    # Create masks for time range
-    start_time_mask = (init_stop_times.arrival_time >= target_time_start)
-    end_time_mask = (init_stop_times.arrival_time <= target_time_end)
-
-    # Select stop times within the range
-    sub_stop_times = init_stop_times[start_time_mask & end_time_mask]
-
-    # Get unique trip ids associated with those stops
-    want_trip_ids = sub_stop_times.trip_id.unique()
-
-    # If any of the stop of a given trip id is the requested time range,
-    # perserve all the stops in that trip
-    want_trips_mask = init_stop_times.trip_id.isin(want_trip_ids)
-    sub_stop_times = init_stop_times[want_trips_mask]
+    sub_stop_times = _trim_stop_times_by_timeframe(
+        feed.stop_times, target_time_start, target_time_end)
 
     # Flags whether we interpolate intermediary stops or not
     if interpolate_times:
