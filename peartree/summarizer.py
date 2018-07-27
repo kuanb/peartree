@@ -11,19 +11,16 @@ from peartree.parallel import (RouteProcessor, TripTimesInterpolator,
 from peartree.utilities import log
 
 
-def _format_summarized_outputs(summarized):
-    # Reset index BUT preserve the original index, which represents stop ids
+def _format_summarized_outputs(summarized: pd.Series) -> pd.DataFrame:
+    # The output of the group by produces a Series, but we want to extract
+    # the values from the index and the Series itself and generate a
+    # pandas DataFrame instead
     original_stop_ids_index = summarized.index.values
-    summed_reset = summarized.reset_index(drop=True)
+    original_series_values = summarized.values
 
-    # At this point, just one column
-    summed_reset.columns = ['avg_cost']
-
-    # So add the new column, which was the index
-    summed_reset['stop_id'] = original_stop_ids_index
-
-    # Finally, preserve a desired ordering (stop id is first)
-    return summed_reset[['stop_id', 'avg_cost']]
+    return summed_reset = pd.DataFrame({
+        'stop_id': original_stop_ids_index,
+        'avg_cost': original_series_values})
 
 
 def calculate_average_wait(direction_times: pd.DataFrame) -> float:
@@ -152,6 +149,7 @@ def generate_summary_wait_times(
     grouped = df_sub.groupby('stop_id')
     summarized = grouped.apply(summarize_waits_at_one_stop)
 
+    # Clean up summary results, reformat pandas DataFrame result
     summed_reset = _format_summarized_outputs(summarized)
 
     end_of_stop_ids = summed_reset.stop_id.unique()
