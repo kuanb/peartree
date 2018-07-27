@@ -137,8 +137,12 @@ def generate_summary_wait_times(
     grouped = df_sub.groupby('stop_id')
     summarized = grouped.apply(summarize_waits_at_one_stop)
 
-    summed_reset = summarized.reset_index(drop=False)
-    summed_reset.columns = ['stop_id', 'avg_cost']
+    # Resent index BUT preserve the original index, which represents stop ids
+    original_stop_ids_index = summarized.index.values
+    summed_reset = summarized.reset_index(drop=True)
+    summed_reset.columns = ['avg_cost']
+    summed_reset['stop_id'] = original_stop_ids_index
+    summed_reset = summed_reset[['stop_id', 'avg_cost']]
 
     end_of_stop_ids = summed_reset.stop_id.unique()
     log('Original stop id count: {}'.format(len(init_of_stop_ids)))
