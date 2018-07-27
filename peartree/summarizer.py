@@ -12,6 +12,9 @@ from peartree.utilities import log
 
 
 
+class InvalidWaitTimes(Exception):
+    pass
+
 class NoValidWaitTimes(Exception):
     pass
 
@@ -147,8 +150,11 @@ def generate_summary_wait_times(
     dir_0_check_2 = df_sub[np.isnan(df_sub.wait_dir_0)]
     dir_1_check_2 = df_sub[np.isnan(df_sub.wait_dir_1)]
 
-    if (len(dir_0_check_2) > 0) or (len(dir_1_check_2) > 0):
-        raise Exception('NaN values for both directions on some stop IDs.')
+    dir_0_trigger = len(dir_0_check_2) > 0
+    dir_1_trigger = len(dir_1_check_2) > 0
+    if dir_0_trigger or dir_1_trigger:
+        raise InvalidWaitTimes(('NaN values for both directions on '
+                                'some stop IDs.'))
 
     # At this point, we should make sure that there are still values
     # in the DataFrame - otherwise we are in a situation where there are
