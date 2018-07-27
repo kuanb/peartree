@@ -97,6 +97,17 @@ def test_loading_in_invalid_timeframes():
         load_feed_as_graph(feed_1, start, end)
 
 
+def test_parsing_when_just_on_trip_during_target_window():
+    path = fixture('highdesertpointorus-2018-03-20.zip')
+    feed = get_representative_feed(path)
+
+    start = 7*60*60  # 7:00 AM
+    end = 8*60*60  # 10:00 AM
+    G = load_feed_as_graph(feed, start, end)
+    assert len(list(G.nodes())) == 2
+    assert len(list(G.edges())) == 1
+
+
 def test_synthetic_network():
     # Load in the GeoJSON as a JSON and convert to a dictionary
     geojson_path = fixture('synthetic_east_bay.geojson')
