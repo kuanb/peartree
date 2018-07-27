@@ -18,7 +18,7 @@ def _format_summarized_outputs(summarized: pd.Series) -> pd.DataFrame:
     original_stop_ids_index = summarized.index.values
     original_series_values = summarized.values
 
-    return summed_reset = pd.DataFrame({
+    return pd.DataFrame({
         'stop_id': original_stop_ids_index,
         'avg_cost': original_series_values})
 
