@@ -11,6 +11,21 @@ from peartree.parallel import (RouteProcessor, TripTimesInterpolator,
 from peartree.utilities import log
 
 
+def _format_summarized_outputs(summarized):
+    # Reset index BUT preserve the original index, which represents stop ids
+    original_stop_ids_index = summarized.index.values
+    summed_reset = summarized.reset_index(drop=True)
+
+    # At this point, just one column
+    summed_reset.columns = ['avg_cost']
+
+    # So add the new column, which was the index
+    summed_reset['stop_id'] = original_stop_ids_index
+
+    # Finally, preserve a desired ordering (stop id is first)
+    return summed_reset[['stop_id', 'avg_cost']]
+
+
 def calculate_average_wait(direction_times: pd.DataFrame) -> float:
     # Exit early if we do not have enough values to calculate a mean
     at = direction_times.arrival_time
@@ -137,12 +152,7 @@ def generate_summary_wait_times(
     grouped = df_sub.groupby('stop_id')
     summarized = grouped.apply(summarize_waits_at_one_stop)
 
-    # Resent index BUT preserve the original index, which represents stop ids
-    original_stop_ids_index = summarized.index.values
-    summed_reset = summarized.reset_index(drop=True)
-    summed_reset.columns = ['avg_cost']
-    summed_reset['stop_id'] = original_stop_ids_index
-    summed_reset = summed_reset[['stop_id', 'avg_cost']]
+    summed_reset = _format_summarized_outputs(summarized)
 
     end_of_stop_ids = summed_reset.stop_id.unique()
     log('Original stop id count: {}'.format(len(init_of_stop_ids)))
