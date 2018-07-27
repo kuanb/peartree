@@ -12,10 +12,7 @@ from peartree.utilities import log
 
 
 
-class InvalidWaitTimes(Exception):
-    pass
-
-class NoValidWaitTimes(Exception):
+class InvalidParsedWaitTimes(Exception):
     pass
 
 def _format_summarized_outputs(summarized: pd.Series) -> pd.DataFrame:
@@ -153,22 +150,24 @@ def generate_summary_wait_times(
     dir_0_trigger = len(dir_0_check_2) > 0
     dir_1_trigger = len(dir_1_check_2) > 0
     if dir_0_trigger or dir_1_trigger:
-        raise InvalidWaitTimes(('NaN values for both directions on '
-                                'some stop IDs.'))
+        raise InvalidParsedWaitTimes(
+            'NaN values for both directions on some stop IDs.')
 
     # At this point, we should make sure that there are still values
     # in the DataFrame - otherwise we are in a situation where there are
-    # no valid times to evaluate
+    # no valid times to evaluate. This is okay; we just need to skip straight
+    # to the application of the fallback value
     if df_sub.empty:
-        raise NoValidWaitTimes(('No valid wait times exist in either '
-                                'direction for any stops in the timeframe '
-                                'requested'))
+        # So just make a fallback empty dataframe for now
+        summed_reset = pd.DataFrame({'stop_id': [], 'avg_cost': []})
 
-    grouped = df_sub.groupby('stop_id')
-    summarized = grouped.apply(summarize_waits_at_one_stop)
+    # Only attempt this group by summary if at least one row to group on
+    else:
+        grouped = df_sub.groupby('stop_id')
+        summarized = grouped.apply(summarize_waits_at_one_stop)
 
-    # Clean up summary results, reformat pandas DataFrame result
-    summed_reset = _format_summarized_outputs(summarized)
+        # Clean up summary results, reformat pandas DataFrame result
+        summed_reset = _format_summarized_outputs(summarized)
 
     end_of_stop_ids = summed_reset.stop_id.unique()
     log('Original stop id count: {}'.format(len(init_of_stop_ids)))
