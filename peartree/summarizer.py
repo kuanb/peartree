@@ -11,6 +11,10 @@ from peartree.parallel import (RouteProcessor, TripTimesInterpolator,
 from peartree.utilities import log
 
 
+
+class NoValidWaitTimes(Exception):
+    pass
+
 def _format_summarized_outputs(summarized: pd.Series) -> pd.DataFrame:
     # The output of the group by produces a Series, but we want to extract
     # the values from the index and the Series itself and generate a
@@ -145,6 +149,14 @@ def generate_summary_wait_times(
 
     if (len(dir_0_check_2) > 0) or (len(dir_1_check_2) > 0):
         raise Exception('NaN values for both directions on some stop IDs.')
+
+    # At this point, we should make sure that there are still values
+    # in the DataFrame - otherwise we are in a situation where there are
+    # no valid times to evaluate
+    if df_sub.empty:
+        raise NoValidWaitTimes(('No valid wait times exist in either '
+                                'direction for any stops in the timeframe '
+                                'requested'))
 
     grouped = df_sub.groupby('stop_id')
     summarized = grouped.apply(summarize_waits_at_one_stop)
