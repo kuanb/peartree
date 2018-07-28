@@ -11,6 +11,22 @@ from peartree.parallel import (RouteProcessor, TripTimesInterpolator,
 from peartree.utilities import log
 
 
+
+class InvalidParsedWaitTimes(Exception):
+    pass
+
+def _format_summarized_outputs(summarized: pd.Series) -> pd.DataFrame:
+    # The output of the group by produces a Series, but we want to extract
+    # the values from the index and the Series itself and generate a
+    # pandas DataFrame instead
+    original_stop_ids_index = summarized.index.values
+    original_series_values = summarized.values
+
+    return pd.DataFrame({
+        'stop_id': original_stop_ids_index,
+        'avg_cost': original_series_values})
+
+
 def calculate_average_wait(direction_times: pd.DataFrame) -> float:
     # Exit early if we do not have enough values to calculate a mean
     at = direction_times.arrival_time
@@ -131,14 +147,27 @@ def generate_summary_wait_times(
     dir_0_check_2 = df_sub[np.isnan(df_sub.wait_dir_0)]
     dir_1_check_2 = df_sub[np.isnan(df_sub.wait_dir_1)]
 
-    if (len(dir_0_check_2) > 0) or (len(dir_1_check_2) > 0):
-        raise Exception('NaN values for both directions on some stop IDs.')
+    dir_0_trigger = len(dir_0_check_2) > 0
+    dir_1_trigger = len(dir_1_check_2) > 0
+    if dir_0_trigger or dir_1_trigger:
+        raise InvalidParsedWaitTimes(
+            'NaN values for both directions on some stop IDs.')
 
-    grouped = df_sub.groupby('stop_id')
-    summarized = grouped.apply(summarize_waits_at_one_stop)
+    # At this point, we should make sure that there are still values
+    # in the DataFrame - otherwise we are in a situation where there are
+    # no valid times to evaluate. This is okay; we just need to skip straight
+    # to the application of the fallback value
+    if df_sub.empty:
+        # So just make a fallback empty dataframe for now
+        summed_reset = pd.DataFrame({'stop_id': [], 'avg_cost': []})
 
-    summed_reset = summarized.reset_index(drop=False)
-    summed_reset.columns = ['stop_id', 'avg_cost']
+    # Only attempt this group by summary if at least one row to group on
+    else:
+        grouped = df_sub.groupby('stop_id')
+        summarized = grouped.apply(summarize_waits_at_one_stop)
+
+        # Clean up summary results, reformat pandas DataFrame result
+        summed_reset = _format_summarized_outputs(summarized)
 
     end_of_stop_ids = summed_reset.stop_id.unique()
     log('Original stop id count: {}'.format(len(init_of_stop_ids)))
