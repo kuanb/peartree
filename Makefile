@@ -20,16 +20,16 @@ cprofile:
 	snakeviz performance/cprof-output.py
 
 install-graph-viz:
-	apt-get udpate && \
+	apt-get update && \
 	apt-get install xdg-utils && \
 	apt-get install graphviz && \
 	pip install pygraphviz
 
 install-graph-tool:
-	sed -i -e '$$a\
-	deb http://downloads.skewed.de/apt/stretch stretch main\
-	deb-src http://downloads.skewed.de/apt/stretch stretch main' /etc/apt/sources.list && \
-	apt-get udpate && \
+	echo "deb http://downloads.skewed.de/apt/stretch stretch main" | tee -a /etc/apt/sources.list && \
+	echo "deb-src http://downloads.skewed.de/apt/stretch stretch main" | tee -a /etc/apt/sources.list && \
+	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7A80C8ED4FCCBE09 && \
+	apt-get update && \
 	apt-get install python3-graph-tool
 
 pypi-release:
