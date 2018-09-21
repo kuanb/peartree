@@ -25,10 +25,12 @@ install-graph-viz:
 	apt-get install graphviz && \
 	pip install pygraphviz
 
+# Used this instead? apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7A80C8ED4FCCBE09
+# pip install pycairo
 install-graph-tool:
 	echo "deb http://downloads.skewed.de/apt/stretch stretch main" | tee -a /etc/apt/sources.list && \
 	echo "deb-src http://downloads.skewed.de/apt/stretch stretch main" | tee -a /etc/apt/sources.list && \
-	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7A80C8ED4FCCBE09 && \
+	apt-key adv --keyserver pgp.skewed.de --recv-key 612DEFB798507F25 && \
 	apt-get update && \
 	apt-get install python3-graph-tool
 
