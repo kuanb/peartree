@@ -6,23 +6,22 @@ addons:
     - libgdal-dev
     - libspatialindex-dev
 
-language: python
-
-python:
-  - 3.6
-  - 3.5
+services:
+  - docker
+  - docker-compose
 
 before_install:
-  - sudo apt-get -y update
-  - pip install --upgrade pip
-  - pip install --upgrade wheel
+  - docker-compose build kuanb/test .
+  - docker run kuanb/test /bin/sh -c "sudo apt-get -y update"
+  - docker run kuanb/test /bin/sh -c "pip install --upgrade pip"
+  - docker run kuanb/test /bin/sh -c "pip install --upgrade wheel"
 
 install:
-  - pip install -r requirements.txt
-  - pip install -r requirements_dev.txt
+  - docker run kuanb/test /bin/sh -c "pip install -r requirements.txt"
+  - docker run kuanb/test /bin/sh -c "pip install -r requirements_dev.txt"
 
 script:
-  - PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose
+  - docker run kuanb/test /bin/sh -c "GRAPH_TOOL_DIR=/usr/lib/python3/dist-packages/ PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose"
 
 after_success:
   - coverage report -m
