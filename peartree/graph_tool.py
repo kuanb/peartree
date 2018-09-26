@@ -1,25 +1,40 @@
+import os
+import sys
 from typing import Any, Tuple
 
 import networkx as nx
 
 
 def _import_graph_tool():
-    # Initially, assume graph_tool is not available
-    gt = None
-
-    # Here, try and see if we can install it
+    # Naively assume everything is set up try and see if can just be imported
     try:
         import graph_tool as gt
+        return gt
     except ModuleNotFoundError:
-        # If we fail to import it the first time, check to see if it
-        # has been downloaded in its default apt-get install directory
-        import sys
-        sys.path.append('/usr/lib/python3/dist-packages/')
+        pass
+
+    # Note: graph-tool installs to a specific directory, not what
+    #       is being used by Python as a default.
+
+    # If we fail to import it the first time, check to see if it
+    # has been downloaded in its default apt-get install directory
+    sys.path.append(os.environ['GRAPH_TOOL_DIR'])
+
+    # Now retry with the new system path appended
+    try:
         import graph_tool as gt
+        return gt
+    except ModuleNotFoundError as e:
+        # If still fails, pass the exception through a custom error
+        raise GraphToolNotImported(
+            'graph-tool was not able to be imported: {}'.format(e))
+
     return gt
 
-# Carefully attempt an import of graph_tool
-gt = _import_graph_tool()
+
+class GraphToolNotImported(Exception):
+    # Let's have a custom exception for when we read in GTFS files
+    pass
 
 
 def get_prop_type(value: Any, key: Any=None) -> Tuple[str, Any, str]:
@@ -55,12 +70,17 @@ def get_prop_type(value: Any, key: Any=None) -> Tuple[str, Any, str]:
         tname = 'string'
         value = str(value)
 
+    # Final check to make sure outputs that need to be of a specific type are
+    tname = str(tname)
+    key = str(key)
+
+    # Return all three results
     return tname, value, key
 
 
-def nx_to_gt(nxG: nx.Digraph) -> gt.Graph:
+def nx_to_gt(nxG: nx.DiGraph):
     """
-    Converts a networkx graph to a graph-tool graph.
+    Converts a networkx graph to a graph-tool graph (gt.Graph).
 
     Credit: Please note that this function is adapted from Github user
             @bbengfort's blog post 'Converting NetworkX to Graph-Tool',
@@ -71,6 +91,9 @@ def nx_to_gt(nxG: nx.Digraph) -> gt.Graph:
     More information about this method available on @kuanbutts blog:
         > http://kuanbutts.com/2018/08/17/peartree-to-graph-tool/
     """
+    # First, attempt to import graph-tool
+    gt = _import_graph_tool()        
+
     # Phase 0: Create a directed or undirected graph-tool Graph
     gtG = gt.Graph(directed=nxG.is_directed())
 
@@ -91,15 +114,20 @@ def nx_to_gt(nxG: nx.Digraph) -> gt.Graph:
 
         # Go through all the properties if not seen and add them.
         for key, val in data.items():
-            if key in nprops: continue # Skip properties already added
+            # Check: Skip properties already added
+            if key in nprops:
+                continue
 
             # Convert the value and key into a type for graph-tool
             tname, _, key  = get_prop_type(val, key)
 
-            prop = gtG.new_vertex_property(tname) # Create the PropertyMap
-            gtG.vertex_properties[key] = prop     # Set the PropertyMap
+            # Create the PropertyMap, and...
+            prop = gtG.new_vertex_property(tname)
 
-            # Add the key to the already seen properties
+            # ...then set the PropertyMap
+            gtG.vertex_properties[key] = prop
+
+            # Finally, add the key to the already seen properties
             nprops.add(key)
 
     # Also add the node id: in NetworkX a node can be any hashable type, but
@@ -111,22 +139,28 @@ def nx_to_gt(nxG: nx.Digraph) -> gt.Graph:
     eprops = set() # cache keys to only add properties once
     for src, dst, data in nxG.edges(data=True):
 
-        # Go through all the edge properties if not seen and add them.
+        # Go through all the edge properties if not seen and add them,
+        # just like was performed with the vertices attributes
         for key, val in data.items():
-            if key in eprops: continue # Skip properties already added
+            # Check: Skip properties already added
+            if key in eprops:
+                continue
 
             # Convert the value and key into a type for graph-tool
             tname, _, key = get_prop_type(val, key)
 
-            prop = gtG.new_edge_property(tname) # Create the PropertyMap
-            gtG.edge_properties[key] = prop     # Set the PropertyMap
+            # Create the PropertyMap, and...
+            prop = gtG.new_edge_property(tname)
 
-            # Add the key to the already seen properties
+            # ...then set the PropertyMap
+            gtG.edge_properties[key] = prop
+
+            # Finally, add the key to the already seen properties
             eprops.add(key)
 
     # Phase 2: Actually add all the nodes and vertices with their properties
-    # Add the nodes
-    vertices = {} # vertex mapping for tracking edges later
+    # Vertex mapping (lookup) for tracking edges later
+    vertices = {}
     for node, data in nxG.nodes(data=True):
 
         # Create the vertex and annotate for our edges later
@@ -137,7 +171,7 @@ def nx_to_gt(nxG: nx.Digraph) -> gt.Graph:
         data['id'] = str(node)
         for key, value in data.items():
             tname, value, key = get_prop_type(value, key)
-            gtG.vp[key][v] = value # vp is short for vertex_properties
+            gtG.vp[key][v] = value  # vp is short for vertex_properties
 
     # Add the edges
     for src, dst, data in nxG.edges(data=True):
