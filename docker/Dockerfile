@@ -91,3 +91,18 @@ RUN pip install --upgrade numpy && \
     cd basemap-1.0.7rel && \
     python setup.py install && \
     rm -rf /provisioning/matplotlib-basemap
+
+RUN echo "Installing graph-tool" && \
+    echo "deb http://downloads.skewed.de/apt/stretch stretch main" | tee -a /etc/apt/sources.list && \
+    echo "deb-src http://downloads.skewed.de/apt/stretch stretch main" | tee -a /etc/apt/sources.list && \
+    apt-key adv --keyserver pgp.skewed.de --recv-key 612DEFB798507F25 && \
+    apt-get update && \
+    apt-get install -y python3-graph-tool && \
+    echo "export PYTHONPATH=/usr/lib/python3/dist-packages/" >> ~/.bashrc  && \
+    pip install pycairo
+
+RUN echo "Installing graphviz" && \
+    apt-get update && \
+    apt-get install -y xdg-utils && \
+    apt-get install -y graphviz && \
+    pip install pygraphviz

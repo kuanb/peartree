@@ -20,17 +20,20 @@ cprofile:
 	snakeviz performance/cprof-output.py
 
 install-graph-viz:
-	apt-get udpate && \
+	apt-get update && \
 	apt-get install xdg-utils && \
 	apt-get install graphviz && \
 	pip install pygraphviz
 
+# TODO: Determine which keyserver to use? Other option that appeared to work:
+# 		apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7A80C8ED4FCCBE09
 install-graph-tool:
-	sed -i -e '$$a\
-	deb http://downloads.skewed.de/apt/stretch stretch main\
-	deb-src http://downloads.skewed.de/apt/stretch stretch main' /etc/apt/sources.list && \
-	apt-get udpate && \
-	apt-get install python3-graph-tool
+	echo "deb http://downloads.skewed.de/apt/stretch stretch main" | tee -a /etc/apt/sources.list && \
+	echo "deb-src http://downloads.skewed.de/apt/stretch stretch main" | tee -a /etc/apt/sources.list && \
+	apt-key adv --keyserver pgp.skewed.de --recv-key 612DEFB798507F25 && \
+	apt-get update && \
+	apt-get install python3-graph-tool && \
+	pip install pycairo
 
 pypi-release:
 	if [ -d dist ]; then rm -Rf dist; fi
