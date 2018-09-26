@@ -22,7 +22,7 @@ install:
   - pip install -r requirements_dev.txt
 
 script:
-  - PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test -k 'not graph_tool' --verbose
+  - PYTHONPATH=. MPLBACKEND="agg" py.test -k 'not graph_tool' --verbose
   - docker run -v $PWD:/code -it kuanb/test bash -c "GRAPH_TOOL_DIR=/usr/lib/python3/dist-packages/ PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose"
 
 after_success:
