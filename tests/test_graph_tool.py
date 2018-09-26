@@ -1,7 +1,10 @@
+import json
+import os
 import pytest
 
 from peartree.graph_tool import nx_to_gt
 from peartree.paths import load_synthetic_network_as_graph
+from peartree.utilities import config
 
 # Make sure the we set logger on to test logging utilites
 # as well, related to each test
