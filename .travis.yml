@@ -8,11 +8,10 @@ addons:
 
 services:
   - docker
-  - docker-compose
 
 before_install:
   - touch .env
-  - docker-compose build -t kuanb/test .
+  - docker build -t kuanb/test .
   - docker run kuanb/test /bin/sh -c "sudo apt-get -y update"
   - docker run kuanb/test /bin/sh -c "pip install --upgrade pip"
   - docker run kuanb/test /bin/sh -c "pip install --upgrade wheel"
