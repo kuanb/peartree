@@ -111,7 +111,6 @@ def nx_to_gt(nxG: nx.DiGraph):
     # Add the node properties first
     nprops = set() # cache keys to only add properties once
     for node, data in nxG.nodes(data=True):
-
         # Go through all the properties if not seen and add them.
         for key, val in data.items():
             # Check: Skip properties already added
