@@ -1,5 +1,12 @@
-languages:
-  - python3
+addons:
+  apt:
+    packages:
+    - libgdal1h
+    - gdal-bin
+    - libgdal-dev
+    - libspatialindex-dev
+
+language: python
 
 python:
   - 3.6
