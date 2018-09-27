@@ -1,6 +1,6 @@
 # https://docs.codecov.io/docs/codecov-yaml
 fixes:
-  - "/code/::"
+  - "code/::"
 
 ignore:
   - "tests/**"
