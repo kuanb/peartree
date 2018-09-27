@@ -27,6 +27,3 @@ comment:
 
 fixes:
   - "code/::"
-
-ignore:
-  - "tests/**"
