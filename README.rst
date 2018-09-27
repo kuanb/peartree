@@ -1,5 +1,5 @@
 =============
-Peartree 🍐🌳
+peartree 🍐🌳
 =============
 
 .. image:: https://img.shields.io/gitter/room/nwjs/nw.js.svg
@@ -14,11 +14,11 @@ Peartree 🍐🌳
 .. image:: https://codecov.io/gh/kuanb/peartree/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/kuanb/peartree
 
-Peartree is a library for converting `GTFS <https://developers.google.com/transit/gtfs/>`_ feed schedules into a representative directed network graph. The tool uses `Partridge <https://github.com/remix/partridge>`__ to convert the target operator schedule data into `Pandas <https://github.com/pandas-dev/pandas>`__ dataframes and then `NetworkX <https://networkx.github.io/>`_ to hold the manipulated schedule data as a directed multigraph.
+peartree is a library for converting `GTFS <https://developers.google.com/transit/gtfs/>`_ feed schedules into a representative directed network graph. The tool uses `Partridge <https://github.com/remix/partridge>`__ to convert the target operator schedule data into `Pandas <https://github.com/pandas-dev/pandas>`__ dataframes and then `NetworkX <https://networkx.github.io/>`_ to hold the manipulated schedule data as a directed multigraph.
 
 .. image:: https://raw.githubusercontent.com/kuanb/peartree/master/examples/example.gif
 
-Above, an example of multiple Bay Area transit operators being incrementally loaded into Peartree.
+Above, an example of multiple Bay Area transit operators being incrementally loaded into peartree.
 
 Installation
 ------------
@@ -54,7 +54,7 @@ See a full notebook at `this gist <https://gist.github.com/kuanb/c54d0ae7ee353ca
 Examples
 --------
 
-I've yet to produce a full how-to guide for this library, but will begin to populate this section with any blog posts or notebooks that I or others produce, that include workflows using Peartree.
+I've yet to produce a full how-to guide for this library, but will begin to populate this section with any blog posts or notebooks that I or others produce, that include workflows using peartree.
 
 `Calculating betweeness centrality with Brooklyn bus network <http://kuanbutts.com/2017/12/13/betweenness-centrality-peartree/>`_
 

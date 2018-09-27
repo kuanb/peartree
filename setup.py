@@ -30,7 +30,7 @@ test_requirements = [
 setup(
     name='peartree',
     version=about['__version__'],
-    description=('Peartree is a library for '
+    description=('peartree is a library for '
                  'converting GTFS to directed graphs.'),
     long_description=readme,
     author='Kuan Butts',

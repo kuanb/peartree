@@ -2,7 +2,7 @@
 Contributing
 ============
 
-Thanks for your interest in Peartree! Contributions are always welcome.
+Thanks for your interest in peartree! Contributions are always welcome.
 
 Bug Reports
 ~~~~~~~~~~~
