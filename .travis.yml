@@ -35,4 +35,4 @@ script:
 
 after_success:
   - docker run -v $PWD:/code -it kuanb/test bash -c "coverage report -m"
-  - docker run -v $PWD:/code -it kuanb/test bash -c "codecov"
+  - codecov
