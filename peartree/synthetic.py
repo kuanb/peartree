@@ -1,9 +1,10 @@
+import abc
 from functools import partial
-from typing import List
+from typing import Any, Dict, Iterable, List
 
 import pandas as pd
 import pyproj
-from shapely.geometry import LineString, MultiPoint, Point
+from shapely.geometry import LineString, MultiPoint, Point, shape
 from shapely.ops import linemerge, split, transform
 
 from .toolkit import generate_random_name
@@ -34,6 +35,7 @@ def generate_meter_projected_chunks(
     # target stops or "break points" for the route line shape
 
     # Path 1 if available
+    print("custom_stopscustom_stops, custom_stops", custom_stops)
     if custom_stops is not None:
         mp_array = []
         for custom_stop in custom_stops:
@@ -183,3 +185,119 @@ def generate_edges_df(
     })
 
     return edges_df
+
+
+def _validate_feature_properties(props: Dict) -> Dict:
+    fresh_props = {}
+
+    if 'headway' in props:
+        fresh_props['headway'] = float(props['headway'])
+
+    if 'average_speed' in props:
+        fresh_props['average_speed'] = float(props['average_speed'])
+
+    if 'bidirectional' in props:
+        fresh_props['bidirectional'] = bool(props['bidirectional'])
+
+    # For this section, either the custom stops of the stop distance
+    # value must be set
+    if 'stops' in props:
+        # Make sure that this value is supplied as a list
+        if isinstance(props['stops'], list):
+            fresh_props['custom_stops'] = props['stops']
+
+    if 'stop_distance_distribution' in props:
+        fresh_props['stop_dist'] = float(props['stop_distance_distribution'])
+
+    # Sanity check; if both custom stops and stops distance are None
+    # then we cannot proceed
+    no_stops = 'custom_stops' not in fresh_props
+    no_dist = 'stop_dist' not in fresh_props
+    if no_stops and no_dist:
+        raise ValueError('Synthetic network addition must have either '
+                         'custom stops or stops distance default set.')
+
+    return fresh_props
+
+
+class SyntheticTransitLine(abc.ABC):
+    """
+    Represents a single synthetic transit lines custom attributes and shape.
+
+    Derived from a single Feature in a TransitJSON GeoJSON FeatureCollection.
+    """
+
+    def __init__(self, feature: Dict[str, Any]):
+        # All values have defaults built in; which are overridden when the
+        # user supplies, through the TransitJSON, custom values for those
+        # properties.
+        feature_props = feature['properties']
+        props = _validate_feature_properties(feature_props)
+
+        # Headway measured in seconds (30 minutes to seconds)
+        self.headway = props.get('headway', 30 * 60)
+
+        # Speed is measured in miles per hour
+        self.average_speed = props.get('average_speed', 8)
+
+        self.bidirectional = props.get('bidirectional', False)
+
+        # Via the validation step; one of these two will be set
+        custom_stops = props.get('custom_stops', None)
+        # Note that stops distances are set in meters (e.g. 402 meters
+        # is the equivalent of every 1/4 of a mile)
+        stop_distance = props.get('stop_dist', 402)
+
+        # We require this GeoJSON coordinate component to be valid format
+        self.route_path = shape(feature['geometry'])
+
+        # Generate reference geometry data, note (and this is confusing) but
+        # chunks is in meter projection and all_pts is in web mercator
+        # this is because we only need (from chunks) the length value
+        # and do not actually preserve the geometry beyond these operations
+        chunks = generate_meter_projected_chunks(self.route_path,
+                                                 custom_stops,
+                                                 stop_distance)
+
+        # Generate stops from each chunk and assign each a unique id
+        all_pts = generate_stop_points(chunks)
+        stop_ids = generate_stop_ids(len(all_pts))
+
+        # Produce key graph components
+        self.nodes = generate_nodes_df(stop_ids, all_pts, self.headway)
+        self.edges = generate_edges_df(stop_ids, chunks, self.average_speed)
+
+    def get_nodes(self) -> pd.DataFrame:
+        # Do this to prevent upstream mutation of the reference DataFrame
+        return self.nodes.copy()
+
+    def get_edges(self) -> pd.DataFrame:
+        # Do this to prevent upstream mutation of the reference DataFrame
+        return self.edges.copy()
+
+    def is_bidrectional(self) -> bool:
+        # Always attempt to avoid mutation
+        return bool(self.bidirectional)
+
+
+class SyntheticTransitNetwork(abc.ABC):
+    """
+    Holds a list of SyntheticTransitLine
+    """
+
+    def __init__(self, feature_collection: Dict[str, Any]):
+        # Initialize an empty list
+        self.lines = []
+
+        # For each Feature in the FeatureCollection group; add an additional
+        # instantiated SyntheticTransitLine object
+        for feature in feature_collection['features']:
+            new_line = SyntheticTransitLine(feature)
+            self.lines.append(new_line)
+
+    def _create_all_lines_generator(self):
+        for line in self.lines:
+            yield line
+
+    def all_lines(self) -> Iterable[SyntheticTransitLine]:
+        return self._create_all_lines_generator()
