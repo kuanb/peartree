@@ -19,6 +19,22 @@ class InsufficientSummaryResults(Exception):
 
 def generate_empty_md_graph(name: str,
                             init_crs: Dict=crs.from_epsg(WGS84)):
+    """
+    Generates an empty multi-directed graph.
+
+    Parameters
+    ———————
+    name : str
+        The name of the graph
+    init_crs : dict
+        The coordinate reference system to be assigned to the graph. Example
+        CRS would be `{'init': 'epsg:4326'}`
+
+    Returns
+    ——
+    G : nx.MultiDiGraph
+        The muti-directed graph
+    """
     return nx.MultiDiGraph(name=name, crs=init_crs)
 
 

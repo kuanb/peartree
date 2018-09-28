@@ -112,7 +112,7 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
 
     Returns
     -------
-    G
+    G : nx.MultiDiGraph
         networkx.Graph, the loaded, combined representation of the schedule
         data from the feed subset by the time parameters provided
     """
@@ -167,15 +167,36 @@ def load_synthetic_network_as_graph(
         existing_graph: nx.MultiDiGraph=None,
         connection_threshold: float=50.0,
         walk_speed_kmph: float=4.5,
-        impute_walk_transfers: bool=True):
+        impute_walk_transfers: bool=True) -> nx.MultiDiGraph:
     """
-    Convert a formatter transit FeatureCollection into a directed network graph.
+    Convert formatted transit FeatureCollection into a directed network graph.
 
     Utilizing a correctly formatted transit FeatureCollection, generate a
     directed networ graph (or add to an existing one), based off of features
     included in the reference_geojson parameter.
-    """
 
+    Parameters
+    ———————
+    reference_geojson : dict
+        The TransitJSON; a specifically formatted GeoJSON
+    name : str
+        The name of the graph
+    existing_graph : nx.MultiDiGraph
+        An existing, populated transit NetworkX graph generated from peartree
+    connection_threshold : float
+        Distance in meters within which a nearby transit stops should be
+        deemed acceptably close for a walk transfer to be also added
+    walk_speed_kmph : float
+        Speed in kilometers per hour to be used as the reference walk speed for
+        calculating cost (impedance in time) of walk transfers
+    impute_walk_transfers : bool
+        A flag to indicate whether or not walk transfers should be calculated
+
+    Returns
+    ——
+    G : nx.MultiDiGraph
+        The muti-directed graph
+    """
 
     # Generate a random name for name if it is None
     if not name:
