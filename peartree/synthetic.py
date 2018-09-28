@@ -1,6 +1,6 @@
 import abc
 from functools import partial
-from typing import Any, Dict, List
+from typing import Any, Bool, Dict, Iterable, List
 
 import pandas as pd
 import pyproj
@@ -266,15 +266,15 @@ class SyntheticTransitLine(abc.ABC):
         self.nodes = generate_nodes_df(stop_ids, all_pts, self.headway)
         self.edges = generate_edges_df(stop_ids, chunks, self.average_speed)
 
-    def get_nodes(self):
+    def get_nodes(self) -> pd.DataFrame:
         # Do this to prevent upstream mutation of the reference DataFrame
         return self.nodes.copy()
 
-    def get_edges(self):
+    def get_edges(self) -> pd.DataFrame:
         # Do this to prevent upstream mutation of the reference DataFrame
         return self.edges.copy()
 
-    def is_bidrectional(self):
+    def is_bidrectional(self) -> Bool:
         # Always attempt to avoid mutation
         return bool(self.bidirectional)
 
@@ -294,6 +294,6 @@ class SyntheticTransitNetwork(abc.ABC):
             new_line = SyntheticTransitLine(feature)
             self.lines.append(new_line)
 
-    def all_lines(self):
-        # TODO: Convert this to a generator
-        return self.lines
+    def all_lines(self) -> Iterable[SyntheticTransitLine]:
+        for line in self.lines:
+            yield self.lines

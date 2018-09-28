@@ -239,6 +239,9 @@ def make_synthetic_system_network(
         for key, val in sid_lookup_sub.items():
             sid_lookup[key] = val
 
+        # TODO: Appending pandas DataFrames is a costly operation
+        #       so identify what is needed from this DataFrame and extract
+        #       those values instead
         # Then add to the running tally of nodes
         if all_nodes is None:
             all_nodes = nodes.copy()
