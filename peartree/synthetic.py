@@ -1,6 +1,6 @@
 import abc
 from functools import partial
-from typing import Any, Bool, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List
 
 import pandas as pd
 import pyproj
@@ -35,6 +35,7 @@ def generate_meter_projected_chunks(
     # target stops or "break points" for the route line shape
 
     # Path 1 if available
+    print("custom_stopscustom_stops, custom_stops", custom_stops)
     if custom_stops is not None:
         mp_array = []
         for custom_stop in custom_stops:
@@ -200,10 +201,10 @@ def _validate_feature_properties(props: Dict) -> Dict:
 
     # For this section, either the custom stops of the stop distance
     # value must be set
-    if 'custom_stops' in props:
+    if 'stops' in props:
         # Make sure that this value is supplied as a list
-        if isinstance(props['custom_stops'], list):
-            fresh_props['custom_stops'] = props['custom_stops']
+        if isinstance(props['stops'], list):
+            fresh_props['custom_stops'] = props['stops']
 
     if 'stop_distance_distribution' in props:
         fresh_props['stop_dist'] = float(props['stop_distance_distribution'])
@@ -274,7 +275,7 @@ class SyntheticTransitLine(abc.ABC):
         # Do this to prevent upstream mutation of the reference DataFrame
         return self.edges.copy()
 
-    def is_bidrectional(self) -> Bool:
+    def is_bidrectional(self) -> bool:
         # Always attempt to avoid mutation
         return bool(self.bidirectional)
 
@@ -294,6 +295,9 @@ class SyntheticTransitNetwork(abc.ABC):
             new_line = SyntheticTransitLine(feature)
             self.lines.append(new_line)
 
-    def all_lines(self) -> Iterable[SyntheticTransitLine]:
+    def _create_all_lines_generator(self):
         for line in self.lines:
-            yield self.lines
+            yield line
+
+    def all_lines(self) -> Iterable[SyntheticTransitLine]:
+        return self._create_all_lines_generator()
