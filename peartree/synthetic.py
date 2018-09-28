@@ -189,10 +189,6 @@ def generate_edges_df(
 def _validate_feature_properties(props: Dict) -> Dict:
     fresh_props = {}
 
-    # Required values
-    fresh_props['geometry'] = props['geometry']
-
-    # Optional values
     if 'headway' in props:
         fresh_props['headway'] = float(props['headway'])
 
@@ -202,6 +198,8 @@ def _validate_feature_properties(props: Dict) -> Dict:
     if 'bidirectional' in props:
         fresh_props['bidirectional'] = bool(props['bidirectional'])
 
+    # For this section, either the custom stops of the stop distance
+    # value must be set
     if 'custom_stops' in props:
         # Make sure that this value is supplied as a list
         if isinstance(props['custom_stops'], list):
@@ -212,8 +210,8 @@ def _validate_feature_properties(props: Dict) -> Dict:
 
     # Sanity check; if both custom stops and stops distance are None
     # then we cannot proceed
-    no_stops = fresh_props['custom_stops'] is None
-    no_dist = fresh_props['stop_dist'] is None
+    no_stops = 'custom_stops' not in fresh_props
+    no_dist = 'stop_dist' not in fresh_props
     if no_stops and no_dist:
         raise ValueError('Synthetic network addition must have either '
                          'custom stops or stops distance default set.')
@@ -228,11 +226,11 @@ class SyntheticTransitLine(abc.ABC):
     Derived from a single Feature in a TransitJSON GeoJSON FeatureCollection.
     """
 
-    def __init__(self, feature_props: Dict[str, Any]):
-
+    def __init__(self, feature: Dict[str, Any]):
         # All values have defaults built in; which are overridden when the
         # user supplies, through the TransitJSON, custom values for those
         # properties.
+        feature_props = feature['properties']
         props = _validate_feature_properties(feature_props)
 
         # Headway measured in seconds (30 minutes to seconds)
@@ -245,10 +243,12 @@ class SyntheticTransitLine(abc.ABC):
 
         # Via the validation step; one of these two will be set
         custom_stops = props.get('custom_stops', None)
-        stop_distance = props.get('stop_distance_distribution', None)
+        # Note that stops distances are set in meters (e.g. 402 meters
+        # is the equivalent of every 1/4 of a mile)
+        stop_distance = props.get('stop_distance_distribution', 402)
 
         # We require this GeoJSON coordinate component to be valid format
-        self.route_path = shape(props['geometry'])
+        self.route_path = shape(feature['geometry'])
 
         # Generate reference geometry data, note (and this is confusing) but
         # chunks is in meter projection and all_pts is in web mercator
@@ -266,11 +266,11 @@ class SyntheticTransitLine(abc.ABC):
         self.nodes = generate_nodes_df(stop_ids, all_pts, self.headway)
         self.edges = generate_edges_df(stop_ids, chunks, self.average_speed)
 
-    def nodes(self):
+    def get_nodes(self):
         # Do this to prevent upstream mutation of the reference DataFrame
         return self.nodes.copy()
 
-    def edges(self):
+    def get_edges(self):
         # Do this to prevent upstream mutation of the reference DataFrame
         return self.edges.copy()
 
@@ -295,4 +295,5 @@ class SyntheticTransitNetwork(abc.ABC):
             self.lines.append(new_line)
 
     def all_lines(self):
+        # TODO: Convert this to a generator
         return self.lines

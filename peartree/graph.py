@@ -228,8 +228,8 @@ def make_synthetic_system_network(
 
     # Now, iterate through each line, extracting a single SyntheticTransitLine
     for line in new_network.all_lines():
-        nodes = line.nodes()
-        edges = line.edges()
+        nodes = line.get_nodes()
+        edges = line.get_edges()
 
         # Mutates the G network object
         sid_lookup_sub = _add_nodes_and_edges(
