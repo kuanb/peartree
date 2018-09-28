@@ -32,6 +32,10 @@ def test_save_and_read_zip():
     # Then read in as a new graph
     G2 = graph_from_zip(zip_fpath)
 
+    # Also immediately remove the zip file so it's not hanging
+    # around or impacting later tests
+    os.remove(zip_fpath)
+
     # Get new lengths
     nodes_len_g2 = len(list(G2.nodes()))
     edges_len_g2 = len(list(G2.edges()))

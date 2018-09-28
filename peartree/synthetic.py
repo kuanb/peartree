@@ -246,7 +246,7 @@ class SyntheticTransitLine(abc.ABC):
         custom_stops = props.get('custom_stops', None)
         # Note that stops distances are set in meters (e.g. 402 meters
         # is the equivalent of every 1/4 of a mile)
-        stop_distance = props.get('stop_distance_distribution', 402)
+        stop_distance = props.get('stop_dist', 402)
 
         # We require this GeoJSON coordinate component to be valid format
         self.route_path = shape(feature['geometry'])
