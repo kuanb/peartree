@@ -34,5 +34,5 @@ script:
   - docker run -v $PWD:/code -it kuanb/test bash -c "GRAPH_TOOL_DIR=/usr/lib/python3/dist-packages/ PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose"
 
 after_success:
-  - coverage report -m
+  - docker run -v $PWD:/code -it kuanb/test bash -c "coverage report -m"
   - codecov
