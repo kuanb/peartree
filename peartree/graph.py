@@ -4,15 +4,12 @@ import networkx as nx
 import pandas as pd
 import partridge as ptg
 from fiona import crs
-from shapely.geometry import shape
 
 from .settings import WGS84
 from .summarizer import (generate_edge_and_wait_values,
                          generate_summary_edge_costs,
                          generate_summary_wait_times)
-from .synthetic import (generate_edges_df, generate_meter_projected_chunks,
-                        generate_nodes_df, generate_stop_ids,
-                        generate_stop_points)
+from .synthetic import SyntheticTransitNetwork
 from .toolkit import generate_graph_node_dataframe, get_nearest_nodes
 
 
@@ -214,32 +211,6 @@ def populate_graph(G: nx.MultiDiGraph,
     return G
 
 
-def _validate_feature_properties(props: Dict) -> Dict:
-    fresh_props = {}
-    fresh_props['headway'] = float(props['headway'])
-    fresh_props['average_speed'] = float(props['average_speed'])
-
-    # Check if want to do bidirectional (optional)
-    fresh_props['bidirectional'] = props.get('bidirectional', False)
-
-    # If the user supplied custom stops, let's try and use them
-    # otherwise this attribute will be passed as a Nonetype
-    fresh_props['custom_stops'] = props.get('stops', None)
-
-    # Similarly, if there are stops distance instead, then we can use that
-    fresh_props['stop_dist'] = props.get('stop_distance_distribution', None)
-
-    # Sanity check; if both custom stops and stops distance are None
-    # then we cannot proceed
-    no_stops = fresh_props['custom_stops'] is None
-    no_dist = fresh_props['stop_dist'] is None
-    if no_stops and no_dist:
-        raise ValueError('Synthetic network addition must have either '
-                         'custom stops or stops distance default set.')
-
-    return fresh_props
-
-
 def make_synthetic_system_network(
         G: nx.MultiDiGraph,
         name: str,
@@ -251,36 +222,18 @@ def make_synthetic_system_network(
     # that are created
     sid_lookup = {}
     all_nodes = None
-    for feat in reference_geojson['features']:
-        # Pull out required properties
-        props = _validate_feature_properties(feat['properties'])
-        headway = props['headway']
-        avg_speed = props['average_speed']
-        stop_dist = props['stop_dist']
-        custom_stops = props['custom_stops']
 
-        # We require this GeoJSON coordinate component to be valid format
-        route_path = shape(feat['geometry'])
+    # First, instantiate entire TransitJSON as a SyntheticTransitNetwork object
+    new_network = SyntheticTransitNetwork(reference_geojson)
 
-        # Generate reference geometry data, note (and this is confusing) but
-        # chunks is in meter projection and all_pts is in web mercator
-        # this is because we only need (from chunks) the length value
-        # and do not actually preserve the geometry beyond these operations
-        chunks = generate_meter_projected_chunks(route_path,
-                                                 custom_stops,
-                                                 stop_dist)
-        all_pts = generate_stop_points(chunks)
-
-        # Give each stop a unique id
-        stop_ids = generate_stop_ids(len(all_pts))
-
-        # Produce graph components
-        nodes = generate_nodes_df(stop_ids, all_pts, headway)
-        edges = generate_edges_df(stop_ids, chunks, avg_speed)
+    # Now, iterate through each line, extracting a single SyntheticTransitLine
+    for line in new_network.all_lines():
+        nodes = line.nodes()
+        edges = line.edges()
 
         # Mutates the G network object
         sid_lookup_sub = _add_nodes_and_edges(
-            G, name, nodes, edges, props['bidirectional'])
+            G, name, nodes, edges, line.is_bidrectional())
 
         # Update the parent sid with new values
         for key, val in sid_lookup_sub.items():
