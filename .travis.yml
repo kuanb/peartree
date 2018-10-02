@@ -26,9 +26,9 @@ install:
   - pip install -r requirements_dev.txt
 
 script:
-  - PYTHONPATH=. MPLBACKEND="agg" py.test -k 'not graph_tool' --verbose
+  - PYTHONPATH=. MPLBACKEND="agg" py.test -k 'synthetic' --verbose
   - find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
-  - docker run -v $PWD:/code -it ci/build bash -c "GRAPH_TOOL_DIR=/usr/lib/python3/dist-packages/ PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose"
+  - docker run -v $PWD:/code -it ci/build bash -c "GRAPH_TOOL_DIR=/usr/lib/python3/dist-packages/ PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test -h 'synthetic' --verbose"
 
 after_success:
   - docker run -v $PWD:/code -it ci/build bash -c "coverage report -m"
