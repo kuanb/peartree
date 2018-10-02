@@ -29,7 +29,7 @@ script:
   - PYTHONPATH=. MPLBACKEND="agg" py.test -k 'synthetic' --verbose
   - find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
   - ci_env=`bash <(curl -s https://codecov.io/env)`
-  - docker run $ci_env -v $PWD:/code -it ci/build bash -c "GRAPH_TOOL_DIR=/usr/lib/python3/dist-packages/ PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test -h 'synthetic' --verbose"
+  - docker run $ci_env -v $PWD:/code -it ci/build bash -c "GRAPH_TOOL_DIR=/usr/lib/python3/dist-packages/ PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test -k 'synthetic' --verbose"
 
 after_success:
   - docker run $ci_env -v $PWD:/code -it ci/build bash -c "coverage report -m"
