@@ -9,7 +9,6 @@ addons:
 language: python
 
 python:
-  - 3.6
   - 3.5
 
 services:
@@ -17,22 +16,20 @@ services:
 
 before_install:
   - touch .env
-  - docker build -t kuanb/test .
+  - docker build -t ci/build .
   - sudo apt-get -y update
   - pip install --upgrade pip
   - pip install --upgrade wheel
 
 install:
-  - docker run kuanb/test /bin/sh -c "pip install -r requirements.txt"
-  - docker run kuanb/test /bin/sh -c "pip install -r requirements_dev.txt"
   - pip install -r requirements.txt
   - pip install -r requirements_dev.txt
 
 script:
   - PYTHONPATH=. MPLBACKEND="agg" py.test -k 'not graph_tool' --verbose
   - find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
-  - docker run -v $PWD:/code -it kuanb/test bash -c "GRAPH_TOOL_DIR=/usr/lib/python3/dist-packages/ PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose"
+  - docker run -v $PWD:/code -it ci/build bash -c "GRAPH_TOOL_DIR=/usr/lib/python3/dist-packages/ PYTHONPATH=. MPLBACKEND="agg" coverage run --source peartree -m py.test --verbose"
 
 after_success:
-  - docker run -v $PWD:/code -it kuanb/test bash -c "coverage report -m"
-  - codecov
+  - docker run -v $PWD:/code -it ci/build bash -c "coverage report -m"
+  - docker run -v $PWD:/code -it ci/build bash -c "bash <(curl -s https://codecov.io/bash)"
