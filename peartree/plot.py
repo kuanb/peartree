@@ -1,11 +1,11 @@
 import os
 
 import networkx as nx
-import osmnx as ox
 
 
 def generate_plot(G: nx.MultiDiGraph, use_agg=False):
     # Load matplotlib only when plot requested
+    import osmnx as ox  # noqa
     import matplotlib  # noqa
     if use_agg:
         # Force matplotlib to not use any Xwindows backend
