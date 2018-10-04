@@ -234,12 +234,12 @@ class SyntheticTransitLine(abc.ABC):
         props = _validate_feature_properties(feature_props)
 
         # Headway measured in seconds (30 minutes to seconds)
-        self.headway = props.get('headway', 30 * 60)
+        self._headway = props.get('headway', 30 * 60)
 
         # Speed is measured in miles per hour
-        self.average_speed = props.get('average_speed', 8)
+        self._average_speed = props.get('average_speed', 8)
 
-        self.bidirectional = props.get('bidirectional', False)
+        self._bidirectional = props.get('bidirectional', False)
 
         # Via the validation step; one of these two will be set
         custom_stops = props.get('custom_stops', None)
@@ -248,13 +248,13 @@ class SyntheticTransitLine(abc.ABC):
         stop_distance = props.get('stop_dist', 402)
 
         # We require this GeoJSON coordinate component to be valid format
-        self.route_path = shape(feature['geometry'])
+        self._route_path = shape(feature['geometry'])
 
         # Generate reference geometry data, note (and this is confusing) but
         # chunks is in meter projection and all_pts is in web mercator
         # this is because we only need (from chunks) the length value
         # and do not actually preserve the geometry beyond these operations
-        chunks = generate_meter_projected_chunks(self.route_path,
+        chunks = generate_meter_projected_chunks(self._route_path,
                                                  custom_stops,
                                                  stop_distance)
 
@@ -263,20 +263,24 @@ class SyntheticTransitLine(abc.ABC):
         stop_ids = generate_stop_ids(len(all_pts))
 
         # Produce key graph components
-        self.nodes = generate_nodes_df(stop_ids, all_pts, self.headway)
-        self.edges = generate_edges_df(stop_ids, chunks, self.average_speed)
+        self._nodes = generate_nodes_df(stop_ids, all_pts, self._headway)
+        self._edges = generate_edges_df(stop_ids, chunks, self._average_speed)
 
     def get_nodes(self) -> pd.DataFrame:
         # Do this to prevent upstream mutation of the reference DataFrame
-        return self.nodes.copy()
+        return self._nodes.copy()
 
     def get_edges(self) -> pd.DataFrame:
         # Do this to prevent upstream mutation of the reference DataFrame
-        return self.edges.copy()
+        return self._edges.copy()
 
-    def is_bidrectional(self) -> bool:
+    def get_bidrectional(self) -> bool:
         # Always attempt to avoid mutation
-        return bool(self.bidirectional)
+        return bool(self._bidirectional)
+
+    nodes = property(get_nodes)
+    edges = property(get_edges)
+    bidirectional = property(get_bidrectional)
 
 
 class SyntheticTransitNetwork(abc.ABC):
