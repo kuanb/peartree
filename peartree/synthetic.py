@@ -290,17 +290,19 @@ class SyntheticTransitNetwork(abc.ABC):
 
     def __init__(self, feature_collection: Dict[str, Any]):
         # Initialize an empty list
-        self.lines = []
+        self._lines = []
 
         # For each Feature in the FeatureCollection group; add an additional
         # instantiated SyntheticTransitLine object
         for feature in feature_collection['features']:
             new_line = SyntheticTransitLine(feature)
-            self.lines.append(new_line)
+            self._lines.append(new_line)
 
     def _create_all_lines_generator(self):
-        for line in self.lines:
+        for line in self._lines:
             yield line
 
-    def all_lines(self) -> Iterable[SyntheticTransitLine]:
+    def get_all_lines(self) -> Iterable[SyntheticTransitLine]:
         return self._create_all_lines_generator()
+
+    lines = property(get_all_lines)

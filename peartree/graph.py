@@ -243,7 +243,7 @@ def make_synthetic_system_network(
     new_network = SyntheticTransitNetwork(reference_geojson)
 
     # Now, iterate through each line, extracting a single SyntheticTransitLine
-    for line in new_network.all_lines():
+    for line in new_network.lines:
         nodes = line.nodes
         edges = line.edges
 
