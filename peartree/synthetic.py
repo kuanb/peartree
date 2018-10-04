@@ -35,7 +35,6 @@ def generate_meter_projected_chunks(
     # target stops or "break points" for the route line shape
 
     # Path 1 if available
-    print("custom_stopscustom_stops, custom_stops", custom_stops)
     if custom_stops is not None:
         mp_array = []
         for custom_stop in custom_stops:
