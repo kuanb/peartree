@@ -243,13 +243,13 @@ def make_synthetic_system_network(
     new_network = SyntheticTransitNetwork(reference_geojson)
 
     # Now, iterate through each line, extracting a single SyntheticTransitLine
-    for line in new_network.all_lines():
-        nodes = line.get_nodes()
-        edges = line.get_edges()
+    for line in new_network.lines:
+        nodes = line.nodes
+        edges = line.edges
 
         # Mutates the G network object
         sid_lookup_sub = _add_nodes_and_edges(
-            G, name, nodes, edges, line.is_bidrectional())
+            G, name, nodes, edges, line.bidirectional)
 
         # Update the parent sid with new values
         for key, val in sid_lookup_sub.items():

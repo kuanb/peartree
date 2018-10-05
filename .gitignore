@@ -15,3 +15,5 @@ performance/cprof-output.py
 .eggs/
 .pytest_cache/
 profile/
+.coverage-e
+coverage.xml

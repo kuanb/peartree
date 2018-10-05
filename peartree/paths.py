@@ -21,7 +21,28 @@ class InvalidTimeBracket(Exception):
 
 
 def get_representative_feed(file_loc: str,
-                            day_type: str='busiest'):
+                            day_type: str='busiest') -> ptg.feed:
+    """
+    Given a filepath, extract a partridge feed object, holding a representative
+    set of schedule patterns, extracted from the GTFS zip file, as a set of
+    pandas DataFrames.
+
+    Parameters
+    ----------
+    file_loc : str
+        The location (filepath) of the GTFS zip file.
+    day_type : str
+        The name of the type of representative feed desired. Currently, only
+        one type is supported, busiest. This extracts the schedule pattern
+        for a day that has the most service on it. This is determined by the
+        day with the most trips on it.
+
+    Returns
+    -------
+    feed : ptg.feed
+        A partridge feed object, holding related schedule information as pandas
+        DataFrames for the busiest day in the available schedule.
+    """
     # Extract service ids and then trip counts by those dates
     service_ids_by_date = ptg.read_service_ids_by_date(file_loc)
     trip_counts_by_date = ptg.read_trip_counts_by_date(file_loc)
@@ -64,8 +85,8 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
                        impute_walk_transfers: bool=False,
                        use_multiprocessing: bool=False):
     """
-    Convert a feed object into a NetworkX Graph, connect to an existing
-    NetworkX graph if one is supplied
+    Convert a feed object into a NetworkX Graph, or connect to an existing
+    NetworkX graph if one is supplied.
 
     Parameters
     ----------

@@ -1,11 +1,11 @@
 import random
 import string
-from typing import Tuple
+from typing import List, Tuple
+import warnings
 
 import geopandas as gpd
 import networkx as nx
 import numpy as np
-import osmnx as ox
 import pandas as pd
 from shapely.geometry import LineString, Point
 
@@ -16,11 +16,51 @@ def great_circle_vec(lat1: float,
                      lng1: float,
                      lat2: float,
                      lng2: float,
-                     earth_radius: int=6371009):
-    # This method wraps the same in OSMnx, source:
-    #   https://github.com/gboeing/osmnx/blob/
-    #   b32f8d333c6965a0d2f27c1f3224a29de2f08d55/osmnx/utils.py#L262
-    return ox.utils.great_circle_vec(lat1, lng1, lat2, lng2, earth_radius)
+                     earth_radius: float=6371009.0) -> float:
+    """
+    Vectorized function to calculate the great-circle distance between two
+    points or between vectors of points.
+
+    Please note that this method is copied from OSMnx method of the same name,
+    which can be accessed here:
+    https://github.com/gboeing/osmnx/blob/
+    b32f8d333c6965a0d2f27c1f3224a29de2f08d55/osmnx/utils.py#L262
+
+    Parameters
+    ----------
+    lat1 : float or array of float
+    lng1 : float or array of float
+    lat2 : float or array of float
+    lng2 : float or array of float
+    earth_radius : numeric
+        radius of earth in units in which distance will be returned (default is
+        meters)
+
+    Returns
+    -------
+    distance : float
+        distance or vector of distances from (lat1, lng1) to (lat2, lng2) in
+        units of earth_radius
+    """
+
+    phi1 = np.deg2rad(90 - lat1)
+    phi2 = np.deg2rad(90 - lat2)
+
+    theta1 = np.deg2rad(lng1)
+    theta2 = np.deg2rad(lng2)
+
+    cos = (np.sin(phi1) * np.sin(phi2) * np.cos(theta1 - theta2) \
+           + np.cos(phi1) * np.cos(phi2))
+
+    # Ignore warnings during this calculation because numpy warns it cannot
+    # calculate arccos for self-loops since u==v
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        arc = np.arccos(cos)
+
+    # Return distance in units of earth_radius
+    distance = arc * earth_radius
+    return distance
 
 
 def generate_random_name(N: int=5):
@@ -313,6 +353,196 @@ def _path_has_consistent_mode_type(G, path):
     return path_clear
 
 
+def is_endpoint(G: nx.Graph, node: int, strict=True):
+    """
+    Return True if the node is a "real" endpoint of an edge in the network, \
+    otherwise False. OSM data includes lots of nodes that exist only as \
+    points to help streets bend around curves. An end point is a node that \
+    either: \
+    1) is its own neighbor, ie, it self-loops. \
+    2) or, has no incoming edges or no outgoing edges, ie, all its incident \
+        edges point inward or all its incident edges point outward. \
+    3) or, it does not have exactly two neighbors and degree of 2 or 4. \
+    4) or, if strict mode is false, if its edges have different OSM IDs.
+
+    Please note this method is taken directly from OSMnx, and can be found in \
+    its original form, here: \
+    https://github.com/gboeing/osmnx/blob/ \
+    c5916aab5c9b94c951c8fb1964c841899c9467f8/osmnx/simplify.py#L22-L88
+
+    Parameters
+    ----------
+    G : networkx multidigraph
+        The NetworkX graph being evaluated
+    node : int
+        The node to examine
+    strict : bool
+        If False, allow nodes to be end points even if they fail all other \
+        rules  but have edges with different OSM IDs
+
+    Returns
+    -------
+    bool
+        Indicates whether or not the node is indeed an endpoint
+    """
+
+    neighbors = set(list(G.predecessors(node)) + list(G.successors(node)))
+    n = len(neighbors)
+    d = G.degree(node)
+
+    if node in neighbors:
+        # If the node appears in its list of neighbors, it self-loops. this is
+        # always an endpoint.
+        return True
+
+    # If node has no incoming edges or no outgoing edges, it must be an endpoint
+    elif G.out_degree(node)==0 or G.in_degree(node)==0:
+        return True
+
+    elif not (n==2 and (d==2 or d==4)):
+        # Else, if it does NOT have 2 neighbors AND either 2 or 4 directed
+        # edges, it is an endpoint. either it has 1 or 3+ neighbors, in which
+        # case it is a dead-end or an intersection of multiple streets or it has
+        # 2 neighbors but 3 degree (indicating a change from oneway to twoway)
+        # or more than 4 degree (indicating a parallel edge) and thus is an
+        # endpoint
+        return True
+
+    elif not strict:
+        # Non-strict mode
+        osmids = []
+
+        # Add all the edge OSM IDs for incoming edges
+        for u in G.predecessors(node):
+            for key in G[u][node]:
+                osmids.append(G.edges[u, node, key]['osmid'])
+
+        # Add all the edge OSM IDs for outgoing edges
+        for v in G.successors(node):
+            for key in G[node][v]:
+                osmids.append(G.edges[node, v, key]['osmid'])
+
+        # If there is more than 1 OSM ID in the list of edge OSM IDs then it is
+        # an endpoint, if not, it isn't
+        return len(set(osmids)) > 1
+
+    else:
+        # If none of the preceding rules returned true, then it is not an endpoint
+        return False
+
+
+def build_path(
+        G: nx.Graph,
+        node: int,
+        endpoints: List[int],
+        path: List[int]) -> List[int]:
+    """
+    Recursively build a path of nodes until you hit an endpoint node.
+
+    Please note this method is taken directly from OSMnx, and can be found in \
+    its original form, here: \
+    https://github.com/gboeing/osmnx/blob/ \
+    c5916aab5c9b94c951c8fb1964c841899c9467f8/osmnx/simplify.py#L91-L131
+
+    Parameters
+    ----------
+    G : networkx multidigraph
+    node : int
+        the current node to start from
+    endpoints : set
+        the set of all nodes in the graph that are endpoints
+    path : list
+        the list of nodes in order in the path so far
+
+    Returns
+    -------
+    paths_to_simplify : list
+    """
+
+    # For each successor in the passed-in node
+    for successor in G.successors(node):
+        if successor not in path:
+            # If successor is already in path, ignore it, otherwise add to path
+            path.append(successor)
+
+            if successor not in endpoints:
+                # If successor not endpoint, recursively call
+                # build_path until endpoint found
+                path = build_path(G, successor, endpoints, path)
+
+            else:
+                # If successor is endpoint, path is completed, so return
+                return path
+
+    if (path[-1] not in endpoints) and (path[0] in G.successors(path[-1])):
+        # If end of the path is not actually an endpoint and the path's
+        # first node is a successor of the path's final node, then this is
+        # actually a self loop, so add path's first node to end of path to
+        # close it
+        path.append(path[0])
+
+    return path
+
+
+def get_paths_to_simplify(G: nx.Graph, strict: bool=True) -> List[List[int]]:
+    """
+    Create a list of all the paths to be simplified between endpoint nodes. \
+    The path is ordered from the first endpoint, through the interstitial \
+    nodes, to the second endpoint.
+
+    Please note this method is taken directly from OSMnx, and can be found in \
+    its original form, here: \
+    https://github.com/gboeing/osmnx/blob/ \
+    c5916aab5c9b94c951c8fb1964c841899c9467f8/osmnx/simplify.py#L134-L181
+
+    Parameters
+    ----------
+    G : networkx multidigraph
+    strict : bool
+        if False, allow nodes to be end points even if they fail all other rules
+        but have edges with different OSM IDs
+
+    Returns
+    -------
+    paths_to_simplify : lists
+        Returns a nested set of lists, containing the paths (node ID arrays) \
+        for each group of vertices that can be consolidated
+    """
+
+    # First identify all the nodes that are endpoints
+    endpoints = set([node for node in G.nodes()
+                     if is_endpoint(G, node, strict=strict)])
+
+    # Initialize the list to be returned; an empty list
+    paths_to_simplify = []
+
+    # For each endpoint node, look at each of its successor nodes
+    for node in endpoints:
+        for successor in G.successors(node):
+            if successor not in endpoints:
+                # if the successor is not an endpoint, build a path from the
+                # endpoint node to the next endpoint node
+                try:
+                    paths_to_simplify.append(
+                        build_path(G,
+                                   successor,
+                                   endpoints,
+                                   path=[node, successor]))
+                except RuntimeError:
+                    # Note: Recursion errors occur if some connected component
+                    #       is a self-contained ring in which all nodes are not
+                    #       end points handle it by just ignoring that
+                    #       component and letting its topology remain intact
+                    #       (this should be a rare occurrence).
+                    # Note: RuntimeError is what Python <3.5 will throw, Py3.5+
+                    #       throws RecursionError but it is a subtype of
+                    #       RuntimeError so it still gets handled
+                    log(('Recursion error: exceeded max depth, moving on to '
+                         'next endpoint successor'), level=lg.WARNING)
+
+    return paths_to_simplify
+
+
 def simplify_graph(G_orig: nx.MultiDiGraph) -> nx.MultiDiGraph:
     # Note: This operation borrows heavily from the operation of
     #       the same name in OSMnx, as it existed in this state/commit:
@@ -331,7 +561,7 @@ def simplify_graph(G_orig: nx.MultiDiGraph) -> nx.MultiDiGraph:
     #       removal proposals
     # Utilize the recursive function from OSMnx that identifies paths based
     # on isolated successor nodes
-    paths_to_consider = ox.simplify.get_paths_to_simplify(G)
+    paths_to_consider = get_paths_to_simplify(G)
 
     # Iterate through the resulting path arrays to target
     for path in paths_to_consider:

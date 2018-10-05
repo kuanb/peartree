@@ -1,7 +1,8 @@
 import os
 
 import networkx as nx
-import osmnx as ox
+
+from .utilities import log
 
 
 def generate_plot(G: nx.MultiDiGraph, use_agg=False):
@@ -10,6 +11,15 @@ def generate_plot(G: nx.MultiDiGraph, use_agg=False):
     if use_agg:
         # Force matplotlib to not use any Xwindows backend
         matplotlib.use('Agg')
+
+    # OSMnx is not a dependency anymore, so we should only allow the plot
+    # function to work as a convenience, if the user has already installed
+    # OSMnx
+    try:
+        import osmnx as ox  # noqa
+    except ModuleNotFoundError:
+        log(('Optional dependency: OSMnx must be installed to use the '
+             'plot method in peartree'))
 
     # TODO: Build out custom plotting configurations but,
     #       in the meantime, use OSMnx's plotting configurations

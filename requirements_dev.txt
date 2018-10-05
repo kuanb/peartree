@@ -6,6 +6,8 @@ flake8
 coverage
 pytest
 pytest-runner
+matplotlib
+osmnx
 jupyter>=1.0.0
 jupyter-client>=5.1.0
 jupyter-console>=5.2.0
