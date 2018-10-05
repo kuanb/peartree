@@ -24,6 +24,7 @@ before_install:
 install:
   - pip install -r requirements.txt
   - pip install -r requirements_dev.txt
+  - pip install osmnx matplotlib
 
 script:
   - PYTHONPATH=. MPLBACKEND="agg" py.test -k 'not graph_tool' --verbose
