@@ -286,6 +286,26 @@ class SyntheticTransitLine(abc.ABC):
 class SyntheticTransitNetwork(abc.ABC):
     """
     Holds a list of SyntheticTransitLine
+
+    Below is an example of the most basic TransitJSON that could/should be \
+    provided to peartree for modeling out a new transit line:
+    
+    {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [-82.7, 39.5], [-82.8, 39.6], [-82.9, 39.7] ]
+                }, "properties": {
+                        "average_speed": 16,
+                        "headway": 600,
+                        "stops": [ [-82.8, 39.6] ],
+                }, "type": "Feature"
+            }
+        ],
+    }
     """
 
     def __init__(self, feature_collection: Dict[str, Any]):
