@@ -289,7 +289,7 @@ class SyntheticTransitNetwork(abc.ABC):
 
     Below is an example of the most basic TransitJSON that could/should be \
     provided to peartree for modeling out a new transit line:
-    
+
     {
         "type": "FeatureCollection",
         "features": [
