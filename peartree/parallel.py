@@ -135,7 +135,7 @@ def generate_wait_times(
                 # values associated with the specified direction so default NaN
                 average_wait = np.nan
             else:
-                average_wait = stop_cost_method(direction_subset)
+                average_wait = stop_cost_method(direction_subset.arrival_time)
 
             # Add according to which direction we are working with
             wait_times[direction][stop_id] = average_wait

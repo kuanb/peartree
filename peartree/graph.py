@@ -82,6 +82,10 @@ def generate_summary_graph_elements(
         specific route. This can happen when there is only one arrival in \
         the considered time frame. In such situations, the fallback value \
         is used in lieu of a calculated standard wait time for that stop node.
+    stop_cost_method : Any
+        A method is passed in here that handles an arrival time numpy array
+        and, from that array, calcualtes a representative average wait time
+        value, in seconds, for that stop.
     use_multiprocessing : bool
         This is a flag to tell the peartree model whether to attempt to \
         parallelize the computing of route-stop average wait times. It can \
