@@ -27,24 +27,6 @@ def _format_summarized_outputs(summarized: pd.Series) -> pd.DataFrame:
         'avg_cost': original_series_values})
 
 
-def calculate_average_wait(direction_times: pd.DataFrame) -> float:
-    # Exit early if we do not have enough values to calculate a mean
-    at = direction_times.arrival_time
-    if len(at) < 2:
-        return np.nan
-
-    first = at[1:].values
-    second = at[:-1].values
-    wait_seconds = (first - second)
-
-    # TODO: Can implement something more substantial here that takes into
-    #       account divergent/erratic performance or intentional timing
-    #       clusters that are not evenly dispersed
-    na = np.array(wait_seconds)
-    average_wait = na.mean()
-    return average_wait
-
-
 def summarize_edge_costs(df: pd.DataFrame) -> pd.DataFrame:
     # Used as a function applied to a grouping
     # operation, pulls out the mean edge cost for each
@@ -72,7 +54,7 @@ def generate_summary_edge_costs(all_edge_costs: pd.DataFrame) -> pd.DataFrame:
 def summarize_waits_at_one_stop(stop_df: pd.DataFrame) -> float:
     # Calculates average wait time at this stop, given all observed
     # TODO: Simply dividiing by two may not be appropriate - it is
-    #       go for estimation purposes, but I could introduce
+    #       good for estimation purposes, but I could introduce
     #       more sophisticated wait time calculations here
     divide_by = (len(stop_df) * 2)
     dir_0_sum = stop_df.wait_dir_0.sum()
@@ -360,7 +342,7 @@ def _trim_stop_times_by_timeframe(
 
 
 def generate_edge_and_wait_values(
-        feed: ptg.gtfs.feed,
+        feed: ptg.feed,
         target_time_start: int,
         target_time_end: int,
         interpolate_times: bool,
