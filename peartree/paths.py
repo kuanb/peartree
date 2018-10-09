@@ -1,6 +1,7 @@
-from typing import Dict
+from typing import Any, Dict
 
 import networkx as nx
+import numpy as np
 import partridge as ptg
 
 from .graph import (generate_empty_md_graph, generate_summary_graph_elements,
@@ -18,6 +19,29 @@ class InvalidGTFS(Exception):
 
 class InvalidTimeBracket(Exception):
     pass
+
+
+def _calculate_means_default(arrival_times: np.array) -> foo:
+    # This is the default method that is provided to the load feed operation
+    # and applied to the observed arrival times at a given stop. From this
+    # array of arrival times, the average delay between stops is calcualted
+    if len(arrival_times) < 2:
+        return np.nan
+
+    first = arrival_times[1:].values
+    second = arrival_times[:-1].values
+    wait_seconds = (first - second)
+
+    # Note: Can implement something more substantial here that takes into
+    #       account divergent/erratic performance or intentional timing
+    #       clusters that are not evenly dispersed in a custom method that
+    #       would replace this default method
+    na = np.array(wait_seconds)
+
+    # Naive implementation: halve the headway to get average wait time
+    average_wait = na.mean() / 2
+    return average_wait
+
 
 
 def get_representative_feed(file_loc: str,
@@ -73,24 +97,25 @@ def get_representative_feed(file_loc: str,
     return ptg.feed(file_loc, view=feed_query)
 
 
-def load_feed_as_graph(feed: ptg.gtfs.feed,
+def load_feed_as_graph(feed: ptg.feed,
                        start_time: int,
                        end_time: int,
                        name: str=None,
                        existing_graph: nx.MultiDiGraph=None,
                        connection_threshold: float=50.0,
                        walk_speed_kmph: float=4.5,
+                       stop_cost_method: Any=_calculate_means_default,
                        fallback_stop_cost: bool=FALLBACK_STOP_COST_DEFAULT,
                        interpolate_times: bool=True,
                        impute_walk_transfers: bool=False,
                        use_multiprocessing: bool=False):
     """
-    Convert a feed object into a NetworkX Graph, or connect to an existing
+    Convert a feed object into a NetworkX Graph, or connect to an existing \
     NetworkX graph if one is supplied.
 
     Parameters
     ----------
-    feed : partridge.feed
+    feed : ptg.feed
         A feed object from Partridge holding a representation of the
         desired schedule ids and their releated scheudule data from an
         operator GTFS
@@ -115,6 +140,10 @@ def load_feed_as_graph(feed: ptg.gtfs.feed,
     walk_speed_kmph : float
         Walk speed in km/h, that is used to determine the cost in time when
         walking between two nodes that get an internal connection created
+    stop_cost_method : Any
+        A method is passed in here that handles an arrival time numpy array
+        and, from that array, calcualtes a representative average wait time
+        value, in seconds, for that stop.
     fallback_stop_cost: bool
         Cost in seconds to board a line at a stop if no other data is able
         to be calculated from schedule data for that stop to determine
