@@ -21,7 +21,7 @@ class InvalidTimeBracket(Exception):
     pass
 
 
-def _calculate_means_default(arrival_times: np.array) -> foo:
+def _calculate_means_default(arrival_times: np.array) -> float:
     # This is the default method that is provided to the load feed operation
     # and applied to the observed arrival times at a given stop. From this
     # array of arrival times, the average delay between stops is calcualted
