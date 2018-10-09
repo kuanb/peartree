@@ -3,7 +3,9 @@ import pytest
 
 from peartree.graph import (generate_empty_md_graph,
                             generate_summary_graph_elements)
-from peartree.paths import FALLBACK_STOP_COST_DEFAULT, get_representative_feed
+from peartree.paths import (FALLBACK_STOP_COST_DEFAULT,
+                            _calculate_means_default,
+                            get_representative_feed)
 
 
 def fixture(filename):
@@ -33,6 +35,7 @@ def test_generate_summary_graph_elements():
             end,
             FALLBACK_STOP_COST_DEFAULT,
             interpolate_times,
+            _calculate_means_default,
             use_multiprocessing)
 
         # Ensure that the summary edge cost dataframe looks as it should

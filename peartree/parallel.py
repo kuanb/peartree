@@ -1,5 +1,5 @@
 from multiprocessing.managers import BaseManager
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -19,7 +19,8 @@ class RouteProcessor(object):
             target_time_end: int,
             feed_trips: pd.DataFrame,
             stop_times: pd.DataFrame,
-            all_stops: pd.DataFrame):
+            all_stops: pd.DataFrame,
+            stop_cost_method: Any):
 
         # Initialize common parameters
         self.target_time_start = target_time_start
@@ -34,6 +35,10 @@ class RouteProcessor(object):
         astops = all_stops.copy()
         astops['stop_id'] = astops['stop_id'].astype(str)
         self.all_stops = astops
+
+        # This is a custom method for calculating custom wait time from
+        # a list of arrival time values in a numpy array
+        self.stop_cost_method = stop_cost_method
 
     def generate_route_costs(self, route_id: str):
         # Get all the subset of trips that are related to this route
@@ -86,13 +91,17 @@ class RouteProcessor(object):
                 # If it has no full coverage in direction_id, drop the column
                 trips_and_stop_times.drop('direction_id', axis=1, inplace=True)
 
-        wait_times = generate_wait_times(trips_and_stop_times)
+        wait_times = generate_wait_times(
+            trips_and_stop_times, self.stop_cost_method)
+
+        # Used in the next two steps
+        stop_id_col = trips_and_stop_times['stop_id'].copy()
 
         # Look up wait time for each stop in wait_times for each direction
-        wait_zero = trips_and_stop_times['stop_id'].apply(lambda x: wait_times[0][x])
+        wait_zero = stop_id_col.apply(lambda x: wait_times[0][x])
         trips_and_stop_times['wait_dir_0'] = wait_zero
         
-        wait_one = trips_and_stop_times['stop_id'].apply(lambda x: wait_times[1][x])
+        wait_one = stop_id_col.apply(lambda x: wait_times[1][x])
         trips_and_stop_times['wait_dir_1'] = wait_one
 
         tst_sub = trips_and_stop_times[['stop_id',
@@ -105,26 +114,9 @@ class RouteProcessor(object):
         return (tst_sub, edge_costs)
 
 
-def calculate_average_wait(direction_times: pd.DataFrame) -> float:
-    # Exit early if we do not have enough values to calculate a mean
-    at = direction_times.arrival_time
-    if len(at) < 2:
-        return np.nan
-
-    first = at[1:].values
-    second = at[:-1].values
-    wait_seconds = (first - second)
-
-    # TODO: Can implement something more substantial here that takes into
-    #       account divergent/erratic performance or intentional timing
-    #       clusters that are not evenly dispersed
-    na = np.array(wait_seconds)
-    average_wait = na.mean() / 2  # half headway
-    return average_wait
-
-
-def generate_wait_times(trips_and_stop_times: pd.DataFrame
-                        ) -> Dict[int, List[float]]:
+def generate_wait_times(
+        trips_and_stop_times: pd.DataFrame,
+        stop_cost_method: Any) -> Dict[int, List[float]]:
     wait_times = {0: {}, 1: {}}
     for stop_id in trips_and_stop_times.stop_id.unique():
         # Handle both inbound and outbound directions
@@ -138,12 +130,12 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame
             else:
                 direction_subset = trips_and_stop_times.copy()
 
-            # Only run if each direction is contained
-            # in the same trip id
             if direction_subset.empty:
+                # Cannot calculate the average wait time if there are no
+                # values associated with the specified direction so default NaN
                 average_wait = np.nan
             else:
-                average_wait = calculate_average_wait(direction_subset)
+                average_wait = stop_cost_method(direction_subset.arrival_time)
 
             # Add according to which direction we are working with
             wait_times[direction][stop_id] = average_wait

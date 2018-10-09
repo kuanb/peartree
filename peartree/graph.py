@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import networkx as nx
 import pandas as pd
@@ -44,18 +44,74 @@ def nameify_stop_id(name, sid):
     return '{}_{}'.format(name, sid)
 
 
-def generate_summary_graph_elements(feed: ptg.gtfs.feed,
-                                    target_time_start: int,
-                                    target_time_end: int,
-                                    fallback_stop_cost: float,
-                                    interpolate_times: bool,
-                                    use_multiprocessing: bool):
+def generate_summary_graph_elements(
+        feed: ptg.feed,
+        target_time_start: float,
+        target_time_end: float,
+        fallback_stop_cost: float,
+        interpolate_times: bool,
+        stop_cost_method: Any,
+        use_multiprocessing: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Takes in a feed with a series of settings and produces two results: \
+    a table of edge costs and a table of stop (or nodes).
+
+    Output tables represent the two primary components of a network graph: \
+    the graph nodes and vertices. This method wraps the primary edge and wait \
+    times generator with a few additional validation checks and summary steps.
+
+    Parameters
+    ———————
+    feed : ptg.feed
+        A partridge feed object, holding related schedule information as pandas
+        DataFrames for the busiest day in the available schedule.
+    target_time_start : float
+        Start time in hours (on a 24-hour range). This will be used to \
+        determine what part of the available selected schedule to subselect. \
+        For example, you could set 7.5, which would be read as 7.5 hours past \
+        midnight and converted into seconds.
+    target_time_end : float
+        End time in hours (on a 24-hour range). This will be used to \
+        determine what part of the available selected schedule to subselect. \
+        For example, you could set 13.5, which would be read as 17.5 hours \
+        past midnight and converted into seconds.
+    fallback_stop_cost : float
+        This is measured in seconds. So, if the value is 600, it will equate \
+        to a 10 minute fallback cost. The fallback stop cost is used if \
+        peartree is unable to determine a time between arrivals for a \
+        specific route. This can happen when there is only one arrival in \
+        the considered time frame. In such situations, the fallback value \
+        is used in lieu of a calculated standard wait time for that stop node.
+    stop_cost_method : Any
+        A method is passed in here that handles an arrival time numpy array
+        and, from that array, calcualtes a representative average wait time
+        value, in seconds, for that stop.
+    use_multiprocessing : bool
+        This is a flag to tell the peartree model whether to attempt to \
+        parallelize the computing of route-stop average wait times. It can \
+        be helpful in speeding up evaluation of larger GTFS feeds.
+
+
+    Returns
+    ——
+    summary_edge_costs : pd.DataFrame
+        The edge DataFrame holds the from and to node (stop) ids, as well \
+        as the cost calculated for traversing that edge.
+    wait_times_by_stop : pd.DataFrame
+        The node, or stops, DataFrame, holds the the stop id and the average \
+        boarding cost for that node (calculated based on the distribution of \
+        arrival times) within the evaluation time range for the target subset \
+        of the feed schedule.
+    """
+
     (all_edge_costs,
-     all_wait_times) = generate_edge_and_wait_values(feed,
-                                                     target_time_start,
-                                                     target_time_end,
-                                                     interpolate_times,
-                                                     use_multiprocessing)
+     all_wait_times) = generate_edge_and_wait_values(
+        feed,
+        target_time_start,
+        target_time_end,
+        interpolate_times,
+        stop_cost_method,
+        use_multiprocessing)
 
     # Same sanity checks on the output before we continue
     _verify_outputs(all_edge_costs, all_wait_times)
@@ -196,7 +252,7 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
 
 def populate_graph(G: nx.MultiDiGraph,
                    name: str,
-                   feed: ptg.gtfs.feed,
+                   feed: ptg.feed,
                    wait_times_by_stop: pd.DataFrame,
                    summary_edge_costs: pd.DataFrame,
                    connection_threshold: Union[int, float],
