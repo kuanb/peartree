@@ -59,7 +59,7 @@ def test_extract_valid_feed():
     # other optional arguments
     path = fixture('caltrain-2017-07-24.zip')
     feed = get_representative_feed(path)
-    assert isinstance(feed, ptg.gtfs.feed)
+    assert isinstance(feed, ptg.feed)
 
 
 def test_loading_in_too_small_timeframes():
