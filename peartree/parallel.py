@@ -88,11 +88,14 @@ class RouteProcessor(object):
 
         wait_times = generate_wait_times(trips_and_stop_times)
 
+        # Used in the next two steps
+        stop_id_col = trips_and_stop_times['stop_id'].copy()
+
         # Look up wait time for each stop in wait_times for each direction
-        wait_zero = trips_and_stop_times['stop_id'].apply(lambda x: wait_times[0][x])
+        wait_zero = stop_id_col.apply(lambda x: wait_times[0][x])
         trips_and_stop_times['wait_dir_0'] = wait_zero
         
-        wait_one = trips_and_stop_times['stop_id'].apply(lambda x: wait_times[1][x])
+        wait_one = stop_id_col.apply(lambda x: wait_times[1][x])
         trips_and_stop_times['wait_dir_1'] = wait_one
 
         tst_sub = trips_and_stop_times[['stop_id',
@@ -138,9 +141,9 @@ def generate_wait_times(trips_and_stop_times: pd.DataFrame
             else:
                 direction_subset = trips_and_stop_times.copy()
 
-            # Only run if each direction is contained
-            # in the same trip id
             if direction_subset.empty:
+                # Cannot calculate the average wait time if there are no
+                # values associated with the specified direction so default NaN
                 average_wait = np.nan
             else:
                 average_wait = calculate_average_wait(direction_subset)
