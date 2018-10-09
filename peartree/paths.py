@@ -185,6 +185,7 @@ def load_feed_as_graph(feed: ptg.feed,
                                                            end_time,
                                                            fallback_stop_cost,
                                                            interpolate_times,
+                                                           stop_cost_method,
                                                            use_multiprocessing)
 
     # This is a flag used to check if we need to run any additional steps

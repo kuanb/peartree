@@ -1,6 +1,6 @@
 import multiprocessing as mp
 import time
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -253,6 +253,7 @@ def _generate_route_processing_results(
         ftrips: pd.DataFrame,
         stop_times: pd.DataFrame,
         feed_stops: pd.DataFrame,
+        stop_cost_method: Any,
         use_multiprocessing: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
     # Track the runtime of this method
     start_time = time.time()
@@ -268,7 +269,8 @@ def _generate_route_processing_results(
             target_time_end,
             ftrips,
             stop_times,
-            feed_stops)
+            feed_stops,
+            stop_cost_method)
 
         with mp.Pool(processes=cpu_count) as pool:
             results = pool.starmap(_route_analyzer_pool_map,
@@ -281,7 +283,8 @@ def _generate_route_processing_results(
             target_time_end,
             ftrips,
             stop_times,
-            feed_stops)
+            feed_stops,
+            stop_cost_method)
         results = [route_analyzer.generate_route_costs(rid)
                    for rid in target_route_ids]
     elapsed = round(time.time() - start_time, 2)
@@ -346,6 +349,7 @@ def generate_edge_and_wait_values(
         target_time_start: int,
         target_time_end: int,
         interpolate_times: bool,
+        stop_cost_method: Any,
         use_multiprocessing: bool) -> Tuple[pd.DataFrame]:
     sub_stop_times = _trim_stop_times_by_timeframe(
         feed.stop_times, target_time_start, target_time_end)
@@ -374,6 +378,7 @@ def generate_edge_and_wait_values(
         ftrips,
         stop_times,
         feed.stops.copy(),
+        stop_cost_method,
         use_multiprocessing)
 
     return (all_edge_costs, all_wait_times)

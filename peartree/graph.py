@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import networkx as nx
 import pandas as pd
@@ -50,6 +50,7 @@ def generate_summary_graph_elements(
         target_time_end: float,
         fallback_stop_cost: float,
         interpolate_times: bool,
+        stop_cost_method: Any,
         use_multiprocessing: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Takes in a feed with a series of settings and produces two results: \
@@ -100,11 +101,13 @@ def generate_summary_graph_elements(
     """
 
     (all_edge_costs,
-     all_wait_times) = generate_edge_and_wait_values(feed,
-                                                     target_time_start,
-                                                     target_time_end,
-                                                     interpolate_times,
-                                                     use_multiprocessing)
+     all_wait_times) = generate_edge_and_wait_values(
+        feed,
+        target_time_start,
+        target_time_end,
+        interpolate_times,
+        stop_cost_method,
+        use_multiprocessing)
 
     # Same sanity checks on the output before we continue
     _verify_outputs(all_edge_costs, all_wait_times)
