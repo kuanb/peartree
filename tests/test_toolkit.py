@@ -30,6 +30,12 @@ def test_feed_to_graph_plot():
     # Now, reproject the graph to the default 2163 epsg
     G2 = reproject(G)
 
+    # Now make sure the projection has been retained during simplification
+    assert 'crs' in G.graph
+    assert G.graph['crs']['init'] == 'epsg:4326'
+    assert 'crs' in G2.graph
+    assert G2.graph['crs']['init'] == 'epsg:2163'
+
     # Extract the x and y values of the reproject nodes
     xs = []
     ys = []

@@ -185,6 +185,9 @@ def reproject(G: nx.MultiDiGraph, to_epsg: int=2163) -> nx.MultiDiGraph:
         G.nodes[i]['x'] = new_pt.x
         G.nodes[i]['y'] = new_pt.y
 
+    # Update the graph's coordinate reference
+    G.graph['crs'] = {'init': 'epsg:{}'.format(to_epsg)}
+
     # Return the reprojected copy
     return G
 
