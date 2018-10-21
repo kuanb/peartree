@@ -6,6 +6,7 @@ import partridge as ptg
 
 from .graph import (generate_empty_md_graph, generate_summary_graph_elements,
                     make_synthetic_system_network, populate_graph)
+from .synthetic import SyntheticTransitNetwork
 from .toolkit import generate_random_name
 from .utilities import log
 
@@ -47,25 +48,25 @@ def _calculate_means_default(arrival_times: np.array) -> float:
 def get_representative_feed(file_loc: str,
                             day_type: str='busiest') -> ptg.feed:
     """
-    Given a filepath, extract a partridge feed object, holding a representative
-    set of schedule patterns, extracted from the GTFS zip file, as a set of
-    pandas DataFrames.
+    Given a filepath, extract a partridge feed object, holding a \
+    representative set of schedule patterns, extracted from the GTFS zip \
+    file, as a set of pandas DataFrames.
 
     Parameters
     ----------
     file_loc : str
         The location (filepath) of the GTFS zip file.
     day_type : str
-        The name of the type of representative feed desired. Currently, only
-        one type is supported, busiest. This extracts the schedule pattern
-        for a day that has the most service on it. This is determined by the
+        The name of the type of representative feed desired. Currently, only \
+        one type is supported, busiest. This extracts the schedule pattern \
+        for a day that has the most service on it. This is determined by the \
         day with the most trips on it.
 
     Returns
     -------
     feed : ptg.feed
-        A partridge feed object, holding related schedule information as pandas
-        DataFrames for the busiest day in the available schedule.
+        A partridge feed object, holding related schedule information as \
+        pandas DataFrames for the busiest day in the available schedule.
     """
     # Extract service ids and then trip counts by those dates
     service_ids_by_date = ptg.read_service_ids_by_date(file_loc)
@@ -116,54 +117,54 @@ def load_feed_as_graph(feed: ptg.feed,
     Parameters
     ----------
     feed : ptg.feed
-        A feed object from Partridge holding a representation of the
-        desired schedule ids and their releated scheudule data from an
+        A feed object from Partridge holding a representation of the \
+        desired schedule ids and their releated scheudule data from an \
         operator GTFS
     start_time : int
-        Represented in seconds after midnight; indicates the start time
-        with which to take the subset of the target feed schedule
-        to be used to measure impedance between stops along
+        Represented in seconds after midnight; indicates the start time \
+        with which to take the subset of the target feed schedule \
+        to be used to measure impedance between stops along \
         the route, as well as cost (wait time) to board at each stop
     end_time : int
-        Represented in seconds after midnight; indicates the end time
-        with which to take the subset of the target feed schedule
-        to be used to measure impedance between stops along
+        Represented in seconds after midnight; indicates the end time \
+        with which to take the subset of the target feed schedule \
+        to be used to measure impedance between stops along \
         the route, as well as cost (wait time) to board at each stop
     name : str
-        Name of the operator, which is used to create a unique ID for each
+        Name of the operator, which is used to create a unique ID for each \
         of the stops, routes, etc. in the feed being supplied
     existing_graph : networkx.Graph
         An existing graph containing other operator or schedule data
     connection_threshold : float
-        Treshold by which to create a connection with an existing stop
+        Treshold by which to create a connection with an existing stop \
         in the existing_graph graph, measured in meters
     walk_speed_kmph : float
-        Walk speed in km/h, that is used to determine the cost in time when
+        Walk speed in km/h, that is used to determine the cost in time when \
         walking between two nodes that get an internal connection created
     stop_cost_method : Any
-        A method is passed in here that handles an arrival time numpy array
-        and, from that array, calcualtes a representative average wait time
+        A method is passed in here that handles an arrival time numpy array \
+        and, from that array, calcualtes a representative average wait time \
         value, in seconds, for that stop.
     fallback_stop_cost: bool
-        Cost in seconds to board a line at a stop if no other data is able
-        to be calculated from schedule data for that stop to determine
-        what wait time is. Example of this situation would be when
+        Cost in seconds to board a line at a stop if no other data is able \
+        to be calculated from schedule data for that stop to determine \
+        what wait time is. Example of this situation would be when \
         there is only one scheduled stop time found for the stop id.
     interpolate_times : bool
-        A boolean flag to indicate whether or not to infill intermediary stops
-        that do not have all intermediary stop arrival times specified in the
-        GTFS schedule.
+        A boolean flag to indicate whether or not to infill intermediary \
+        stops that do not have all intermediary stop arrival times specified \
+        in the GTFS schedule.
     impute_walk_transfers : bool
-        A flag to indicate whether to add in walk connections between nodes
+        A flag to indicate whether to add in walk connections between nodes \
         that are close enough, as measured using connection_trheshold
     use_multiprocessing: bool
-        A flag to indicate whether or not to leverage multiprocessing where
-        available to attempt to speed up trivially parallelizable operations.
+        A flag to indicate whether or not to leverage multiprocessing where \
+        available to attempt to speed up trivially parallelizable operations
 
     Returns
     -------
     G : nx.MultiDiGraph
-        networkx.Graph, the loaded, combined representation of the schedule
+        networkx.Graph, the loaded, combined representation of the schedule \
         data from the feed subset by the time parameters provided
     """
 
@@ -222,8 +223,8 @@ def load_synthetic_network_as_graph(
     """
     Convert formatted transit FeatureCollection into a directed network graph.
 
-    Utilizing a correctly formatted transit FeatureCollection, generate a
-    directed networ graph (or add to an existing one), based off of features
+    Utilizing a correctly formatted transit FeatureCollection, generate a \
+    directed networ graph (or add to an existing one), based off of features \
     included in the reference_geojson parameter.
 
     Parameters
@@ -235,11 +236,11 @@ def load_synthetic_network_as_graph(
     existing_graph : nx.MultiDiGraph
         An existing, populated transit NetworkX graph generated from peartree
     connection_threshold : float
-        Distance in meters within which a nearby transit stops should be
+        Distance in meters within which a nearby transit stops should be \
         deemed acceptably close for a walk transfer to be also added
     walk_speed_kmph : float
-        Speed in kilometers per hour to be used as the reference walk speed for
-        calculating cost (impedance in time) of walk transfers
+        Speed in kilometers per hour to be used as the reference walk speed \
+        for calculating cost (impedance in time) of walk transfers
     impute_walk_transfers : bool
         A flag to indicate whether or not walk transfers should be calculated
 
@@ -267,13 +268,14 @@ def load_synthetic_network_as_graph(
     else:
         G = generate_empty_md_graph(name)
 
-    # TODO: Refactor reference_geojson to become a class that includes
-    #       validation on instantiation
+    # First, instantiate whole TransitJSON as a SyntheticTransitNetwork object;
+    # will provide necessory validation prior to synthetic network construction
+    as_synthetic_network = SyntheticTransitNetwork(reference_geojson)
 
     return make_synthetic_system_network(
         G,
         name,
-        reference_geojson,
+        as_synthetic_network,
         connection_threshold,
         walk_speed_kmph,
         impute_walk_transfers)

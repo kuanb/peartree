@@ -78,18 +78,28 @@ def get_prop_type(value: Any, key: Any=None) -> Tuple[str, Any, str]:
     return tname, value, key
 
 
-def nx_to_gt(nxG: nx.DiGraph):
+def nx_to_gt(nxG: nx.MultiDiGraph):
     """
     Converts a networkx graph to a graph-tool graph (gt.Graph).
 
-    Credit: Please note that this function is adapted from Github user
-            @bbengfort's blog post 'Converting NetworkX to Graph-Tool',
-            available at the URL:
-                > https://bbengfort.github.io/snippets/
-                  2016/06/23/graph-tool-from-networkx.html
+    Credit: Please note that this function is adapted from Github user \
+            @bbengfort's blog post 'Converting NetworkX to Graph-Tool', \
+            available at the URL: \
+                > https://bbengfort.github.io/snippets/\
+                  2016/06/23/graph-tool-from-networkx.html \
 
-    More information about this method available on @kuanbutts blog:
+    More information about this method available on @kuanbutts blog: \
         > http://kuanbutts.com/2018/08/17/peartree-to-graph-tool/
+
+    Parameters
+    ----------
+        nxG : nx.MultiDiGraph
+            The peartree network graph result of a processed set of GTFS feeds
+
+    Returns
+    ——
+    gtG : graph_tool.Graph
+        The converted network graph, instantiated as a graph_tool network graph
     """
     # First, attempt to import graph-tool
     gt = _import_graph_tool()        
