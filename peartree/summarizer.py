@@ -27,24 +27,63 @@ def _format_summarized_outputs(summarized: pd.Series) -> pd.DataFrame:
         'avg_cost': original_series_values})
 
 
-def summarize_edge_costs(df: pd.DataFrame) -> pd.DataFrame:
-    # Used as a function applied to a grouping
-    # operation, pulls out the mean edge cost for each
-    # unqiue edge pair (from node and to node)
+def summarize_edge_costs(
+        df: pd.DataFrame,
+        unique_edge_operator=lambda x: x.mean()) -> pd.DataFrame:
+    """
+    Used as a function applied to a grouping operation, pulls out the mean \
+    edge cost for each unique edge pair (from node and to node)
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        A DataFrame representing all edges associated with one from node
+    unique_edge_operator : method
+        An operation on a numpy array of edge costs to compute the edge \
+        impedance given an array of edge impedances associated with a \
+        specific graph segment. Default is to calculate the mean value, \
+        but a min or max could alternatively be designated, so as to \
+        optimistically (or pessimistically) compute impedance.
+
+    Returns
+    -------
+    df_cleaned : pd.DataFrame
+        All unique to-from node pairs gruoped with their average impedance
+        assigned to the grouping.
+    """
     from_stop_id = df.from_stop_id.values[0]
     results_mtx = []
     for to_stop_id in df.to_stop_id.unique():
         to_mask = (df.to_stop_id == to_stop_id)
-        avg_cost = df[to_mask].edge_cost.mean()
+
+        # TODO: Thread through control over the application of this lambda
+        #       operator out from the nested summarize_edge_costs method
+        avg_cost = unique_edge_operator(df[to_mask].edge_cost)
+
+        # Add each row-array to the reference matrix, which...
         results_mtx.append([avg_cost,
                             from_stop_id,
                             to_stop_id])
+
+    # ...will be converted into a DataFrame upon being returned
     return pd.DataFrame(results_mtx, columns=df.columns)
 
 
 def generate_summary_edge_costs(all_edge_costs: pd.DataFrame) -> pd.DataFrame:
-    # Given a dataframe of edges costs, get the average for each
-    # from node - to node pair
+    """
+    Given a dataframe of edges costs, get the average for each \
+    from node - to node pair
+
+    Parameters
+    ----------
+    all_edge_costs : pd.DataFrame
+        A DataFrame of node pairs with associated impedance values.
+
+    Returns
+    -------
+    summary_edge_costs : pd.DataFrame
+        Edge costs grouped by from-to node pairs.
+    """
     summary_groupings = all_edge_costs.groupby('from_stop_id')
     summary = summary_groupings.apply(summarize_edge_costs)
     summary = summary.reset_index(drop=True)
