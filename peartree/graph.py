@@ -27,7 +27,7 @@ def generate_empty_md_graph(name: str,
     name : str
         The name of the graph
     init_crs : dict
-        The coordinate reference system to be assigned to the graph. Example
+        The coordinate reference system to be assigned to the graph. Example \
         CRS would be `{'init': 'epsg:4326'}`
 
     Returns
@@ -128,6 +128,33 @@ def generate_cross_feed_edges(G: nx.MultiDiGraph,
                               stops_df: pd.DataFrame,
                               exempt_nodes: List[str],
                               connection_threshold: float) -> pd.DataFrame:
+    """
+    Generates a DataFrame containing a list of new node-pairs that should \
+    have walk connection edges added between them, determined based on a \
+    distance (proximity) threshold.
+
+    Parameters
+    ———————
+    G : nx.MultiDiGraph
+        The muti-directed graph
+    name : str
+        The name (based on the graph) to be used in creating unique ids
+    stops_df : pd.DataFrame
+        Dataframe holding all stops and associated stops columns from the \
+        graph feed object
+    exempt_nodes : List[str]
+        An iterable of string objects representing the ids of nodes that \
+        should not have connector edges created to or from them
+    connection_threshold : float
+        The distance (in meters) used to determine if a connector edge should \
+        be created between two nodes
+
+    Returns
+    ——
+    connector_edges_df : pd.DataFrame
+        Dataframe holding all edges between existing nodes that were added, \
+        with the attributes: from stop id, to stop id, and distance (in meters)
+    """
     # Terminate this process early if the graph is empty
     if (G.number_of_nodes() == 0):
         return pd.DataFrame({'stop_id': [],
@@ -257,7 +284,40 @@ def populate_graph(G: nx.MultiDiGraph,
                    summary_edge_costs: pd.DataFrame,
                    connection_threshold: Union[int, float],
                    walk_speed_kmph: float=4.5,
-                   impute_walk_transfers: bool=True):
+                   impute_walk_transfers: bool=True) -> nx.MultiDiGraph:
+    """
+    Takes an existing network graph object and adds all new nodes, transit \
+    edges, and connector edges between existing and new nodes (stop ids).
+
+    Parameters
+    ———————
+    G : nx.MultiDiGraph
+        The muti-directed graph
+    name : str
+        The name (based on the graph) to be used in creating unique ids
+    feed : ptg.feed
+        A partridge feed object, holding related schedule information as pandas
+        DataFrames for the busiest day in the available schedule
+    wait_times_by_stop : pd.DataFrame
+        A DataFrame of nodes to be added with their associated boarding costs
+    summary_edge_costs : pd.DataFrame
+        A DataFrame of edge costs between node-pairs and the related costs \
+        a mode type for each of them
+    connection_threshold : Union[int, float]
+        The distance (in meters) used to determine if a connector edge should \
+        be created between two nodes
+    walk_speed_kmph : float
+        The distance (in meters) used to determine if a connector edge should \
+        be created between two nodes
+    impute_walk_transfers : bool
+        Flag indicating whether or not to utilize the connection threshold \
+        value to determine what new transfer edges could be added
+
+    Returns
+    ——
+    G : nx.MultiDiGraph
+        The muti-directed graph
+    """
     # Generate a merge of the wait time data and the feed stops data that will
     # be used for both the addition of new stop nodes and the addition of
     # cross feed edges later on (that join one feeds stops to the other if
@@ -275,7 +335,7 @@ def populate_graph(G: nx.MultiDiGraph,
         exempt_nodes = []
     cross_feed_edges = generate_cross_feed_edges(G, name, stops_df,
                                                  exempt_nodes,
-                                                 connection_threshold)
+                                                 float(connection_threshold))
 
     # Mutates the G network object
     _add_cross_feed_edges(G, sid_lookup, cross_feed_edges, walk_speed_kmph)
@@ -286,17 +346,44 @@ def populate_graph(G: nx.MultiDiGraph,
 def make_synthetic_system_network(
         G: nx.MultiDiGraph,
         name: str,
-        reference_geojson: Dict,
+        synthetic_network: SyntheticTransitNetwork,
         connection_threshold: Union[int, float],
         walk_speed_kmph: float=4.5,
-        impute_walk_transfers: bool=True):
+        impute_walk_transfers: bool=True) -> nx.MultiDiGraph:
+    """
+    Consume and validate an input TransitJSON for conversion to network \
+    graph components. Add the resulting new network components to the \
+    existing network graph provided as a positional argument.
+
+    Parameters
+    ———————
+    G : nx.MultiDiGraph
+        The muti-directed graph
+    name : str
+        The name (based on the graph) to be used in creating unique ids
+    synthetic_network : SyntheticTransitNetwork
+        An instantiated SyntheticTransitNetwork object containing all \
+        features as individually instantiated and validated \
+        SyntheticTransitLine objects
+    connection_threshold : Union[int, float]
+        The distance (in meters) used to determine if a connector edge should \
+        be created between two nodes
+    walk_speed_kmph : float
+        The distance (in meters) used to determine if a connector edge should \
+        be created between two nodes
+    impute_walk_transfers : bool
+        Flag indicating whether or not to utilize the connection threshold \
+        value to determine what new transfer edges could be added
+
+    Returns
+    ——
+    G : nx.MultiDiGraph
+        The muti-directed graph
+    """
     # Same as populate_graph, we use this dict to monitor the stop ids
     # that are created
     sid_lookup = {}
     all_nodes = None
-
-    # First, instantiate entire TransitJSON as a SyntheticTransitNetwork object
-    new_network = SyntheticTransitNetwork(reference_geojson)
 
     # Now, iterate through each line, extracting a single SyntheticTransitLine
     for line in new_network.lines:
