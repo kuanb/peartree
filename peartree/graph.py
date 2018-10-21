@@ -82,6 +82,10 @@ def generate_summary_graph_elements(
         specific route. This can happen when there is only one arrival in \
         the considered time frame. In such situations, the fallback value \
         is used in lieu of a calculated standard wait time for that stop node.
+    interpolate_times : bool
+        Flag to check if there are intermediary stop in the GTFS feed that do \
+        not have specific schedule data associated with them and to impute \
+        the approximate arrival and departure times at each of these stops.
     stop_cost_method : Any
         A method is passed in here that handles an arrival time numpy array
         and, from that array, calcualtes a representative average wait time
