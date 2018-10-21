@@ -390,7 +390,7 @@ def make_synthetic_system_network(
     all_nodes = None
 
     # Now, iterate through each line, extracting a single SyntheticTransitLine
-    for line in new_network.lines:
+    for line in synthetic_network.lines:
         nodes = line.nodes
         edges = line.edges
 
