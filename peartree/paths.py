@@ -267,13 +267,14 @@ def load_synthetic_network_as_graph(
     else:
         G = generate_empty_md_graph(name)
 
-    # TODO: Refactor reference_geojson to become a class that includes
-    #       validation on instantiation
+    # First, instantiate whole TransitJSON as a SyntheticTransitNetwork object;
+    # will provide necessory validation prior to synthetic network construction
+    as_synthetic_network = SyntheticTransitNetwork(reference_geojson)
 
     return make_synthetic_system_network(
         G,
         name,
-        reference_geojson,
+        as_synthetic_network,
         connection_threshold,
         walk_speed_kmph,
         impute_walk_transfers)
