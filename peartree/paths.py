@@ -6,6 +6,7 @@ import partridge as ptg
 
 from .graph import (generate_empty_md_graph, generate_summary_graph_elements,
                     make_synthetic_system_network, populate_graph)
+from .synthetic import SyntheticTransitNetwork
 from .toolkit import generate_random_name
 from .utilities import log
 
