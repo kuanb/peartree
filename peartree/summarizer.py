@@ -77,7 +77,7 @@ def generate_summary_edge_costs(all_edge_costs: pd.DataFrame) -> pd.DataFrame:
     Parameters
     ----------
     all_edge_costs : pd.DataFrame
-        A DataFrame of node pairs with associated impedance values.
+        A DataFrame of node pairs with associated impedance values
 
     Returns
     -------
@@ -91,7 +91,21 @@ def generate_summary_edge_costs(all_edge_costs: pd.DataFrame) -> pd.DataFrame:
 
 
 def summarize_waits_at_one_stop(stop_df: pd.DataFrame) -> float:
-    # Calculates average wait time at this stop, given all observed
+    """
+    Calculates average wait time at this stop, given all observed
+
+    Parameters
+    ----------
+    stop_df : pd.DataFrame
+        A DataFrame wait times in both directions (0 and 1) for a specific \
+        stop id
+
+    Returns
+    -------
+    calculated_boarding_cost : pd.DataFrame
+        Returns the estimated cost in tie to wait for and board a service \
+        vehicle at this stop, given all determined wait times
+    """
     # TODO: Simply dividiing by two may not be appropriate - it is
     #       good for estimation purposes, but I could introduce
     #       more sophisticated wait time calculations here
@@ -99,8 +113,8 @@ def summarize_waits_at_one_stop(stop_df: pd.DataFrame) -> float:
     dir_0_sum = stop_df.wait_dir_0.sum()
     dir_1_sum = stop_df.wait_dir_1.sum()
 
-    # A weighted average is performed, which could inaccurately8
-    # portrary a wait time at a given stop if one direction has
+    # A weighted average is performed, which could inaccurately
+    # portray a wait time at a given stop if one direction has
     # significantly higher frequence than another
     calculated = ((dir_0_sum + dir_1_sum) / divide_by)
 
@@ -110,6 +124,26 @@ def summarize_waits_at_one_stop(stop_df: pd.DataFrame) -> float:
 def generate_summary_wait_times(
         df: pd.DataFrame,
         fallback_stop_cost: float) -> pd.DataFrame:
+    """
+    Calculates average wait time at this stop, given all observed
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        A DataFrame wait times in both directions (0 and 1) for a specific \
+        stop id
+    fallback_stop_cost : float
+        A fallback wait time (in seconds) if there is not enough information \
+        (e.g. discrete arrival times scheduled) to calcualte a headway for a \
+        specific transit stop
+
+    Returns
+    -------
+    summary_wait_times : pd.DataFrame
+        Returns a DataFrame of the estimated wait time (boarding cost) for \
+        each stop given the wait times associated with that stop in the \
+        schedule timeframe
+    """
     df_sub = df[['stop_id',
                  'wait_dir_0',
                  'wait_dir_1']].reset_index(drop=True)
@@ -390,6 +424,48 @@ def generate_edge_and_wait_values(
         interpolate_times: bool,
         stop_cost_method: Any,
         use_multiprocessing: bool) -> Tuple[pd.DataFrame]:
+    """
+    Generates 2 DataFrames, one of the stops with their associated boarding \
+    cost information and one for the edges with their associated impedance \
+    (time it takes to travel along that transit line segment between two \
+    stops).
+
+    Parameters
+    ----------
+    feed : ptg.feed
+        A partridge feed object, holding related schedule information as \
+        pandas DataFrames for the busiest day in the available schedule.
+    target_time_start : float
+        Start time in hours (on a 24-hour range). This will be used to \
+        determine what part of the available selected schedule to subselect. \
+        For example, you could set 7.5, which would be read as 7.5 hours past \
+        midnight and converted into seconds.
+    target_time_end : float
+        End time in hours (on a 24-hour range). This will be used to \
+        determine what part of the available selected schedule to subselect. \
+        For example, you could set 13.5, which would be read as 17.5 hours \
+        past midnight and converted into seconds.
+    interpolate_times : bool
+        Flag to check if there are intermediary stop in the GTFS feed that do \
+        not have specific schedule data associated with them and to impute \
+        the approximate arrival and departure times at each of these stops.
+    stop_cost_method : Any
+        A method is passed in here that handles an arrival time numpy array
+        and, from that array, calcualtes a representative average wait time
+        value, in seconds, for that stop.
+    use_multiprocessing : bool
+        This is a flag to tell the peartree model whether to attempt to \
+        parallelize the computing of route-stop average wait times. It can \
+        be helpful in speeding up evaluation of larger GTFS feeds.
+
+    Returns
+    -------
+    all_edge_costs : pd.DataFrame
+        A DataFrame of node pairs with associated impedance values
+    all_wait_times : pd.DataFrame
+        A DataFrame of the estimated cost in tie to wait for and board a \
+        service vehicle at this stop, given all determined wait times
+    """
     sub_stop_times = _trim_stop_times_by_timeframe(
         feed.stop_times, target_time_start, target_time_end)
 
