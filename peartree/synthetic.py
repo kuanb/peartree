@@ -11,64 +11,6 @@ from shapely.ops import linemerge, split, transform
 from .toolkit import generate_random_name
 
 
-def _adjust_synthetic_stops():
-    # Stubbing out work related to the synthetic stop adjustment
-    # Convert the existing graph to a DataFrame
-    temp_rows = []
-    for node_id, node_attrs in list(G.nodes(data=True)):
-        node_attrs['node_id'] = node_id
-        temp_rows.append(node_attrs)
-    temp_df = pd.DataFrame(temp_rows)
-
-    # Convert the x/y coordiantes to shapes
-    xys_zipped = zip(temp_df['x'], temp_df['y'])
-    points_as_sh = [Point(x, y) for x, y in xys_zipped]
-    temp_gdf = gpd.GeoDataFrame(temp_df, geometry=points_as_sh)
-    temp_gdf.crs = {'init': from_proj}
-    temp_gdf = temp_gdf.to_crs({'init': to_proj})
-
-    # Buffer the shape being provided as a synthetic route
-    buffered_rte_sh = rs2.buffer(25)
-
-    # Subset the stops DataFrame to just those within range
-    # of the new synthetic route
-    try:
-        # Use Rtree spatial indexing if available
-        spatial_ind = temp_gdf.sindex
-        poss_match_ind = list(spatial_ind.intersection(
-            buffered_rte_sh.bounds))
-        poss_matches = temp_gdf.iloc[poss_match_ind]
-        precise_matches = poss_matches[poss_matches.intersects(
-            buffered_rte_sh)]
-    except Exception:
-        # Otherwise perform the less performant intersection
-        # operation without assistance from an Rtree spat. index
-        temp_mask = temp_gdf.intersects(buffered_rte_sh)
-        precise_matches = temp_gdf[temp_mask]
-
-    # Create default new stops along the corridor
-    mp_array = []
-    for i in range(1, stop_count):
-        fr = (i / stop_count)
-        mp_array.append(rs2.interpolate(fr, normalized=True))
-
-    # For each new point along the route, see if there is
-    # an existing stop that can be utilized instead, within
-    # a range of about 150 feet of the new stop
-    paired_stops = []
-    for new_point in mp_array:
-        m = precise_matches.intersects(new_point.buffer(50))
-        sub = precise_matches[m]
-        if len(sub) > 0:
-            # If there is at least one stop, take the first
-            # and include that as the stop
-            first_nearest = sub.head(1).squeeze()
-            paired_stops.append(first_nearest.node_id)
-        else:
-            # Otherwise, we keep the stop as-is
-            paired_stops.append(None)
-
-
 def generate_meter_projected_chunks(
         route_shape: LineString,
         custom_stops: List[List[float]]=None,
@@ -319,10 +261,6 @@ class SyntheticTransitLine(abc.ABC):
 
         # Generate stops from each chunk and assign each a unique id
         all_pts = generate_stop_points(chunks)
-
-        # At this point, can try to adjust the points to be existing stops
-        # if any exist that are close enough to the estimated synthetic stop
-        adjusted_stops = _adjust_synthetic_stops()
         stop_ids = generate_stop_ids(len(all_pts))
 
         # Produce key graph components

@@ -11,6 +11,7 @@ from .summarizer import (generate_edge_and_wait_values,
                          generate_summary_wait_times)
 from .synthetic import SyntheticTransitNetwork
 from .toolkit import generate_graph_node_dataframe, get_nearest_nodes
+from .utilities import generate_nodes_gdf_from_graph
 
 
 class InsufficientSummaryResults(Exception):
@@ -389,14 +390,20 @@ def make_synthetic_system_network(
     sid_lookup = {}
     all_nodes = None
 
-    # TODO: Convert existing transit network graph to a re-rpojected (meter)
-    #       GeoDataFrame here, to be used to assist in identifying potential
-    #       nearby transit stops for the synthetic transit stops to adjust to
+    # Convert existing transit network graph to a re-rpojected (meter)
+    # GeoDataFrame here, to be used to assist in identifying potential
+    # nearby transit stops for the synthetic transit stops to adjust to
+    nodes_gdf = generate_nodes_gdf_from_graph(G, to_epsg_crs=2163)
 
     # Now, iterate through each line, extracting a single SyntheticTransitLine
     for line in synthetic_network.lines:
         nodes = line.nodes
         edges = line.edges
+
+        # TODO: Flesh this part out
+        # # At this point, can try to adjust the points to be existing stops
+        # # if any exist that are close enough to the estimated synthetic stop
+        # adjusted_stops = _adjust_synthetic_stops()
 
         # Mutates the G network object
         sid_lookup_sub = _add_nodes_and_edges(

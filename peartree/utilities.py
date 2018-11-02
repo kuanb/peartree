@@ -5,10 +5,69 @@ import unicodedata
 import zipfile
 from tempfile import TemporaryDirectory
 
+import geopandas as gpd
 import networkx as nx
 import pandas as pd
 
 from . import settings
+
+
+def _adjust_synthetic_stops():
+    # Stubbing out work related to the synthetic stop adjustment
+    # Convert the existing graph to a DataFrame
+    temp_rows = []
+    for node_id, node_attrs in G.nodes(data=True):
+        node_attrs['node_id'] = node_id
+        temp_rows.append(node_attrs)
+    temp_df = pd.DataFrame(temp_rows)
+
+    # Convert the x/y coordiantes to shapes
+    xys_zipped = zip(temp_df['x'], temp_df['y'])
+    points_as_sh = [Point(x, y) for x, y in xys_zipped]
+    temp_gdf = gpd.GeoDataFrame(temp_df, geometry=points_as_sh)
+    temp_gdf.crs = {'init': from_proj}
+    temp_gdf = temp_gdf.to_crs({'init': to_proj})
+
+    # Buffer the shape being provided as a synthetic route
+    buffered_rte_sh = rs2.buffer(25)
+
+    # Subset the stops DataFrame to just those within range
+    # of the new synthetic route
+    try:
+        # Use Rtree spatial indexing if available
+        spatial_ind = temp_gdf.sindex
+        poss_match_ind = list(spatial_ind.intersection(
+            buffered_rte_sh.bounds))
+        poss_matches = temp_gdf.iloc[poss_match_ind]
+        precise_matches = poss_matches[poss_matches.intersects(
+            buffered_rte_sh)]
+    except Exception:
+        # Otherwise perform the less performant intersection
+        # operation without assistance from an Rtree spat. index
+        temp_mask = temp_gdf.intersects(buffered_rte_sh)
+        precise_matches = temp_gdf[temp_mask]
+
+    # Create default new stops along the corridor
+    mp_array = []
+    for i in range(1, stop_count):
+        fr = (i / stop_count)
+        mp_array.append(rs2.interpolate(fr, normalized=True))
+
+    # For each new point along the route, see if there is
+    # an existing stop that can be utilized instead, within
+    # a range of about 150 feet of the new stop
+    paired_stops = []
+    for new_point in mp_array:
+        m = precise_matches.intersects(new_point.buffer(50))
+        sub = precise_matches[m]
+        if len(sub) > 0:
+            # If there is at least one stop, take the first
+            # and include that as the stop
+            first_nearest = sub.head(1).squeeze()
+            paired_stops.append(first_nearest.node_id)
+        else:
+            # Otherwise, we keep the stop as-is
+            paired_stops.append(None)
 
 
 def get_logger(level=None,
@@ -110,44 +169,69 @@ def log(message: str, level=None, name=None, filename=None):
         print(decoded)
 
 
+def generate_nodes_df_from_graph(G: nx.MultiDiGraph) -> pd.DataFrame:
+        # Extract the nodes from the graph, with attributes
+    nodes_rows = []
+    for node_id, node in G.nodes(data=True):
+        nodes_rows.append({
+            'id': node_id,
+            'boarding_cost': node['boarding_cost'],
+            'x': node['x'],
+            'y': node['y']})
+
+    # Roll up node rows into a DataFrame
+    nodes_df = pd.DataFrame(nodes_rows)
+
+    # Make sure that the column order is consistent
+    nodes_df = nodes_df[['id', 'boarding_cost', 'x', 'y']]
+    return nodes_df
+
+
+def generate_nodes_gdf_from_graph(
+        G: nx.MultiDiGraph,
+        to_epsg_crs=None) -> gpd.GeoDataFrame:
+    temp_df = generate_nodes_df_from_graph(G)
+
+    # Convert the x/y coordiantes to shapes
+    xys_zipped = zip(temp_df['x'], temp_df['y'])
+    points_as_sh = [Point(x, y) for x, y in xys_zipped]
+    temp_gdf = gpd.GeoDataFrame(temp_df, geometry=points_as_sh)
+    temp_gdf.crs = {'init': 'epsg:4326'}
+
+    if to_epsg_crs is not None:
+        temp_gdf = temp_gdf.to_crs(epsg=to_epsg_crs)
+
+    return temp_gdf
+
+
+def generate_edges_df_from_graph(G: nx.MultiDiGraph) -> pd.DataFrame:
+    # Extract the nodes from the graph, with attributes
+    edges_rows = []
+    for from_id, to_id, edge in G.edges(data=True):
+        edges_rows.append({
+            'from': from_id,
+            'to': to_id,
+            'length': edge['length'],
+            'mode': edge['mode']})
+
+    # Roll up node rows into a DataFrame
+    edges_df = pd.DataFrame(edges_rows)
+
+    # Make sure that the column order is consistent
+    edges_df = edges_df[['from', 'to', 'length', 'mode']]
+    return edges_df
+
+
 def save_graph_to_zip(G: nx.MultiDiGraph, path: str='peartree_graph.zip'):
     # Create a temporary workspace to save csvs to
     with TemporaryDirectory() as dirpath:
-        # Extract the nodes from the graph, with attributes
-        nodes_rows = []
-        for node_id, node in G.nodes(data=True):
-            nodes_rows.append({
-                'id': node_id,
-                'boarding_cost': node['boarding_cost'],
-                'x': node['x'],
-                'y': node['y']})
-
-        # Roll up node rows into a DataFrame
-        nodes_df = pd.DataFrame(nodes_rows)
-
-        # Make sure that the column order is consistent
-        nodes_df = nodes_df[['id', 'boarding_cost', 'x', 'y']]
-
         # Save that DataFrame to a csv
+        nodes_df = generate_nodes_df_from_graph(G)
         nodes_fpath = '{}/nodes.csv'.format(dirpath)
         nodes_df.to_csv(nodes_fpath)
 
-        # Extract the nodes from the graph, with attributes
-        edges_rows = []
-        for from_id, to_id, edge in G.edges(data=True):
-            edges_rows.append({
-                'from': from_id,
-                'to': to_id,
-                'length': edge['length'],
-                'mode': edge['mode']})
-
-        # Roll up node rows into a DataFrame
-        edges_df = pd.DataFrame(edges_rows)
-
-        # Make sure that the column order is consistent
-        edges_df = edges_df[['from', 'to', 'length', 'mode']]
-
         # Save that DataFrame to a csv
+        edges_df = generate_edges_df_from_graph(G)
         edges_fpath = '{}/edges.csv'.format(dirpath)
         edges_df.to_csv(edges_fpath)
 
