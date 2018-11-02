@@ -389,6 +389,10 @@ def make_synthetic_system_network(
     sid_lookup = {}
     all_nodes = None
 
+    # TODO: Convert existing transit network graph to a re-rpojected (meter)
+    #       GeoDataFrame here, to be used to assist in identifying potential
+    #       nearby transit stops for the synthetic transit stops to adjust to
+
     # Now, iterate through each line, extracting a single SyntheticTransitLine
     for line in synthetic_network.lines:
         nodes = line.nodes
