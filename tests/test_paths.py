@@ -3,9 +3,9 @@ import os
 
 import geopandas as gpd
 import networkx as nx
+import numpy as np
 import partridge as ptg
 import pytest
-import numpy as np
 from peartree.graph import InsufficientSummaryResults
 from peartree.paths import (InvalidGTFS, InvalidTimeBracket,
                             get_representative_feed, load_feed_as_graph,
@@ -101,8 +101,8 @@ def test_parsing_when_just_on_trip_during_target_window():
     path = fixture('highdesertpointorus-2018-03-20.zip')
     feed = get_representative_feed(path)
 
-    start = 7*60*60  # 7:00 AM
-    end = 8*60*60  # 10:00 AM
+    start = 7 * 60 * 60  # 7:00 AM
+    end = 8 * 60 * 60  # 10:00 AM
     G = load_feed_as_graph(feed, start, end)
     assert len(list(G.nodes())) == 2
     assert len(list(G.edges())) == 1
@@ -153,9 +153,9 @@ def test_synthetic_network_with_custom_stops():
         reference_geojson = json.load(gjf)
 
     # Add in specific, custom stops under new properties key
-    custom_stops = [[-122.29225158691406,37.80876678753658],
-                    [-122.28886127471924,37.82341261847038],
-                    [-122.2701072692871,37.83005652796547]]
+    custom_stops = [[-122.29225158691406, 37.80876678753658],
+                    [-122.28886127471924, 37.82341261847038],
+                    [-122.2701072692871, 37.83005652796547]]
     reference_geojson['features'][0]['properties']['stops'] = custom_stops
 
     G1 = load_synthetic_network_as_graph(reference_geojson)
@@ -279,6 +279,25 @@ def test_feed_to_graph_path():
     edge_len_3 = len(G.edges())
     assert node_len_3 - node_len_2 == 74
     assert edge_len_3 - edge_len_2 == 80
+
+
+def test_synthetic_stop_assignment_adjustment():
+    # First load original San Bruno line
+    geojson_path = fixture('synthetic_san_bruno.geojson')
+    with open(geojson_path, 'r') as gjf:
+        reference_geojson_sb1 = json.load(gjf)
+
+    G1 = load_synthetic_network_as_graph(reference_geojson_sb1)
+
+    # Now load in the extension further down to Burlingame
+    geojson_path = fixture('synthetic_san_bruno_extension.geojson')
+    with open(geojson_path, 'r') as gjf:
+        reference_geojson_sb2 = json.load(gjf)
+
+    G2 = load_synthetic_network_as_graph(reference_geojson_sb2,
+                                         existing_graph=G1)
+
+    assert len(G2.nodes())
 
 
 def test_feeds_with_no_direction_id():
