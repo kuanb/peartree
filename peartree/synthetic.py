@@ -5,7 +5,7 @@ from typing import Any, Dict, Iterable, List, Optional
 import geopandas as gpd
 import pandas as pd
 import pyproj
-from shapely.geometry import LineString, MultiPoint, Point, shape
+from shapely.geometry import LineString, MultiLineString, MultiPoint, Point, shape
 from shapely.ops import linemerge, split, transform
 
 from .toolkit import generate_random_name
@@ -57,7 +57,30 @@ def _generate_point_array_override(
         #       faster path or is the fact that this is only a subset
         #       of all stop nodes mean that the number of points being
         #       evaluated is acceptably small?
-        dists = intersecting_stops_gdf.distance(pt).values
+
+        # First only select those stops that are near the small segment
+        # of the route that is along this target point
+        sub_rs = route_shape.intersection(pt.buffer(reasonable_distance))
+
+        # If more than one point intersects, reduce to just the correct line
+        if type(sub_rs) == MultiLineString:
+            sub_l_ds = [sub_l.distance(pt) for sub_l in sub_rs]
+            sub_l_ds_min = min(sub_l_ds)
+            for i, sub_l in enumerate(sub_rs):
+                if sub_l_ds_min == sub_l_ds[i]:
+                    sub_rs = sub_l
+                    break
+
+        sub_rs_buffered = sub_rs.buffer(buffer_distance)
+        intersects_mask = existing_graph_nodes.intersects(sub_rs_buffered)
+        stops_to_consider = intersecting_stops_gdf[intersects_mask]
+        stops_to_consider = stops_to_consider.reset_index(drop=True)
+
+        if len(stops_to_consider) == 0:
+            mp_array_override.append(pt)
+            continue
+
+        dists = stops_to_consider.distance(pt).values
 
         # Skip if the closest existing stop is still too far away
         if dists.min() > reasonable_distance:
@@ -66,7 +89,7 @@ def _generate_point_array_override(
 
         # TODO: This mask operation is slow - is there a faster way?
         dists_mask = dists <= dists.min()
-        sub_g_nodes = intersecting_stops[dists_mask]
+        sub_g_nodes = stops_to_consider[dists_mask]
 
         # Handle edge cases where matches are not captured
         if len(sub_g_nodes) == 0:
