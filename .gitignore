@@ -17,3 +17,4 @@ performance/cprof-output.py
 profile/
 .coverage-e
 coverage.xml
+.vscode/
