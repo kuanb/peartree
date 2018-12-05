@@ -322,7 +322,7 @@ def test_synthetic_stop_assignment_adjustment():
 
     # We will use this as a reference distance limit for checking
     # nearest points to ensure there are some adjusted stops matches
-    dist_limit = target_stop_dist_override * 0.1
+    dist_limit = target_stop_dist_override * 0.5
 
     # Then reassess matches
     match_count = 0
@@ -353,7 +353,7 @@ def test_synthetic_stop_assignment_adjustment():
     # This value will be high because the stop distance for the addition is
     # set at 50 meters, which means that we expect there to be a lot of
     # stops along the overlapping segment
-    assert match_count == 74
+    assert match_count == 8
 
 
 def test_feeds_with_no_direction_id():
