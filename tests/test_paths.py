@@ -290,7 +290,7 @@ def test_synthetic_stop_assignment_adjustment():
     G1 = load_synthetic_network_as_graph(reference_geojson_sb1)
 
     # Now load in the extension further down to Burlingame
-    geojson_path = fixture('synthetic_san_bruno_extension.geojson')
+    geojson_path = fixture('synthetic_san_bruno_addition.geojson')
     with open(geojson_path, 'r') as gjf:
         reference_geojson_sb2 = json.load(gjf)
 
