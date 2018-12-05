@@ -1,7 +1,8 @@
 import abc
 from functools import partial
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Optional
 
+import geopandas as gpd
 import pandas as pd
 import pyproj
 from shapely.geometry import LineString, MultiPoint, Point, shape
@@ -10,12 +11,90 @@ from shapely.ops import linemerge, split, transform
 from .toolkit import generate_random_name
 
 
+def _generate_point_array_override(
+        mp_array: Iterable[Point],
+        route_shape: LineString,
+        existing_graph_nodes: gpd.GeoDataFrame,
+        stop_distance_distribution: float) -> Iterable[Point]:
+    # TODO: Better parameterize the factor used with the distance distribution
+    # Figure that we give a 10% "give" - this is, if a stop is within
+    # 10% of the target segment distance, then it should be re-assigned
+    # to that stop
+    reasonable_distance = 0.5 * stop_distance_distribution
+
+    # TODO: Better parameterize the buffer distance setting here
+    # Find the nearby stops for the target line from those available
+    buffer_distance = 10  # meters
+    buffered = route_shape.buffer(buffer_distance)
+
+    try:
+        # Use spatial index if available
+        egn_sindex = existing_graph_nodes.sindex
+        possibles = list(egn_sindex.intersection(route_shape.bounds))
+        existing_graph_nodes_sub = existing_graph_nodes.iloc[possibles]
+        intersects_mask = existing_graph_nodes_sub.intersects(buffered)
+        intersecting_stops_gdf = existing_graph_nodes_sub[intersects_mask]
+
+    except Exception:
+        # Otherwise skip the spatial index and just intersect
+        # against all geometries in the GeoDataFrame
+        intersects_mask = existing_graph_nodes.intersects(buffered)
+        intersecting_stops_gdf = existing_graph_nodes[intersects_mask]
+
+    # If we encounter a situation where there are no nearby nodes, bail
+    # early and just retyurn the original input array
+    if len(intersecting_stops_gdf) == 0:
+        return mp_array
+
+    # TODO: Right now we only consider the stops as points (shapes),
+    #       but in the future should aim to reuse graph nodes that are
+    #       the same location by passing along the node id
+    intersecting_stops = intersecting_stops_gdf['geometry'].values
+
+    mp_array_override = []
+    for pt in mp_array:
+        # TODO: This is can be super slow, is there a potentially
+        #       faster path or is the fact that this is only a subset
+        #       of all stop nodes mean that the number of points being
+        #       evaluated is acceptably small?
+        dists = intersecting_stops_gdf.distance(pt).values
+
+        # Skip if the closest existing stop is still too far away
+        if dists.min() > reasonable_distance:
+            mp_array_override.append(pt)
+            continue
+
+        # TODO: This mask operation is slow - is there a faster way?
+        dists_mask = dists <= dists.min()
+        sub_g_nodes = intersecting_stops[dists_mask]
+
+        # Handle edge cases where matches are not captured
+        if len(sub_g_nodes) == 0:
+            mp_array_override.append(pt)
+            continue
+
+        # Otherwise, we should pass the first nearest stop node
+        # as the new stop location
+        first_nearest = sub_g_nodes[0]
+
+        # But still make sure that it is on the line because
+        # we need to use the points to break up the line and get the
+        # segment distances in the next step
+        adj_projected = route_shape.project(first_nearest)
+        adjusted_nearest = route_shape.interpolate(adj_projected,
+                                                   normalized=True)
+        mp_array_override.append(adjusted_nearest)
+
+    return mp_array_override
+
+
 def generate_meter_projected_chunks(
         route_shape: LineString,
-        custom_stops: List[List[float]]=None,
+        custom_stops: Optional[List[List[float]]]=None,
         stop_distance_distribution: int=None,
         from_proj='epsg:4326',
-        to_proj='epsg:2163') -> List[LineString]:
+        to_proj='epsg:2163',
+        existing_graph_nodes: Optional[pd.DataFrame]=None) -> List[LineString]:
 
     # Reproject 4326 lat/lon coordinates to equal area
     project = partial(
@@ -45,6 +124,13 @@ def generate_meter_projected_chunks(
 
     # Otherwise we go with path 2
     else:
+        # Sanity check (this should never occur due to checks in class init)
+        if stop_distance_distribution is None:
+            raise ValueError(('Auto stop assignment triggered, but '
+                              'stop_distance_distribution is Nonetype'))
+
+        # Divide the target route into roughly equal length segments
+        # and get the number that would be needed to accomplish this
         stop_count = round(rs2.length / stop_distance_distribution)
 
         # Create the array of break points/joints
@@ -52,6 +138,23 @@ def generate_meter_projected_chunks(
         for i in range(1, stop_count):
             fr = (i / stop_count)
             mp_array.append(rs2.interpolate(fr, normalized=True))
+
+        # At this point, we have an array of what might be described as
+        # "potential stops." From these stops, we want to look to see if there
+        # are nearby stop alternatives that are existing stops used by the
+        # current network graph. If there are, then we should use those
+        # instead.
+        if existing_graph_nodes is not None and len(existing_graph_nodes) > 0:
+            mp_array_override = _generate_point_array_override(
+                mp_array,
+                rs2,
+                existing_graph_nodes,
+                stop_distance_distribution)
+
+            # Now that mp_array_override has been fully populated,
+            # can now override the original array holding the estimated
+            # stop point locations
+            mp_array = mp_array_override
 
     # Cast array as a Shapely object
     splitter = MultiPoint(mp_array)
@@ -226,7 +329,9 @@ class SyntheticTransitLine(abc.ABC):
     Derived from a single Feature in a TransitJSON GeoJSON FeatureCollection.
     """
 
-    def __init__(self, feature: Dict[str, Any]):
+    def __init__(self,
+                 feature: Dict[str, Any],
+                 existing_graph_nodes: Optional[pd.DataFrame]=None):
         # All values have defaults built in; which are overridden when the
         # user supplies, through the TransitJSON, custom values for those
         # properties.
@@ -243,6 +348,8 @@ class SyntheticTransitLine(abc.ABC):
 
         # Via the validation step; one of these two will be set
         custom_stops = props.get('custom_stops', None)
+        self.used_custom_stops = custom_stops is not None
+
         # Note that stops distances are set in meters (e.g. 402 meters
         # is the equivalent of every 1/4 of a mile)
         stop_distance = props.get('stop_dist', 402)
@@ -254,9 +361,11 @@ class SyntheticTransitLine(abc.ABC):
         # chunks is in meter projection and all_pts is in web mercator
         # this is because we only need (from chunks) the length value
         # and do not actually preserve the geometry beyond these operations
-        chunks = generate_meter_projected_chunks(self._route_path,
-                                                 custom_stops,
-                                                 stop_distance)
+        chunks = generate_meter_projected_chunks(
+            route_shape=self._route_path,
+            custom_stops=custom_stops,
+            stop_distance_distribution=stop_distance,
+            existing_graph_nodes=existing_graph_nodes)
 
         # Generate stops from each chunk and assign each a unique id
         all_pts = generate_stop_points(chunks)
@@ -308,14 +417,16 @@ class SyntheticTransitNetwork(abc.ABC):
     }
     """
 
-    def __init__(self, feature_collection: Dict[str, Any]):
+    def __init__(self,
+                 feature_collection: Dict[str, Any],
+                 existing_graph_nodes: Optional[pd.DataFrame]=None):
         # Initialize an empty list
         self._lines = []
 
         # For each Feature in the FeatureCollection group; add an additional
         # instantiated SyntheticTransitLine object
         for feature in feature_collection['features']:
-            new_line = SyntheticTransitLine(feature)
+            new_line = SyntheticTransitLine(feature, existing_graph_nodes)
             self._lines.append(new_line)
 
     def _create_all_lines_generator(self):

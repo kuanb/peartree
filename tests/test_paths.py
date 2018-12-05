@@ -1,16 +1,17 @@
 import json
+import math
 import os
 
 import geopandas as gpd
 import networkx as nx
+import numpy as np
 import partridge as ptg
 import pytest
-import numpy as np
 from peartree.graph import InsufficientSummaryResults
 from peartree.paths import (InvalidGTFS, InvalidTimeBracket,
                             get_representative_feed, load_feed_as_graph,
                             load_synthetic_network_as_graph)
-from peartree.toolkit import generate_random_name
+from peartree.toolkit import generate_random_name, great_circle_vec
 from peartree.utilities import config
 
 # Make sure the we set logger on to test logging utilites
@@ -101,8 +102,8 @@ def test_parsing_when_just_on_trip_during_target_window():
     path = fixture('highdesertpointorus-2018-03-20.zip')
     feed = get_representative_feed(path)
 
-    start = 7*60*60  # 7:00 AM
-    end = 8*60*60  # 10:00 AM
+    start = 7 * 60 * 60  # 7:00 AM
+    end = 8 * 60 * 60  # 10:00 AM
     G = load_feed_as_graph(feed, start, end)
     assert len(list(G.nodes())) == 2
     assert len(list(G.edges())) == 1
@@ -153,9 +154,9 @@ def test_synthetic_network_with_custom_stops():
         reference_geojson = json.load(gjf)
 
     # Add in specific, custom stops under new properties key
-    custom_stops = [[-122.29225158691406,37.80876678753658],
-                    [-122.28886127471924,37.82341261847038],
-                    [-122.2701072692871,37.83005652796547]]
+    custom_stops = [[-122.29225158691406, 37.80876678753658],
+                    [-122.28886127471924, 37.82341261847038],
+                    [-122.2701072692871, 37.83005652796547]]
     reference_geojson['features'][0]['properties']['stops'] = custom_stops
 
     G1 = load_synthetic_network_as_graph(reference_geojson)
@@ -277,8 +278,82 @@ def test_feed_to_graph_path():
     # And make sure it connected correctly
     node_len_3 = len(G.nodes())
     edge_len_3 = len(G.edges())
-    assert node_len_3 - node_len_2 == 74
-    assert edge_len_3 - edge_len_2 == 80
+    assert node_len_3 - node_len_2 == 68
+    assert edge_len_3 - edge_len_2 == 69
+
+
+def test_synthetic_stop_assignment_adjustment():
+    target_stop_dist_override = 50  # meters
+
+    # First load original San Bruno line
+    geojson_path_1 = fixture('synthetic_san_bruno.geojson')
+    with open(geojson_path_1, 'r') as gjf:
+        reference_geojson_sb1 = json.load(gjf)
+
+    # We want there to be a lot of stops along
+    # both of the routes
+    (reference_geojson_sb1['features'][0]['properties']
+        ['stop_distance_distribution']) = target_stop_dist_override
+
+    G1 = load_synthetic_network_as_graph(reference_geojson_sb1)
+    G1_copy = G1.copy()
+
+    # Now load in the extension further down to Burlingame
+    geojson_path_2 = fixture('synthetic_san_bruno_addition.geojson')
+    with open(geojson_path_2, 'r') as gjf:
+        reference_geojson_sb2 = json.load(gjf)
+
+    # Also override this stop distance distribution value
+    (reference_geojson_sb2['features'][0]['properties']
+        ['stop_distance_distribution']) = target_stop_dist_override
+
+    G2 = load_synthetic_network_as_graph(reference_geojson_sb2,
+                                         existing_graph=G1_copy)
+    assert len(G1.nodes()) == 293
+    assert len(G2.nodes()) == 495
+
+    # Now remove nodes that were in the original graph
+    for i in G1.nodes():
+        G2.remove_node(i)
+
+    # The new graph should now be just (495 - 293) nodes
+    assert len(G2.nodes()) == 495 - 293
+
+
+    # We will use this as a reference distance limit for checking
+    # nearest points to ensure there are some adjusted stops matches
+    dist_limit = target_stop_dist_override * 0.5
+
+    # Then reassess matches
+    match_count = 0
+    for i2, n2 in G2.nodes(data=True):
+        found_match = False
+        for i1, n1 in G1.nodes(data=True):
+
+            # First check if exact match
+            x_match = n1['x'] == n2['x']
+            y_match = n1['y'] == n2['y']
+            if x_match and y_match:
+                found_match = True
+                continue
+
+            # Then check if near enough
+            gc_dist = great_circle_vec(n1['x'], n1['y'], n2['x'], n2['y'])
+            if gc_dist <= dist_limit:
+                found_match = True
+
+            # Stop looping once we find at least one match
+            if found_match:
+                break
+
+        # If one constraint satisfied, add to tally
+        if found_match:
+            match_count += 1
+
+    # This value will be high because the stop distance for the addition is
+    # set at 50 meters, which means that we expect there to be a lot of
+    # stops along the overlapping segment
+    assert match_count == 8
 
 
 def test_feeds_with_no_direction_id():
