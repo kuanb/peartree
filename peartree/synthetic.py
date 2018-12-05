@@ -16,13 +16,16 @@ def _generate_point_array_override(
         route_shape: LineString,
         existing_graph_nodes: gpd.GeoDataFrame,
         stop_distance_distribution: float) -> Iterable[Point]:
+    # TODO: Better parameterize the factor used with the distance distribution
     # Figure that we give a 10% "give" - this is, if a stop is within
     # 10% of the target segment distance, then it should be re-assigned
     # to that stop
-    reasonable_distance = 0.1 * stop_distance_distribution
+    reasonable_distance = 0.5 * stop_distance_distribution
 
+    # TODO: Better parameterize the buffer distance setting here
     # Find the nearby stops for the target line from those available
-    buffered = route_shape.buffer(reasonable_distance)
+    buffer_distance = 10  # meters
+    buffered = route_shape.buffer(buffer_distance)
 
     try:
         # Use spatial index if available
@@ -62,7 +65,7 @@ def _generate_point_array_override(
             continue
 
         # TODO: This mask operation is slow - is there a faster way?
-        dists_mask = dists == dists.min()
+        dists_mask = dists <= dists.min()
         sub_g_nodes = intersecting_stops[dists_mask]
 
         # Handle edge cases where matches are not captured
@@ -77,8 +80,10 @@ def _generate_point_array_override(
         # But still make sure that it is on the line because
         # we need to use the points to break up the line and get the
         # segment distances in the next step
-        mp_array_override.append(route_shape.interpolate(first_nearest,
-                                                         normalized=True))
+        adj_projected = route_shape.project(first_nearest)
+        adjusted_nearest = route_shape.interpolate(adj_projected,
+                                                   normalized=True)
+        mp_array_override.append(adjusted_nearest)
 
     return mp_array_override
 
