@@ -310,14 +310,14 @@ def test_synthetic_stop_assignment_adjustment():
     G2 = load_synthetic_network_as_graph(reference_geojson_sb2,
                                          existing_graph=G1_copy)
     assert len(G1.nodes()) == 293
-    assert len(G2.nodes()) == 531
+    assert len(G2.nodes()) == 495
 
     # Now remove nodes that were in the original graph
     for i in G1.nodes():
         G2.remove_node(i)
 
-    # The new graph should now be just (531 - 293) nodes
-    assert len(G2.nodes()) == 238
+    # The new graph should now be just (495 - 293) nodes
+    assert len(G2.nodes()) == 495 - 293
 
 
     # We will use this as a reference distance limit for checking
