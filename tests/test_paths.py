@@ -1,4 +1,5 @@
 import json
+import math
 import os
 
 import geopandas as gpd
@@ -283,21 +284,58 @@ def test_feed_to_graph_path():
 
 def test_synthetic_stop_assignment_adjustment():
     # First load original San Bruno line
-    geojson_path = fixture('synthetic_san_bruno.geojson')
-    with open(geojson_path, 'r') as gjf:
+    geojson_path_1 = fixture('synthetic_san_bruno.geojson')
+    with open(geojson_path_1, 'r') as gjf:
         reference_geojson_sb1 = json.load(gjf)
 
     G1 = load_synthetic_network_as_graph(reference_geojson_sb1)
+    G1_copy = G1.copy()
 
     # Now load in the extension further down to Burlingame
-    geojson_path = fixture('synthetic_san_bruno_addition.geojson')
-    with open(geojson_path, 'r') as gjf:
+    geojson_path_2 = fixture('synthetic_san_bruno_addition.geojson')
+    with open(geojson_path_2, 'r') as gjf:
         reference_geojson_sb2 = json.load(gjf)
 
     G2 = load_synthetic_network_as_graph(reference_geojson_sb2,
-                                         existing_graph=G1)
+                                         existing_graph=G1_copy)
+    assert len(G1.nodes()) == 74
+    assert len(G2.nodes()) == 134
 
-    assert len(G2.nodes())
+    # Now remove nodes that were in the original graph
+    for i in G1.nodes():
+        G2.remove_node(i)
+
+    # The new graph should now be just 60 nodes
+    assert len(G2.nodes()) == 60
+
+    # Then reassess matches
+    match_count = 0
+    for i2, n2 in G2.nodes(data=True):
+        found_match = False
+        for i1, n1 in G1.nodes(data=True):
+
+            # First check if exact match
+            x_match = n1['x'] == n2['x']
+            y_match = n1['y'] == n2['y']
+            if x_match and y_match:
+                found_match = True
+                continue
+
+            # Then check if near enough
+            xd = (n1['x'] - n2['x']) ** 2
+            yd = (n1['y'] - n2['y']) ** 2
+            hyp = math.sqrt(xd + yd)
+
+            feats = reference_geojson_sb2['features']
+            dist = feats[0]['properties']['stop_distance_distribution'] * 0.1
+            if hyp <= dist:
+                found_match = True
+
+        # If one constraint satisfied, add to tally
+        if found_match:
+            match_count += 1
+
+    assert match_count == 74
 
 
 def test_feeds_with_no_direction_id():
