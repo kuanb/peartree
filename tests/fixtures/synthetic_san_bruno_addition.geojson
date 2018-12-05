@@ -6,7 +6,7 @@
             "properties": {
                 "headway": 900,
                 "average_speed": 16,
-                "stop_distance_distribution": 201
+                "stop_distance_distribution": 50
             },
             "geometry": {
                 "type": "LineString",

@@ -283,10 +283,17 @@ def test_feed_to_graph_path():
 
 
 def test_synthetic_stop_assignment_adjustment():
+    target_stop_dist_override = 50  # meters
+
     # First load original San Bruno line
     geojson_path_1 = fixture('synthetic_san_bruno.geojson')
     with open(geojson_path_1, 'r') as gjf:
         reference_geojson_sb1 = json.load(gjf)
+
+    # We want there to be a lot of stops along
+    # both of the routes
+    (reference_geojson_sb1['features'][0]['properties']
+        ['stop_distance_distribution']) = target_stop_dist_override
 
     G1 = load_synthetic_network_as_graph(reference_geojson_sb1)
     G1_copy = G1.copy()
@@ -296,24 +303,26 @@ def test_synthetic_stop_assignment_adjustment():
     with open(geojson_path_2, 'r') as gjf:
         reference_geojson_sb2 = json.load(gjf)
 
+    # Also override this stop distance distribution value
+    (reference_geojson_sb2['features'][0]['properties']
+        ['stop_distance_distribution']) = target_stop_dist_override
+
     G2 = load_synthetic_network_as_graph(reference_geojson_sb2,
                                          existing_graph=G1_copy)
-    assert len(G1.nodes()) == 74
-    assert len(G2.nodes()) == 134
+    assert len(G1.nodes()) == 293
+    assert len(G2.nodes()) == 531
 
     # Now remove nodes that were in the original graph
     for i in G1.nodes():
         G2.remove_node(i)
 
-    # The new graph should now be just 60 nodes
-    assert len(G2.nodes()) == 60
+    # The new graph should now be just (531 - 293) nodes
+    assert len(G2.nodes()) == 238
 
 
     # We will use this as a reference distance limit for checking
     # nearest points to ensure there are some adjusted stops matches
-    feats = reference_geojson_sb2['features']
-    sdd = feats[0]['properties']['stop_distance_distribution']
-    dist_limit = sdd * 0.1
+    dist_limit = target_stop_dist_override * 0.1
 
     # Then reassess matches
     match_count = 0
@@ -341,6 +350,9 @@ def test_synthetic_stop_assignment_adjustment():
         if found_match:
             match_count += 1
 
+    # This value will be high because the stop distance for the addition is
+    # set at 50 meters, which means that we expect there to be a lot of
+    # stops along the overlapping segment
     assert match_count == 74
 
 
