@@ -38,6 +38,11 @@ def _generate_point_array_override(
         intersects_mask = existing_graph_nodes.intersects(buffered)
         intersecting_stops_gdf = existing_graph_nodes[intersects_mask]
 
+    # If we encounter a situation where there are no nearby nodes, bail
+    # early and just retyurn the original input array
+    if len(intersecting_stops_gdf) == 0:
+        return mp_array
+
     # TODO: Right now we only consider the stops as points (shapes),
     #       but in the future should aim to reuse graph nodes that are
     #       the same location by passing along the node id
