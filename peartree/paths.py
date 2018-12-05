@@ -264,7 +264,8 @@ def load_synthetic_network_as_graph(
         #       it is valid as well as set a flag to create join points with
         #       other feeds so that they can be linked when the next is added.
         G = existing_graph
-        existing_graph_nodes = generate_nodes_gdf_from_graph(G)
+        existing_graph_nodes = generate_nodes_gdf_from_graph(
+            G, to_epsg_crs=2163)
     else:
         G = generate_empty_md_graph(name)
         existing_graph_nodes = None
