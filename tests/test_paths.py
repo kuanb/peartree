@@ -11,7 +11,7 @@ from peartree.graph import InsufficientSummaryResults
 from peartree.paths import (InvalidGTFS, InvalidTimeBracket,
                             get_representative_feed, load_feed_as_graph,
                             load_synthetic_network_as_graph)
-from peartree.toolkit import generate_random_name
+from peartree.toolkit import generate_random_name, great_circle_vec
 from peartree.utilities import config
 
 # Make sure the we set logger on to test logging utilites
@@ -308,6 +308,13 @@ def test_synthetic_stop_assignment_adjustment():
     # The new graph should now be just 60 nodes
     assert len(G2.nodes()) == 60
 
+
+    # We will use this as a reference distance limit for checking
+    # nearest points to ensure there are some adjusted stops matches
+    feats = reference_geojson_sb2['features']
+    sdd = feats[0]['properties']['stop_distance_distribution']
+    dist_limit = sdd * 0.1
+
     # Then reassess matches
     match_count = 0
     for i2, n2 in G2.nodes(data=True):
@@ -322,14 +329,13 @@ def test_synthetic_stop_assignment_adjustment():
                 continue
 
             # Then check if near enough
-            xd = (n1['x'] - n2['x']) ** 2
-            yd = (n1['y'] - n2['y']) ** 2
-            hyp = math.sqrt(xd + yd)
-
-            feats = reference_geojson_sb2['features']
-            dist = feats[0]['properties']['stop_distance_distribution'] * 0.1
-            if hyp <= dist:
+            gc_dist = great_circle_vec(n1['x'], n1['y'], n2['x'], n2['y'])
+            if gc_dist <= dist_limit:
                 found_match = True
+
+            # Stop looping once we find at least one match
+            if found_match:
+                break
 
         # If one constraint satisfied, add to tally
         if found_match:
