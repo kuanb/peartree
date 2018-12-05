@@ -11,6 +11,73 @@ from shapely.ops import linemerge, split, transform
 from .toolkit import generate_random_name
 
 
+def _generate_point_array_override(
+        mp_array: Iterable[Point],
+        route_shape: LineString,
+        existing_graph_nodes: gpd.GeoDataFrame,
+        stop_distance_distribution: float) -> Iterable[Point]:
+    # Figure that we give a 10% "give" - this is, if a stop is within
+    # 10% of the target segment distance, then it should be re-assigned
+    # to that stop
+    reasonable_distance = 0.1 * stop_distance_distribution
+
+    # Find the nearby stops for the target line from those available
+    buffered = route_shape.buffer(reasonable_distance)
+
+    try:
+        # Use spatial index if available
+        egn_sindex = existing_graph_nodes.sindex
+        possibles = list(egn_sindex.intersection(route_shape.bounds))
+        existing_graph_nodes_sub = existing_graph_nodes.iloc[possibles]
+        intersects_mask = existing_graph_nodes_sub.intersects(buffered)
+        intersecting_stops_gdf = existing_graph_nodes_sub[intersects_mask]
+
+    except Exception:
+        # Otherwise skip the spatial index and just intersect
+        # against all geometries in the GeoDataFrame
+        intersects_mask = existing_graph_nodes.intersects(buffered)
+        intersecting_stops_gdf = existing_graph_nodes[intersects_mask]
+
+    # TODO: Right now we only consider the stops as points (shapes),
+    #       but in the future should aim to reuse graph nodes that are
+    #       the same location by passing along the node id
+    intersecting_stops = intersecting_stops_gdf['geometry'].values
+
+    mp_array_override = []
+    for pt in mp_array:
+        # TODO: This is can be super slow, is there a potentially
+        #       faster path or is the fact that this is only a subset
+        #       of all stop nodes mean that the number of points being
+        #       evaluated is acceptably small?
+        dists = intersecting_stops_gdf.distance(pt).values
+
+        # Skip if the closest existing stop is still too far away
+        if dists.min() > reasonable_distance:
+            mp_array_override.append(pt)
+            continue
+
+        # TODO: This mask operation is slow - is there a faster way?
+        dists_mask = dists == dists.min()
+        sub_g_nodes = intersecting_stops[dists_mask]
+
+        # Handle edge cases where matches are not captured
+        if len(sub_g_nodes) == 0:
+            mp_array_override.append(pt)
+            continue
+
+        # Otherwise, we should pass the first nearest stop node
+        # as the new stop location
+        first_nearest = sub_g_nodes[0]
+
+        # But still make sure that it is on the line because
+        # we need to use the points to break up the line and get the
+        # segment distances in the next step
+        mp_array_override.append(route_shape.interpolate(first_nearest,
+                                                         normalized=True))
+
+    return mp_array_override
+
+
 def generate_meter_projected_chunks(
         route_shape: LineString,
         custom_stops: Optional[List[List[float]]]=None,
@@ -64,64 +131,20 @@ def generate_meter_projected_chunks(
 
         # At this point, we have an array of what might be described as
         # "potential stops." From these stops, we want to look to see if there
-        # are nearby stop alternatives that are existing stops used by the 
+        # are nearby stop alternatives that are existing stops used by the
         # current network graph. If there are, then we should use those
         # instead.
         if existing_graph_nodes is not None and len(existing_graph_nodes) > 0:
-            # Figure that we give a 10% "give" - this is, if a stop is within
-            # 10% of the target segment distance, then it should be re-assigned
-            # to that stop
-            reasonable_distance = 0.1 * stop_distance_distribution
-
-            # Find the nearby stops for the target line from those available
-            egn_sindex = existing_graph_nodes.sindex
-            possibles = list(egn_sindex.intersection(rs2.bounds))
-            existing_graph_nodes_sub = existing_graph_nodes.iloc[possibles]
-            buffered = rs2.buffer(reasonable_distance)
-            intersecting_stops_gdf = stops_sub[stops_sub.intersects(buffered)]
-
-            # TODO: Right now we only consider the stops as points (shapes),
-            #       but in the future should aim to reuse graph nodes that are
-            #       the same location by passing along the node id
-            intersecting_stops = intersecting_stops_gdf['geometry'].values
-
-            mp_array_override = []
-            for pt in mp_array:
-                # TODO: This is can be super slow, is there a potentially
-                #       faster path or is the fact that this is only a subset
-                #       of all stop nodes mean that the number of points being
-                #       evaluated is acceptably small?
-                dists = intersecting_stops_gdf.distance(pt).values
-
-                # Skip if the closest existing stop is still too far away
-                if dists.min() > reasonable_distance:
-                    mp_array_override.append(pt)
-                    continue
-
-                # TODO: This mask operation is slow - is there a faster way?
-                dists_mask = dists == dists.min()
-                sub_g_nodes = intersecting_stops[dists_mask]
-
-                # Handle edge cases where matches are not captured
-                if len(sub_g_nodes) == 0:
-                    mp_array_override.append(pt)
-                    continue
-
-                # Otherwise, we should pass the first nearest stop node
-                # as the new stop location
-                first_nearest = sub_g_nodes[0]
-
-                # But still make sure that it is on the line because
-                # we need to use the points to break up the line and get the
-                # segment distances in the next step
-                mp_array_override.append(rs2.interpolate(first_nearest,
-                                                         normalized=True))
+            mp_array_override = _generate_point_array_override(
+                mp_array,
+                rs2,
+                existing_graph_nodes,
+                stop_distance_distribution)
 
             # Now that mp_array_override has been fully populated,
             # can now override the original array holding the estimated
             # stop point locations
             mp_array = mp_array_override
-
 
     # Cast array as a Shapely object
     splitter = MultiPoint(mp_array)
@@ -328,10 +351,11 @@ class SyntheticTransitLine(abc.ABC):
         # chunks is in meter projection and all_pts is in web mercator
         # this is because we only need (from chunks) the length value
         # and do not actually preserve the geometry beyond these operations
-        chunks = generate_meter_projected_chunks(self._route_path,
-                                                 custom_stops,
-                                                 stop_distance,
-                                                 existing_graph_nodes)
+        chunks = generate_meter_projected_chunks(
+            route_shape=self._route_path,
+            custom_stops=custom_stops,
+            stop_distance_distribution=stop_distance,
+            existing_graph_nodes=existing_graph_nodes)
 
         # Generate stops from each chunk and assign each a unique id
         all_pts = generate_stop_points(chunks)

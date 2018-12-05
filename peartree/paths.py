@@ -8,7 +8,7 @@ from .graph import (generate_empty_md_graph, generate_summary_graph_elements,
                     make_synthetic_system_network, populate_graph)
 from .synthetic import SyntheticTransitNetwork
 from .toolkit import generate_random_name
-from .utilities import log
+from .utilities import generate_nodes_gdf_from_graph, log
 
 FALLBACK_STOP_COST_DEFAULT = (30 * 60)  # 30 minutes, converted to seconds
 
@@ -42,7 +42,6 @@ def _calculate_means_default(arrival_times: np.array) -> float:
     # Naive implementation: halve the headway to get average wait time
     average_wait = na.mean() / 2
     return average_wait
-
 
 
 def get_representative_feed(file_loc: str,
@@ -265,12 +264,15 @@ def load_synthetic_network_as_graph(
         #       it is valid as well as set a flag to create join points with
         #       other feeds so that they can be linked when the next is added.
         G = existing_graph
+        existing_graph_nodes = generate_nodes_gdf_from_graph(G)
     else:
         G = generate_empty_md_graph(name)
+        existing_graph_nodes = None
 
     # First, instantiate whole TransitJSON as a SyntheticTransitNetwork object;
     # will provide necessory validation prior to synthetic network construction
-    as_synthetic_network = SyntheticTransitNetwork(reference_geojson)
+    as_synthetic_network = SyntheticTransitNetwork(reference_geojson,
+                                                   existing_graph_nodes)
 
     return make_synthetic_system_network(
         G,
