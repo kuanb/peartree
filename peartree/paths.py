@@ -45,7 +45,7 @@ def _calculate_means_default(arrival_times: np.array) -> float:
 
 
 def get_representative_feed(file_loc: str,
-                            day_type: str='busiest') -> ptg.feed:
+                            day_type: str='busiest') -> ptg.Feed:
     """
     Given a filepath, extract a partridge feed object, holding a \
     representative set of schedule patterns, extracted from the GTFS zip \
@@ -63,7 +63,7 @@ def get_representative_feed(file_loc: str,
 
     Returns
     -------
-    feed : ptg.feed
+    feed : ptg.Feed
         A partridge feed object, holding related schedule information as \
         pandas DataFrames for the busiest day in the available schedule.
     """
@@ -94,10 +94,10 @@ def get_representative_feed(file_loc: str,
 
     sub = service_ids_by_date[selected_date]
     feed_query = {'trips.txt': {'service_id': sub}}
-    return ptg.feed(file_loc, view=feed_query)
+    return ptg.Feed(file_loc, view=feed_query)
 
 
-def load_feed_as_graph(feed: ptg.feed,
+def load_feed_as_graph(feed: ptg.Feed,
                        start_time: int,
                        end_time: int,
                        name: str=None,
@@ -115,7 +115,7 @@ def load_feed_as_graph(feed: ptg.feed,
 
     Parameters
     ----------
-    feed : ptg.feed
+    feed : ptg.Feed
         A feed object from Partridge holding a representation of the \
         desired schedule ids and their releated scheudule data from an \
         operator GTFS

@@ -45,7 +45,7 @@ def nameify_stop_id(name, sid):
 
 
 def generate_summary_graph_elements(
-        feed: ptg.feed,
+        feed: ptg.Feed,
         target_time_start: float,
         target_time_end: float,
         fallback_stop_cost: float,
@@ -62,7 +62,7 @@ def generate_summary_graph_elements(
 
     Parameters
     ———————
-    feed : ptg.feed
+    Feed : ptg.Feed
         A partridge feed object, holding related schedule information as pandas
         DataFrames for the busiest day in the available schedule.
     target_time_start : float
@@ -283,7 +283,7 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
 
 def populate_graph(G: nx.MultiDiGraph,
                    name: str,
-                   feed: ptg.feed,
+                   feed: ptg.Feed,
                    wait_times_by_stop: pd.DataFrame,
                    summary_edge_costs: pd.DataFrame,
                    connection_threshold: Union[int, float],
@@ -299,7 +299,7 @@ def populate_graph(G: nx.MultiDiGraph,
         The muti-directed graph
     name : str
         The name (based on the graph) to be used in creating unique ids
-    feed : ptg.feed
+    Feed : ptg.Feed
         A partridge feed object, holding related schedule information as pandas
         DataFrames for the busiest day in the available schedule
     wait_times_by_stop : pd.DataFrame
