@@ -67,11 +67,20 @@ def get_representative_feed(file_loc: str,
         A partridge feed object, holding related schedule information as \
         pandas DataFrames for the busiest day in the available schedule.
     """
-    # Extract service ids and then trip counts by those dates
-    service_ids_by_date = ptg.read_service_ids_by_date(file_loc)
-    trip_counts_by_date = ptg.read_trip_counts_by_date(file_loc)
 
-    # Make sure we have some valid values returned in trips
+    # Extract service ids and then trip counts by those dates
+    try:
+        service_ids_by_date = ptg.read_service_ids_by_date(file_loc)
+        trip_counts_by_date = ptg.read_trip_counts_by_date(file_loc)
+
+    # Raised by partridge if no valid dates returned
+    except AssertionError:
+        # Make sure we have some valid values returned in trips
+        raise InvalidGTFS('No valid trip counts by date '
+                          'were identified in GTFS.')
+
+    # TODO: Due to partridge's assertion error being raised, this
+    #       check may no longer be needed.    
     if not len(trip_counts_by_date.items()):
         # Otherwise, error out
         raise InvalidGTFS('No valid trip counts by date '
