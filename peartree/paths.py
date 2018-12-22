@@ -45,7 +45,7 @@ def _calculate_means_default(arrival_times: np.array) -> float:
 
 
 def get_representative_feed(file_loc: str,
-                            day_type: str='busiest') -> ptg.feed:
+                            day_type: str='busiest') -> ptg.gtfs.Feed:
     """
     Given a filepath, extract a partridge feed object, holding a \
     representative set of schedule patterns, extracted from the GTFS zip \
@@ -63,15 +63,24 @@ def get_representative_feed(file_loc: str,
 
     Returns
     -------
-    feed : ptg.feed
+    feed : ptg.gtfs.Feed
         A partridge feed object, holding related schedule information as \
         pandas DataFrames for the busiest day in the available schedule.
     """
-    # Extract service ids and then trip counts by those dates
-    service_ids_by_date = ptg.read_service_ids_by_date(file_loc)
-    trip_counts_by_date = ptg.read_trip_counts_by_date(file_loc)
 
-    # Make sure we have some valid values returned in trips
+    # Extract service ids and then trip counts by those dates
+    try:
+        service_ids_by_date = ptg.read_service_ids_by_date(file_loc)
+        trip_counts_by_date = ptg.read_trip_counts_by_date(file_loc)
+
+    # Raised by partridge if no valid dates returned
+    except AssertionError:
+        # Make sure we have some valid values returned in trips
+        raise InvalidGTFS('No valid trip counts by date '
+                          'were identified in GTFS.')
+
+    # TODO: Due to partridge's assertion error being raised, this
+    #       check may no longer be needed.    
     if not len(trip_counts_by_date.items()):
         # Otherwise, error out
         raise InvalidGTFS('No valid trip counts by date '
@@ -94,10 +103,10 @@ def get_representative_feed(file_loc: str,
 
     sub = service_ids_by_date[selected_date]
     feed_query = {'trips.txt': {'service_id': sub}}
-    return ptg.feed(file_loc, view=feed_query)
+    return ptg.load_feed(file_loc, view=feed_query)
 
 
-def load_feed_as_graph(feed: ptg.feed,
+def load_feed_as_graph(feed: ptg.gtfs.Feed,
                        start_time: int,
                        end_time: int,
                        name: str=None,
@@ -115,7 +124,7 @@ def load_feed_as_graph(feed: ptg.feed,
 
     Parameters
     ----------
-    feed : ptg.feed
+    feed : ptg.gtfs.Feed
         A feed object from Partridge holding a representation of the \
         desired schedule ids and their releated scheudule data from an \
         operator GTFS

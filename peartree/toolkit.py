@@ -537,9 +537,6 @@ def get_paths_to_simplify(G: nx.Graph, strict: bool=True) -> List[List[int]]:
                     #       end points handle it by just ignoring that
                     #       component and letting its topology remain intact
                     #       (this should be a rare occurrence).
-                    # Note: RuntimeError is what Python <3.5 will throw, Py3.5+
-                    #       throws RecursionError but it is a subtype of
-                    #       RuntimeError so it still gets handled
                     log(('Recursion error: exceeded max depth, moving on to '
                          'next endpoint successor'), level=lg.WARNING)
 

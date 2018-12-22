@@ -418,7 +418,7 @@ def _trim_stop_times_by_timeframe(
 
 
 def generate_edge_and_wait_values(
-        feed: ptg.feed,
+        feed: ptg.gtfs.Feed,
         target_time_start: int,
         target_time_end: int,
         interpolate_times: bool,
@@ -432,7 +432,7 @@ def generate_edge_and_wait_values(
 
     Parameters
     ----------
-    feed : ptg.feed
+    feed : ptg.gtfs.Feed
         A partridge feed object, holding related schedule information as \
         pandas DataFrames for the busiest day in the available schedule.
     target_time_start : float

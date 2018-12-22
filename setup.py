@@ -16,7 +16,7 @@ requirements = [
     'fiona>=1.6.1',
     'geopandas>=0.4.0',
     'networkx>=2.0',
-    'partridge>=0.3.0'
+    'partridge>=1.0.0'
 ]
 
 setup_requirements = [
@@ -46,8 +46,6 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
     test_suite='tests',
