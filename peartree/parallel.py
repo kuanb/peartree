@@ -25,7 +25,11 @@ class RouteProcessor(object):
         # Initialize common parameters
         self.target_time_start = target_time_start
         self.target_time_end = target_time_end
-        self.stop_times = stop_times.copy()
+
+        # Limit stop times held to just those in time range
+        start_mask = (stop_times.arrival_time >= target_time_start)
+        end_mask = (stop_times.arrival_time <= target_time_end)
+        self.stop_times = stop_times[start_mask & end_mask].copy()
 
         # We use route_id as the index to ensure that subselection by
         # route_id from target_route_ids more performant
@@ -51,12 +55,7 @@ class RouteProcessor(object):
 
         # Get just the stop times related to this trip
         st_trip_id_mask = self.stop_times.trip_id.isin(trips.trip_id)
-        stimes_init = self.stop_times[st_trip_id_mask].copy()
-
-        # Then subset further by just the time period that we care about
-        start_time_mask = (stimes_init.arrival_time >= self.target_time_start)
-        end_time_mask = (stimes_init.arrival_time <= self.target_time_end)
-        stimes = stimes_init[start_time_mask & end_time_mask]
+        stimes = self.stop_times[st_trip_id_mask].copy()
 
         # Report on progress if requested
         a = len(stimes_init.trip_id.unique())
