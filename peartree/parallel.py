@@ -57,12 +57,6 @@ class RouteProcessor(object):
         st_trip_id_mask = self.stop_times.trip_id.isin(trips.trip_id)
         stimes = self.stop_times[st_trip_id_mask].copy()
 
-        # Report on progress if requested
-        a = len(stimes_init.trip_id.unique())
-        b = len(stimes.trip_id.unique())
-        log('\tReduced selected trips on route {} from {} to {}.'.format(
-            route_id, a, b))
-
         trips_and_stop_times = pd.merge(trips,
                                         stimes,
                                         how='inner',
