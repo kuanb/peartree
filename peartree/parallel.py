@@ -1,5 +1,5 @@
 from multiprocessing.managers import BaseManager
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -44,67 +44,67 @@ class RouteProcessor(object):
         # a list of arrival time values in a numpy array
         self.stop_cost_method = stop_cost_method
 
-    def generate_route_costs(self, route_id: str):
-        # Get all the subset of trips that are related to this route
-        trips = self.trips.loc[route_id].copy()
+        # Combine three target dataframes into a single composite
+        # to be grouped and processed in generate route cost method
+        trip_plus_stops = pd.merge(
+            self.trips,
+            stop_times,
+            how='inner',
+            on='trip_id')
 
-        # Pandas will try and make returned result a Series if there
-        # is only one result - prevent this from happening
-        if isinstance(trips, pd.Series):
-            trips = trips.to_frame().T
+        trip_plus_stops_an_time = pd.merge(
+            trip_plus_stops,
+            all_stops,
+            how='inner',
+            on='stop_id')
 
-        # Get just the stop times related to this trip
-        st_trip_id_mask = self.stop_times.trip_id.isin(trips.trip_id)
-        stimes = self.stop_times[st_trip_id_mask].copy()
+        self.trips_composite = trip_plus_stops_an_time.set_index('route_id')
 
-        trips_and_stop_times = pd.merge(trips,
-                                        stimes,
-                                        how='inner',
-                                        on='trip_id')
-
-        trips_and_stop_times = pd.merge(trips_and_stop_times,
-                                        self.all_stops.copy(),
-                                        how='inner',
-                                        on='stop_id')
-
+    def _route_coster_apply_method(
+            self,
+            trips_sub: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        # Prepare subset of trips dataframe, ensuring stop
+        # sequence is sorted with arrivals preceding departures
         sort_list = ['stop_sequence',
                      'arrival_time',
                      'departure_time']
-        trips_and_stop_times = trips_and_stop_times.sort_values(sort_list)
+        trips = trips_sub.sort_values(sort_list)
 
         # Check direction_id column value before using
         # trips_and_stop_times to generate wait and edge costs
-        # Note: Advantage to adding handling at route level is that peartree
-        #       avoids tossing direction id if a specific route has all direction
-        #       id rows filled in (while another does not, which is possible).
-        if 'direction_id' in trips_and_stop_times:
-            # If there is such column then check if it contains NaN
-            has_nan = trips_and_stop_times['direction_id'].isnull()
-            if len(trips_and_stop_times[has_nan]) > 0:
-                # If it has no full coverage in direction_id, drop the column
-                trips_and_stop_times.drop('direction_id', axis=1, inplace=True)
+        if 'direction_id' in trips:
+            # If column exists then check if it contains NaN
+            # and, if it lacks full coverage, drop the column
+            if trips['direction_id'].any():
+                trips = trips.drop('direction_id', axis=1)
 
-        wait_times = generate_wait_times(
-            trips_and_stop_times, self.stop_cost_method)
-
-        # Used in the next two steps
-        stop_id_col = trips_and_stop_times['stop_id'].copy()
+        wait_times = generate_wait_times(trips, self.stop_cost_method)
 
         # Look up wait time for each stop in wait_times for each direction
-        wait_zero = stop_id_col.apply(lambda x: wait_times[0][x])
-        trips_and_stop_times['wait_dir_0'] = wait_zero
-        
-        wait_one = stop_id_col.apply(lambda x: wait_times[1][x])
-        trips_and_stop_times['wait_dir_1'] = wait_one
-
-        tst_sub = trips_and_stop_times[['stop_id',
-                                        'wait_dir_0',
-                                        'wait_dir_1']]
+        stop_ids = trips['stop_id'].copy()
+        trips['wait_dir_0'] = stop_ids.apply(lambda x: wait_times[0][x])
+        trips['wait_dir_1'] = stop_ids.apply(lambda x: wait_times[1][x])
+        tst_sub = trips[['stop_id', 'wait_dir_0', 'wait_dir_1']]
 
         # Get all edge costs for this route and add to the running total
-        edge_costs = generate_all_observed_edge_costs(trips_and_stop_times)
+        edge_costs = generate_all_observed_edge_costs(trips)
 
         return (tst_sub, edge_costs)
+
+    def generate_route_costs(self, route_id: str):
+        # Bail early if this target route not available
+        if route_id not in self.trips_composite.index:
+            return (None, None)
+
+        # Get all the subset of trips that are related to this route
+        trips_sub = self.trips_composite.loc[route_id].copy()
+
+        # Pandas will try and make returned result a Series if there
+        # is only one result - prevent this from happening
+        if isinstance(trips_sub, pd.Series):
+            trips_sub = trips_sub.to_frame().T
+
+        return self._route_coster_apply_method(trips_sub)
 
 
 def generate_wait_times(
