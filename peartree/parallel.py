@@ -97,14 +97,31 @@ class RouteProcessor(object):
             return (None, None)
 
         # Get all the subset of trips that are related to this route
-        trips_sub = self.trips_composite.loc[route_id].copy()
+        trips = self.trips.loc[route_id].copy()
 
         # Pandas will try and make returned result a Series if there
         # is only one result - prevent this from happening
-        if isinstance(trips_sub, pd.Series):
-            trips_sub = trips_sub.to_frame().T
+        if isinstance(trips, pd.Series):
+            trips = trips.to_frame().T
 
-        return self._route_coster_apply_method(trips_sub)
+        # TODO: Drop this merge logic - it's just repeating 
+        #       creation of trips_composite. Determine why
+        #       result are inconsistent for both patterns
+        # Get just the stop times related to this trip
+        st_trip_id_mask = self.stop_times.trip_id.isin(trips.trip_id)
+        stimes = self.stop_times[st_trip_id_mask].copy()
+
+        trips_and_stop_times = pd.merge(trips,
+                                        stimes,
+                                        how='inner',
+                                        on='trip_id')
+
+        trips_and_stop_times = pd.merge(trips_and_stop_times,
+                                        self.all_stops.copy(),
+                                        how='inner',
+                                        on='stop_id')
+
+        return self._route_coster_apply_method(trips_and_stop_times)
 
 
 def generate_wait_times(
