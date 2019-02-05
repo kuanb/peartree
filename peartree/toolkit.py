@@ -282,7 +282,7 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
     # With the resulting groupings, we extract values
-    min_edges = grouped['len'].min()
+    min_edges = grouped['len'].mean()
 
     # Second step; which uses results from edge_df grouping/parsing
     edges_to_add = []
