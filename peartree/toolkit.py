@@ -282,42 +282,37 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
     # With the resulting groupings, we extract values
-    min_edges = grouped['len'].mean()
+    avg_edges = grouped['len'].mean()
 
     # Second step; which uses results from edge_df grouping/parsing
     edges_to_add = []
+    # Go through each edge
     for n1, n2, edge in G.edges(data=True):
+        # Get corresponding ids of new nodes (grid corners)
         rn1 = reference[n1]
         rn2 = reference[n2]
 
-        # Make sure that this is the min edge
-        min_length = min_edges.loc[rn1, rn2]
+        # Retrieve the average of grouped edge lengths
+        # from previously-calculated df
+        avg_length = avg_edges.loc[rn1, rn2]
 
-        # Skip this edge if it is not the minimum edge length
-        if not edge['length'] == min_length:
-            continue
+        # If this the edge rn1-rn2 w/ length avg_length
+        # does not exist in G yet
+        if not G.has_edge(rn1, rn2):
+            # Append new edge with attributes to list
+            length = avg_length
+            # Note: the mode is determined by the first edge
+            #       encountered that has not been added.
+            #       one can imagine that some modes will be dropped
+            #       if coalesce is applied on graph with multiple modes
+            mode = edge['mode']
+            edges_to_add.append((rn1, rn2, length, mode))
 
-        # If we pass the first check, we should also make sure that
-        # the edge has not already been added by another minimum edge
-        try:
-            # If this works, then the edge already exists
-            existing_edge = G[rn1][rn2]
-            # Also sanity check that it is the min length value
-            if not existing_edge['length'] == min_length:
-                raise ValueError(
-                    'Edge should have had minimum length of '
-                    '{}, but instead had value of {}'.format(min_length))
-
-        # If this happens, then this is the first time this edge
-        # is being added
-        except KeyError:
-            edges_to_add.append((rn1, rn2, edge))
-
-    # Add the new edges
-    for n1, n2, edge in edges_to_add:
+    # Add the new edges to graph
+    for n1, n2, length, mode in edges_to_add:
         # But avoid edges that now connect to the same node
         if not n1 == n2:
-            G.add_edge(n1, n2, length=edge['length'], mode=edge['mode'])
+            G.add_edge(n1, n2, length=length, mode=mode)
 
     # Now we can remove all edges and nodes that predated the
     # coalescing operations
@@ -328,16 +323,11 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Also make sure to update the new nodes with their summary
     # stats and locational data
     for i, node in new_node_coords.items():
-        # Some nodes are completely dropped in this operation
-        # with no replacement edges (e.g. nodes that would have
-        # connected to another node that ended up getting coalesced
-        # into the same single node)
-        if i not in G.nodes():
-            continue
-
-        # For all other nodes, preserve them by re-populating
-        for key in node:
-            G.nodes[i][key] = node[key]
+        # Note: is it possible at all that node i is not in G?
+        if G.has_node(i):
+            # For all other nodes, preserve them by re-populating
+            for key in node:
+                G.nodes[i][key] = node[key]
 
     return G
 
