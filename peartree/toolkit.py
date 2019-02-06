@@ -286,7 +286,6 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
 
     # Second step; which uses results from edge_df grouping/parsing
     edges_to_add = []
-    # Go through each edge
     for n1, n2, edge in G.edges(data=True):
         # Get corresponding ids of new nodes (grid corners)
         rn1 = reference[n1]
@@ -305,6 +304,7 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
             #       encountered that has not been added.
             #       one can imagine that some modes will be dropped
             #       if coalesce is applied on graph with multiple modes
+            # TODO: segment coalesce by mode
             mode = edge['mode']
             edges_to_add.append((rn1, rn2, length, mode))
 
