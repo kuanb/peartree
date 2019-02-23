@@ -1,7 +1,8 @@
+import logging as lg
 import random
 import string
-from typing import List, Tuple
 import warnings
+from typing import List, Tuple
 
 import geopandas as gpd
 import networkx as nx
@@ -49,7 +50,7 @@ def great_circle_vec(lat1: float,
     theta1 = np.deg2rad(lng1)
     theta2 = np.deg2rad(lng2)
 
-    cos = (np.sin(phi1) * np.sin(phi2) * np.cos(theta1 - theta2) \
+    cos = (np.sin(phi1) * np.sin(phi2) * np.cos(theta1 - theta2)
            + np.cos(phi1) * np.cos(phi2))
 
     # Ignore warnings during this calculation because numpy warns it cannot
@@ -279,9 +280,12 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         'fr': replacement_edges_fr,
         'to': replacement_edges_to,
         'len': replacement_edges_len})
+
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
+
     # With the resulting groupings, we extract values
+    # TODO: Also group on modes
     avg_edges = grouped['len'].mean()
 
     # Second step; which uses results from edge_df grouping/parsing
@@ -291,22 +295,17 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         rn1 = reference[n1]
         rn2 = reference[n2]
 
-        # Retrieve the average of grouped edge lengths
-        # from previously-calculated df
-        avg_length = avg_edges.loc[rn1, rn2]
+        # Only add edge if it has not yet been added yet
+        if G.has_edge(rn1, rn2):
+            continue
 
-        # If this the edge rn1-rn2 w/ length avg_length
-        # does not exist in G yet
-        if not G.has_edge(rn1, rn2):
-            # Append new edge with attributes to list
-            length = avg_length
-            # Note: the mode is determined by the first edge
-            #       encountered that has not been added.
-            #       one can imagine that some modes will be dropped
-            #       if coalesce is applied on graph with multiple modes
-            # TODO: segment coalesce by mode
-            mode = edge['mode']
-            edges_to_add.append((rn1, rn2, length, mode))
+        # Retrieve pair value from previous grouping operation
+        avg_length = avg_edges.loc[rn1, rn2]
+        edges_to_add.append((
+            rn1,
+            rn2,
+            avg_length,
+            edge['mode']))
 
     # Add the new edges to graph
     for n1, n2, length, mode in edges_to_add:
@@ -323,7 +322,6 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Also make sure to update the new nodes with their summary
     # stats and locational data
     for i, node in new_node_coords.items():
-        # Note: is it possible at all that node i is not in G?
         if G.has_node(i):
             # For all other nodes, preserve them by re-populating
             for key in node:
@@ -388,14 +386,15 @@ def is_endpoint(G: nx.Graph, node: int, strict=True):
         # always an endpoint.
         return True
 
-    # If node has no incoming edges or no outgoing edges, it must be an endpoint
-    elif G.out_degree(node)==0 or G.in_degree(node)==0:
+    # If node has no incoming edges or no outgoing edges, it must be an
+    # endpoint
+    elif G.out_degree(node) == 0 or G.in_degree(node) == 0:
         return True
 
-    elif not (n==2 and (d==2 or d==4)):
+    elif not (n == 2 and (d == 2 or d == 4)):
         # Else, if it does NOT have 2 neighbors AND either 2 or 4 directed
         # edges, it is an endpoint. either it has 1 or 3+ neighbors, in which
-        # case it is a dead-end or an intersection of multiple streets or it has
+        # case it is a dead-end or an intersection of multiple streets or has
         # 2 neighbors but 3 degree (indicating a change from oneway to twoway)
         # or more than 4 degree (indicating a parallel edge) and thus is an
         # endpoint
@@ -420,7 +419,8 @@ def is_endpoint(G: nx.Graph, node: int, strict=True):
         return len(set(osmids)) > 1
 
     else:
-        # If none of the preceding rules returned true, then it is not an endpoint
+        # If none of the preceding rules returned true, then it is not an
+        # endpoint
         return False
 
 
@@ -492,8 +492,8 @@ def get_paths_to_simplify(G: nx.Graph, strict: bool=True) -> List[List[int]]:
     ----------
     G : networkx multidigraph
     strict : bool
-        if False, allow nodes to be end points even if they fail all other rules
-        but have edges with different OSM IDs
+        if False, allow nodes to be end points even if they fail all other \
+        rules but have edges with different OSM IDs
 
     Returns
     -------
