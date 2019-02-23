@@ -193,7 +193,12 @@ def reproject(G: nx.MultiDiGraph, to_epsg: int=2163) -> nx.MultiDiGraph:
     return G
 
 
-def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
+def coalesce(
+    G_orig: nx.MultiDiGraph,
+    resolution: float,
+    edge_summary_method=lambda x: x.max(),
+    boarding_cost_summary_method=lambda x: x.mean(),
+) -> nx.MultiDiGraph:
     # Make sure our resolution satisfies basic requirement
     if resolution < 1:
         raise ValueError('Resolution parameters must be >= 1')
@@ -258,11 +263,10 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
             bc = G.nodes[i]['boarding_cost']
             boarding_costs.append(bc)
 
-        # Calculate the mean of the boarding costs
-        avg_bc = np.array(boarding_costs).mean()
-
-        # And assign it to the new nodes objects
-        new_node_coords[nni]['boarding_cost'] = avg_bc
+        # Calculate the summary boarding costs
+        # and assign it to the new nodes objects
+        new_node_coords[nni]['boarding_cost'] = (
+            boarding_cost_summary_method(np.array(boarding_costs)))
 
     # First step to creating a list of replacement edges
     replacement_edges_fr = []
@@ -280,14 +284,13 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         'fr': replacement_edges_fr,
         'to': replacement_edges_to,
         'len': replacement_edges_len})
-    print(edges_df)
 
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
 
     # With the resulting groupings, we extract values
     # TODO: Also group on modes
-    avg_edges = grouped['len'].mean()
+    processed_edge_costs = edge_summary_method(grouped['len'])
 
     # Second step; which uses results from edge_df grouping/parsing
     edges_to_add = []
@@ -297,7 +300,7 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         ref_n2 = reference[n2]
 
         # Retrieve pair value from previous grouping operation
-        avg_length = avg_edges.loc[ref_n1, ref_n2]
+        avg_length = processed_edge_costs.loc[ref_n1, ref_n2]
         edges_to_add.append((
             ref_n1,
             ref_n2,
