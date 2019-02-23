@@ -263,7 +263,7 @@ def coalesce(
             bc = G.nodes[i]['boarding_cost']
             boarding_costs.append(bc)
 
-        # Calculate the mean of the boarding costs
+        # Calculate the summary boarding costs
         # and assign it to the new nodes objects
         new_node_coords[nni]['boarding_cost'] = (
             edge_summary_method(np.array(boarding_costs)))
@@ -284,7 +284,6 @@ def coalesce(
         'fr': replacement_edges_fr,
         'to': replacement_edges_to,
         'len': replacement_edges_len})
-    print(edges_df)
 
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
