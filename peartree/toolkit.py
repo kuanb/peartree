@@ -280,6 +280,7 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         'fr': replacement_edges_fr,
         'to': replacement_edges_to,
         'len': replacement_edges_len})
+    print(edges_df)
 
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
@@ -292,26 +293,28 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     edges_to_add = []
     for n1, n2, edge in G.edges(data=True):
         # Get corresponding ids of new nodes (grid corners)
-        rn1 = reference[n1]
-        rn2 = reference[n2]
+        ref_n1 = reference[n1]
+        ref_n2 = reference[n2]
 
         # Retrieve pair value from previous grouping operation
-        avg_length = avg_edges.loc[rn1, rn2]
+        avg_length = avg_edges.loc[ref_n1, ref_n2]
         edges_to_add.append((
-            rn1,
-            rn2,
+            ref_n1,
+            ref_n2,
             avg_length,
             edge['mode']))
 
     # Add the new edges to graph
     for n1, n2, length, mode in edges_to_add:
         # Only add edge if it has not yet been added yet
-        if G.has_edge(rn1, rn2):
+        if G.has_edge(n1, n2):
             continue
 
-        # But avoid edges that now connect to the same node
-        if not n1 == n2:
-            G.add_edge(n1, n2, length=length, mode=mode)
+        # Also avoid edges that now connect to the same node
+        if n1 == n2:
+            continue
+
+        G.add_edge(n1, n2, length=length, mode=mode)
 
     # Now we can remove all edges and nodes that predated the
     # coalescing operations
