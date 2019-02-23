@@ -39,7 +39,7 @@ def test_feed_to_graph_plot():
     # Extract the x and y values of the reproject nodes
     xs = []
     ys = []
-    for i, node in G2.nodes(data=True):
+    for _, node in G2.nodes(data=True):
         xs.append(node['x'])
         ys.append(node['y'])
 
@@ -59,46 +59,70 @@ def test_feed_to_graph_plot():
 
 
 def test_coalesce_operation():
-    # Create a simple graph
-    G = nx.MultiDiGraph(crs={'init': 'epsg:4326', 'no_defs': True}, name='foo')
+    def method_a(x):
+        return x.mean()
 
-    # And add two nodes to it
-    G.add_node('a', x=-122.2729918, y=37.7688136, boarding_cost=10)
-    G.add_node('b', x=-122.2711039, y=37.7660709, boarding_cost=15)
-    G.add_node('c', x=-122.2711038, y=37.7660708, boarding_cost=12)
-    G.add_edge('a', 'b', length=10, mode='transit')
-    G.add_edge('b', 'c', length=1, mode='walk')
+    def method_b(x):
+        return x.max()
 
-    # Also add a node, and edge that is a more expensive variant
-    # of effectively the same edge
-    G.add_node('b_alt', x=-122.2711039, y=37.7660709, boarding_cost=13.5)
-    G.add_edge('a', 'b_alt', length=100, mode='transit')
+    for method, val in [
+        (method_a, 55),
+        (method_b, 100),
+    ]:
+        # Create a simple graph
+        G = nx.MultiDiGraph(
+            crs={'init': 'epsg:4326', 'no_defs': True},
+            name='foo')
 
-    # Also add a second edge between the same nodes, but with smaller weight
-    # so, it will get tossed in the cleanup
-    G.add_edge('a', 'b_alt', length=50, mode='transit')
+        # And add two nodes to it
+        G.add_node('a',
+                   x=-122.2729918, y=37.7688136, boarding_cost=10)
+        G.add_node('b',
+                   x=-122.2711039, y=37.7660709, boarding_cost=15)
+        G.add_node('c',
+                   x=-122.2711038, y=37.7660708, boarding_cost=12)
 
-    G2 = reproject(G)
-    G2c = coalesce(G2, 200)
+        G.add_edge('a', 'b', length=10, mode='transit')
+        G.add_edge('b', 'c', length=1, mode='walk')
 
-    # Same akward situation as before, where edges are returned in
-    # different order between Py 3.5 and 3.6
-    for _, node in G2c.nodes(data=True):
-        a = _dict_equal(node, {
-            'x': -1933000,
-            'y': -543000,
-            'boarding_cost': 10.0})
-        b = _dict_equal(node, {
-            'x': -1932800,
-            'y': -543400,
-            'boarding_cost': 13.5})
-        assert (a or b)
+        # Also add a node, and edge that is a more expensive variant
+        # of effectively the same edge
+        G.add_node('b_alt',
+                   x=-122.2711039, y=37.7660709, boarding_cost=13.5)
 
-    all_edges = list(G2c.edges(data=True))
-    assert len(all_edges) == 1
+        G.add_edge('a', 'b_alt', length=100, mode='transit')
 
-    # Make sure that the one edge came out as expected
-    assert _dict_equal(all_edges[0][2], {'length': 55, 'mode': 'transit'})
+        # Also add a second edge between the same nodes, but with
+        # smaller weight so, it will get tossed in the cleanup
+        G.add_edge('a', 'b_alt', length=50, mode='transit')
+
+        G2 = reproject(G)
+        G2c = coalesce(G2, 200, edge_summary_method=method)
+
+        # Same akward situation as before, where edges are returned in
+        # different order between Py 3.5 and 3.6
+        for _, node in G2c.nodes(data=True):
+            ref_node_a = {
+                'x': -1933000,
+                'y': -543000,
+                'boarding_cost': 10.0}
+            a = _dict_equal(node, ref_node_a)
+
+            ref_node_b = {
+                'x': -1932800,
+                'y': -543400,
+                'boarding_cost': 13.5}
+            b = _dict_equal(node, ref_node_b)
+
+            assert (a or b)
+
+        all_edges = list(G2c.edges(data=True))
+        assert len(all_edges) == 1
+
+        # Make sure that the one edge came out as expected
+        assert _dict_equal(
+            all_edges[0][2],
+            {'length': val, 'mode': 'transit'})
 
 
 def test_simplify_graph():

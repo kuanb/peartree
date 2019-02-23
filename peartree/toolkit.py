@@ -266,7 +266,7 @@ def coalesce(
         # Calculate the summary boarding costs
         # and assign it to the new nodes objects
         new_node_coords[nni]['boarding_cost'] = (
-            edge_summary_method(np.array(boarding_costs)))
+            boarding_cost_summary_method(np.array(boarding_costs)))
 
     # First step to creating a list of replacement edges
     replacement_edges_fr = []
@@ -290,7 +290,7 @@ def coalesce(
 
     # With the resulting groupings, we extract values
     # TODO: Also group on modes
-    processed_edge_costs = boarding_cost_summary_method(grouped['len'])
+    processed_edge_costs = edge_summary_method(grouped['len'])
 
     # Second step; which uses results from edge_df grouping/parsing
     edges_to_add = []
