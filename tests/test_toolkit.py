@@ -75,14 +75,15 @@ def test_coalesce_operation():
     G.add_edge('a', 'b_alt', length=100, mode='transit')
 
     # Also add a second edge between the same nodes, but with smaller weight
-    G.add_edge('a', 'b_alt', length=10, mode='transit')
+    # so, it will get tossed in the cleanup
+    G.add_edge('a', 'b_alt', length=50, mode='transit')
 
     G2 = reproject(G)
     G2c = coalesce(G2, 200)
 
     # Same akward situation as before, where edges are returned in
     # different order between Py 3.5 and 3.6
-    for i, node in G2c.nodes(data=True):
+    for _, node in G2c.nodes(data=True):
         a = _dict_equal(node, {
             'x': -1933000,
             'y': -543000,
