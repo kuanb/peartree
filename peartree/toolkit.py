@@ -295,10 +295,6 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         rn1 = reference[n1]
         rn2 = reference[n2]
 
-        # Only add edge if it has not yet been added yet
-        if G.has_edge(rn1, rn2):
-            continue
-
         # Retrieve pair value from previous grouping operation
         avg_length = avg_edges.loc[rn1, rn2]
         edges_to_add.append((
@@ -309,6 +305,10 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
 
     # Add the new edges to graph
     for n1, n2, length, mode in edges_to_add:
+        # Only add edge if it has not yet been added yet
+        if G.has_edge(rn1, rn2):
+            continue
+
         # But avoid edges that now connect to the same node
         if not n1 == n2:
             G.add_edge(n1, n2, length=length, mode=mode)
