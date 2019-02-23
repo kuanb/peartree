@@ -264,10 +264,9 @@ def coalesce(
             boarding_costs.append(bc)
 
         # Calculate the mean of the boarding costs
-        avg_bc = edge_summary_method(np.array(boarding_costs))
-
-        # And assign it to the new nodes objects
-        new_node_coords[nni]['boarding_cost'] = avg_bc
+        # and assign it to the new nodes objects
+        new_node_coords[nni]['boarding_cost'] = (
+            edge_summary_method(np.array(boarding_costs)))
 
     # First step to creating a list of replacement edges
     replacement_edges_fr = []
