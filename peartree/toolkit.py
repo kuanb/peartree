@@ -1,7 +1,8 @@
+import logging as lg
 import random
 import string
-from typing import List, Tuple
 import warnings
+from typing import List, Tuple
 
 import geopandas as gpd
 import networkx as nx
@@ -49,7 +50,7 @@ def great_circle_vec(lat1: float,
     theta1 = np.deg2rad(lng1)
     theta2 = np.deg2rad(lng2)
 
-    cos = (np.sin(phi1) * np.sin(phi2) * np.cos(theta1 - theta2) \
+    cos = (np.sin(phi1) * np.sin(phi2) * np.cos(theta1 - theta2)
            + np.cos(phi1) * np.cos(phi2))
 
     # Ignore warnings during this calculation because numpy warns it cannot
@@ -279,45 +280,41 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
         'fr': replacement_edges_fr,
         'to': replacement_edges_to,
         'len': replacement_edges_len})
+    print(edges_df)
+
     # Next we group by the edge pattern (from -> to)
     grouped = edges_df.groupby(['fr', 'to'], sort=False)
+
     # With the resulting groupings, we extract values
-    min_edges = grouped['len'].min()
+    # TODO: Also group on modes
+    avg_edges = grouped['len'].mean()
 
     # Second step; which uses results from edge_df grouping/parsing
     edges_to_add = []
     for n1, n2, edge in G.edges(data=True):
-        rn1 = reference[n1]
-        rn2 = reference[n2]
+        # Get corresponding ids of new nodes (grid corners)
+        ref_n1 = reference[n1]
+        ref_n2 = reference[n2]
 
-        # Make sure that this is the min edge
-        min_length = min_edges.loc[rn1, rn2]
+        # Retrieve pair value from previous grouping operation
+        avg_length = avg_edges.loc[ref_n1, ref_n2]
+        edges_to_add.append((
+            ref_n1,
+            ref_n2,
+            avg_length,
+            edge['mode']))
 
-        # Skip this edge if it is not the minimum edge length
-        if not edge['length'] == min_length:
+    # Add the new edges to graph
+    for n1, n2, length, mode in edges_to_add:
+        # Only add edge if it has not yet been added yet
+        if G.has_edge(n1, n2):
             continue
 
-        # If we pass the first check, we should also make sure that
-        # the edge has not already been added by another minimum edge
-        try:
-            # If this works, then the edge already exists
-            existing_edge = G[rn1][rn2]
-            # Also sanity check that it is the min length value
-            if not existing_edge['length'] == min_length:
-                raise ValueError(
-                    'Edge should have had minimum length of '
-                    '{}, but instead had value of {}'.format(min_length))
+        # Also avoid edges that now connect to the same node
+        if n1 == n2:
+            continue
 
-        # If this happens, then this is the first time this edge
-        # is being added
-        except KeyError:
-            edges_to_add.append((rn1, rn2, edge))
-
-    # Add the new edges
-    for n1, n2, edge in edges_to_add:
-        # But avoid edges that now connect to the same node
-        if not n1 == n2:
-            G.add_edge(n1, n2, length=edge['length'], mode=edge['mode'])
+        G.add_edge(n1, n2, length=length, mode=mode)
 
     # Now we can remove all edges and nodes that predated the
     # coalescing operations
@@ -328,16 +325,10 @@ def coalesce(G_orig: nx.MultiDiGraph, resolution: float) -> nx.MultiDiGraph:
     # Also make sure to update the new nodes with their summary
     # stats and locational data
     for i, node in new_node_coords.items():
-        # Some nodes are completely dropped in this operation
-        # with no replacement edges (e.g. nodes that would have
-        # connected to another node that ended up getting coalesced
-        # into the same single node)
-        if i not in G.nodes():
-            continue
-
-        # For all other nodes, preserve them by re-populating
-        for key in node:
-            G.nodes[i][key] = node[key]
+        if G.has_node(i):
+            # For all other nodes, preserve them by re-populating
+            for key in node:
+                G.nodes[i][key] = node[key]
 
     return G
 
@@ -398,14 +389,15 @@ def is_endpoint(G: nx.Graph, node: int, strict=True):
         # always an endpoint.
         return True
 
-    # If node has no incoming edges or no outgoing edges, it must be an endpoint
-    elif G.out_degree(node)==0 or G.in_degree(node)==0:
+    # If node has no incoming edges or no outgoing edges, it must be an
+    # endpoint
+    elif G.out_degree(node) == 0 or G.in_degree(node) == 0:
         return True
 
-    elif not (n==2 and (d==2 or d==4)):
+    elif not (n == 2 and (d == 2 or d == 4)):
         # Else, if it does NOT have 2 neighbors AND either 2 or 4 directed
         # edges, it is an endpoint. either it has 1 or 3+ neighbors, in which
-        # case it is a dead-end or an intersection of multiple streets or it has
+        # case it is a dead-end or an intersection of multiple streets or has
         # 2 neighbors but 3 degree (indicating a change from oneway to twoway)
         # or more than 4 degree (indicating a parallel edge) and thus is an
         # endpoint
@@ -430,7 +422,8 @@ def is_endpoint(G: nx.Graph, node: int, strict=True):
         return len(set(osmids)) > 1
 
     else:
-        # If none of the preceding rules returned true, then it is not an endpoint
+        # If none of the preceding rules returned true, then it is not an
+        # endpoint
         return False
 
 
@@ -502,8 +495,8 @@ def get_paths_to_simplify(G: nx.Graph, strict: bool=True) -> List[List[int]]:
     ----------
     G : networkx multidigraph
     strict : bool
-        if False, allow nodes to be end points even if they fail all other rules
-        but have edges with different OSM IDs
+        if False, allow nodes to be end points even if they fail all other \
+        rules but have edges with different OSM IDs
 
     Returns
     -------

@@ -70,23 +70,20 @@ def test_coalesce_operation():
     G.add_edge('b', 'c', length=1, mode='walk')
 
     # Also add a node, and edge that is a more expensive variant
-    # of effectively the same edge to make sure this more expensive edge
-    # gets tossed during the coalesce
+    # of effectively the same edge
     G.add_node('b_alt', x=-122.2711039, y=37.7660709, boarding_cost=13.5)
     G.add_edge('a', 'b_alt', length=100, mode='transit')
 
-    # Also add a second edge between the same nodes, but with an equal weight
-    G.add_edge('a', 'b_alt', length=100, mode='transit')
-
-    # Add a node that won't be preserved (no edges connected to it)
-    G.add_edge('a', 'b_alt', length=10, mode='transit')
+    # Also add a second edge between the same nodes, but with smaller weight
+    # so, it will get tossed in the cleanup
+    G.add_edge('a', 'b_alt', length=50, mode='transit')
 
     G2 = reproject(G)
     G2c = coalesce(G2, 200)
 
     # Same akward situation as before, where edges are returned in
     # different order between Py 3.5 and 3.6
-    for i, node in G2c.nodes(data=True):
+    for _, node in G2c.nodes(data=True):
         a = _dict_equal(node, {
             'x': -1933000,
             'y': -543000,
@@ -101,7 +98,7 @@ def test_coalesce_operation():
     assert len(all_edges) == 1
 
     # Make sure that the one edge came out as expected
-    assert _dict_equal(all_edges[0][2], {'length': 10, 'mode': 'transit'})
+    assert _dict_equal(all_edges[0][2], {'length': 55, 'mode': 'transit'})
 
 
 def test_simplify_graph():
