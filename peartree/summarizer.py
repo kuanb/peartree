@@ -480,6 +480,7 @@ def generate_edge_and_wait_values(
 
     # Stop times sometimes are missing timestamps for arrival or departure
     # and should be pruned from consideration
+    sub_stop_times = prune_invalid_stop_times(sub_stop_times)
 
     # Flags whether we interpolate intermediary stops or not
     if interpolate_times:
