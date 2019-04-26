@@ -417,6 +417,15 @@ def _trim_stop_times_by_timeframe(
     return sub_stop_times_final
 
 
+def prune_invalid_stop_times(
+        stop_times: pd.DataFrame) -> pd.DataFrame:
+    missing_arrival = np.isnan(stop_times.arrival_time)
+    departure_arrival = np.isnan(stop_times.departure_time)
+
+    has_both_times = ~missing_arrival & ~departure_arrival
+    return stop_times[has_both_times].reset_index(drop=True)
+
+
 def generate_edge_and_wait_values(
         feed: ptg.gtfs.Feed,
         target_time_start: int,
@@ -468,6 +477,9 @@ def generate_edge_and_wait_values(
     """
     sub_stop_times = _trim_stop_times_by_timeframe(
         feed.stop_times, target_time_start, target_time_end)
+
+    # Stop times sometimes are missing timestamps for arrival or departure
+    # and should be pruned from consideration
 
     # Flags whether we interpolate intermediary stops or not
     if interpolate_times:
