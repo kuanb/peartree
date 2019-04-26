@@ -475,6 +475,8 @@ def generate_edge_and_wait_values(
         A DataFrame of the estimated cost in tie to wait for and board a \
         service vehicle at this stop, given all determined wait times
     """
+
+    # Limit to entries within tiemframe for service day being evaluated
     sub_stop_times = _trim_stop_times_by_timeframe(
         feed.stop_times, target_time_start, target_time_end)
 
