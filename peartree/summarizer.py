@@ -480,10 +480,6 @@ def generate_edge_and_wait_values(
     sub_stop_times = _trim_stop_times_by_timeframe(
         feed.stop_times, target_time_start, target_time_end)
 
-    # Stop times sometimes are missing timestamps for arrival or departure
-    # and should be pruned from consideration
-    sub_stop_times = _prune_invalid_stop_times(sub_stop_times)
-
     # Flags whether we interpolate intermediary stops or not
     if interpolate_times:
         # Prepare the stops times dataframe by also infilling
@@ -494,6 +490,11 @@ def generate_edge_and_wait_values(
             use_multiprocessing)
     else:
         stop_times = sub_stop_times.copy()
+
+    # Stop times sometimes are missing timestamps for arrival or departure
+    # and should be pruned from consideration (can happen if no interpolation
+    # or other orphaned stop times entries)
+    stop_times = _prune_invalid_stop_times(stop_times)
 
     # Initialize the trips dataframe to be worked with
     ftrips = feed.trips.copy()
