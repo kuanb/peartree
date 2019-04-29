@@ -39,8 +39,11 @@ def _calculate_means_default(arrival_times: np.array) -> float:
     #       would replace this default method
     na = np.array(wait_seconds)
 
+    # Prune 0-second delays as these excessively reduce wait-time estimates
+    na_no_zeroes = na[na > 0]
+
     # Naive implementation: halve the headway to get average wait time
-    average_wait = na.mean() / 2
+    average_wait = na_no_zeroes.mean() / 2
     return average_wait
 
 
