@@ -61,7 +61,7 @@ def test_generate_summary_graph_elements():
 
         # Just a heuristic for avg_cost mean
         avg_cost_mean = wait_times_by_stop.avg_cost.mean()
-        assert avg_cost_mean == pytest.approx(1109.380, abs=0.1)
+        assert avg_cost_mean == pytest.approx(1013.68, abs=0.1)
 
         # Make sure that there are stop ids unique
         u = wait_times_by_stop.stop_id.unique()
