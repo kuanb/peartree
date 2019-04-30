@@ -1,5 +1,3 @@
-import os
-
 import networkx as nx
 
 from .utilities import log

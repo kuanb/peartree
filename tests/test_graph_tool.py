@@ -1,6 +1,5 @@
 import json
 import os
-import pytest
 
 from peartree.graph_tool import _import_graph_tool, nx_to_gt
 from peartree.paths import load_synthetic_network_as_graph
@@ -30,7 +29,7 @@ def test_conversion_to_graph_tool():
     # Make sure that the result is indeed a graph-tool Graph class object
     gt = _import_graph_tool()
     assert isinstance(gtG, gt.Graph)
-    
+
     # Also make sure that the attributes for all parameters have been preserved
     assert set(gtG.vp.keys()) == set(('boarding_cost', 'id', 'x', 'y'))
     assert set(gtG.gp.keys()) == set(('crs', 'name'))

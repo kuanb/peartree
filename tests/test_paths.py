@@ -1,5 +1,4 @@
 import json
-import math
 import os
 
 import geopandas as gpd
@@ -318,7 +317,6 @@ def test_synthetic_stop_assignment_adjustment():
 
     # The new graph should now be just (495 - 293) nodes
     assert len(G2.nodes()) == 495 - 293
-
 
     # We will use this as a reference distance limit for checking
     # nearest points to ensure there are some adjusted stops matches
