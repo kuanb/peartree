@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Union
 import numpy as np
 import pandas as pd
 from peartree.toolkit import nan_helper
-from peartree.utilities import log
 
 
 class RouteProcessorManager(BaseManager):
@@ -75,7 +74,7 @@ class RouteProcessor(object):
         # Check direction_id column value before using
         # trips_and_stop_times to generate wait and edge costs
         # Note: Advantage to adding handling at route level is that peartree
-        #       avoids tossing direction id if a specific route has all direction
+        #       avoids tossing direction id if specific route has all direction
         #       id rows filled in (while another does not, which is possible).
         if 'direction_id' in trips_and_stop_times:
             # If there is such column then check if it contains NaN

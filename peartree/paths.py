@@ -102,7 +102,7 @@ def get_representative_feed(file_loc: str,
                           'were identified in GTFS.')
 
     # TODO: Due to partridge's assertion error being raised, this
-    #       check may no longer be needed.    
+    #       check may no longer be needed.
     if not len(trip_counts_by_date.items()):
         # Otherwise, error out
         raise InvalidGTFS('No valid trip counts by date '

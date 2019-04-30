@@ -1,11 +1,10 @@
 import os
-import pytest
 
+import pytest
 from peartree.graph import (generate_empty_md_graph,
                             generate_summary_graph_elements)
 from peartree.paths import (FALLBACK_STOP_COST_DEFAULT,
-                            _calculate_means_default,
-                            get_representative_feed)
+                            _calculate_means_default, get_representative_feed)
 
 
 def fixture(filename):

@@ -11,9 +11,9 @@ from peartree.parallel import (RouteProcessor, TripTimesInterpolator,
 from peartree.utilities import log
 
 
-
 class InvalidParsedWaitTimes(Exception):
     pass
+
 
 def _format_summarized_outputs(summarized: pd.Series) -> pd.DataFrame:
     # The output of the group by produces a Series, but we want to extract

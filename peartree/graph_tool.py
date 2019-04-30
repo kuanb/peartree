@@ -40,7 +40,7 @@ class GraphToolNotImported(Exception):
 def get_prop_type(value: Any, key: Any=None) -> Tuple[str, Any, str]:
     """
     Performs typing and value conversion for the graph_tool PropertyMap class.
-    
+
     If a key is provided, it also ensures the key is in a format that can be
     used with the PropertyMap. Returns a tuple, (type name, value, key)
     """
@@ -102,7 +102,7 @@ def nx_to_gt(nxG: nx.MultiDiGraph):
         The converted network graph, instantiated as a graph_tool network graph
     """
     # First, attempt to import graph-tool
-    gt = _import_graph_tool()        
+    gt = _import_graph_tool()
 
     # Phase 0: Create a directed or undirected graph-tool Graph
     gtG = gt.Graph(directed=nxG.is_directed())
@@ -112,14 +112,14 @@ def nx_to_gt(nxG: nx.MultiDiGraph):
         # Convert the value and key into a type for graph-tool
         tname, value, key = get_prop_type(value, key)
 
-        prop = gtG.new_graph_property(tname) # Create the PropertyMap
+        prop = gtG.new_graph_property(tname)  # Create the PropertyMap
         gtG.graph_properties[key] = prop     # Set the PropertyMap
         gtG.graph_properties[key] = value    # Set the actual value
 
     # Phase 1: Add the vertex and edge property maps
     # Go through all nodes and edges and add seen properties
     # Add the node properties first
-    nprops = set() # cache keys to only add properties once
+    nprops = set()  # cache keys to only add properties once
     for node, data in nxG.nodes(data=True):
         # Go through all the properties if not seen and add them.
         for key, val in data.items():
@@ -128,7 +128,7 @@ def nx_to_gt(nxG: nx.MultiDiGraph):
                 continue
 
             # Convert the value and key into a type for graph-tool
-            tname, _, key  = get_prop_type(val, key)
+            tname, _, key = get_prop_type(val, key)
 
             # Create the PropertyMap, and...
             prop = gtG.new_vertex_property(tname)
@@ -145,7 +145,7 @@ def nx_to_gt(nxG: nx.MultiDiGraph):
     gtG.vertex_properties['id'] = gtG.new_vertex_property('string')
 
     # Add the edge properties second
-    eprops = set() # cache keys to only add properties once
+    eprops = set()  # cache keys to only add properties once
     for src, dst, data in nxG.edges(data=True):
 
         # Go through all the edge properties if not seen and add them,
@@ -190,7 +190,7 @@ def nx_to_gt(nxG: nx.MultiDiGraph):
 
         # Add the edge properties
         for key, value in data.items():
-            gtG.ep[key][e] = value # ep is short for edge_properties
+            gtG.ep[key][e] = value  # ep is short for edge_properties
 
     # Done, finally!
     return gtG

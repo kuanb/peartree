@@ -3,8 +3,7 @@ from time import time
 
 from peartree.graph import generate_empty_md_graph, populate_graph
 from peartree.paths import (FALLBACK_STOP_COST_DEFAULT,
-                            _calculate_means_default,
-                            get_representative_feed)
+                            _calculate_means_default, get_representative_feed)
 from peartree.summarizer import (generate_edge_and_wait_values,
                                  generate_summary_edge_costs,
                                  generate_summary_wait_times)
