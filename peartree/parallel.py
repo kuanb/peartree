@@ -85,7 +85,10 @@ class RouteProcessor(object):
                 trips_and_stop_times.drop('direction_id', axis=1, inplace=True)
 
         wait_times = generate_wait_times(
-            trips_and_stop_times, self.stop_cost_method)
+            self.target_time_start,
+            self.target_time_end,
+            trips_and_stop_times,
+            self.stop_cost_method)
 
         # Used in the next two steps
         stop_id_col = trips_and_stop_times['stop_id'].copy()
@@ -108,6 +111,8 @@ class RouteProcessor(object):
 
 
 def generate_wait_times(
+        target_time_start: float,
+        target_time_end: float,
         trips_and_stop_times: pd.DataFrame,
         stop_cost_method: Any) -> Dict[int, List[float]]:
     wait_times = {0: {}, 1: {}}
@@ -128,7 +133,10 @@ def generate_wait_times(
                 # values associated with the specified direction so default NaN
                 average_wait = np.nan
             else:
-                average_wait = stop_cost_method(direction_subset.arrival_time)
+                average_wait = stop_cost_method(
+                    target_time_start,
+                    target_time_end,
+                    direction_subset.arrival_time)
 
             # Add according to which direction we are working with
             wait_times[direction][stop_id] = average_wait
