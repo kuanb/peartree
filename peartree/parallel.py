@@ -96,7 +96,7 @@ class RouteProcessor(object):
         # Look up wait time for each stop in wait_times for each direction
         wait_zero = stop_id_col.apply(lambda x: wait_times[0][x])
         trips_and_stop_times['wait_dir_0'] = wait_zero
-        
+
         wait_one = stop_id_col.apply(lambda x: wait_times[1][x])
         trips_and_stop_times['wait_dir_1'] = wait_one
 
@@ -117,26 +117,29 @@ def generate_wait_times(
         stop_cost_method: Any) -> Dict[int, List[float]]:
     wait_times = {0: {}, 1: {}}
     for stop_id in trips_and_stop_times.stop_id.unique():
+        constraint_1 = (trips_and_stop_times.stop_id == stop_id)
+        stop_times_by_stop = trips_and_stop_times[constraint_1]
+
         # Handle both inbound and outbound directions
         for direction in [0, 1]:
             # Check if direction_id exists in source data
             if 'direction_id' in trips_and_stop_times:
-                constraint_1 = (trips_and_stop_times.direction_id == direction)
-                constraint_2 = (trips_and_stop_times.stop_id == stop_id)
-                both_constraints = (constraint_1 & constraint_2)
-                direction_subset = trips_and_stop_times[both_constraints]
+                constraint_2 = (trips_and_stop_times.direction_id == direction)
+                direction_subset = stop_times_by_stop[constraint_2]
             else:
-                direction_subset = trips_and_stop_times.copy()
+                direction_subset = stop_times_by_stop.copy()
 
             if direction_subset.empty:
                 # Cannot calculate the average wait time if there are no
                 # values associated with the specified direction so default NaN
                 average_wait = np.nan
             else:
+                arrival_times_copy = np.array(direction_subset.arrival_time)
+                arrival_times_copy.sort()
                 average_wait = stop_cost_method(
                     target_time_start,
                     target_time_end,
-                    direction_subset.arrival_time)
+                    arrival_times_copy)
 
             # Add according to which direction we are working with
             wait_times[direction][stop_id] = average_wait
