@@ -35,24 +35,22 @@ def _calculate_means_default(
     # Make sure that values are in ascending order (also converts to list)
     arrival_times = np.array(arrival_times)
     arrival_times.sort()
-    
 
     # Recast as numpy array
     first = arrival_times[1:]
     second = arrival_times[:-1]
     wait_seconds = list(first - second)
-    
+
+    # Recast arrival times as just a python list
+    arrival_times = list(arrival_times)
 
     # Also ensure that both the first and last trip include context
     # framed by the evaluation time period
-    arrival_times = list(arrival_times)
     from_start_time_to_first_arrival = arrival_times[0] - target_time_start
     wait_seconds.append(from_start_time_to_first_arrival)
 
     from_last_arrival_to_end_time = target_time_end - arrival_times[-1]
     wait_seconds.append(from_last_arrival_to_end_time)
-    
-    print(wait_seconds)
 
     # Note: Can implement something more substantial here that takes into
     #       account divergent/erratic performance or intentional timing
