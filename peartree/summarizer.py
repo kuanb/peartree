@@ -157,7 +157,8 @@ def generate_summary_wait_times(
 
         # Convert anything that is 0 or less seconds to a NaN as well
         # to remove negative or 0 second waits in the system
-        df_sub.loc[~(df_sub[col] > 0), col] = np.nan
+        over_zero_mask = df_sub[col] > 0
+        df_sub.loc[~over_zero_mask, col] = np.nan
 
         # With all null types converted to NaN, we can cast col as float
         df_sub[col] = df_sub[col].astype(float)
