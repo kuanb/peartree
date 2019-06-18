@@ -147,7 +147,7 @@ def generate_summary_wait_times(
     df_sub = df[['stop_id',
                  'wait_dir_0',
                  'wait_dir_1']].reset_index(drop=True)
-    init_of_stop_ids = df_sub.stop_id.unique()
+    init_of_stop_ids = df_sub['stop_id'].unique()
 
     # Default values for average waits with not enough data should be
     # NaN types, but let's make sure all null types are NaNs to be safe
@@ -157,7 +157,8 @@ def generate_summary_wait_times(
 
         # Convert anything that is 0 or less seconds to a NaN as well
         # to remove negative or 0 second waits in the system
-        df_sub.loc[~(df_sub[col] > 0), col] = np.nan
+        over_zero_mask = df_sub[col] > 0
+        df_sub.loc[~over_zero_mask, col] = np.nan
 
         # With all null types converted to NaN, we can cast col as float
         df_sub[col] = df_sub[col].astype(float)
