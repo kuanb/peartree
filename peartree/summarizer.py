@@ -147,19 +147,7 @@ def generate_summary_wait_times(
     df_sub = df[['stop_id',
                  'wait_dir_0',
                  'wait_dir_1']].reset_index(drop=True)
-
-    # Get the number of wait time rows registered with each unique stop
-    stop_id_vcs = df_sub['stop_id'].value_counts()
-
-    # Find the rows with just 1 entry that are nan and
-    # assign those the default fallback stop cost value
-    mask_is_one = stop_id_vcs == 1
-    sub_stop_id_vcs = stop_id_vcs[mask_is_one]
-    over_zero_mask = sub_stop_id_vcs > 0
-    sub_stop_id_vcs[~over_zero_mask] = fallback_stop_cost
-
-    # Also use this Series to extract the number of unique stop ids
-    init_of_stop_ids = stop_id_vcs.index
+    init_of_stop_ids = df_sub['stop_id'].unique()
 
     # Default values for average waits with not enough data should be
     # NaN types, but let's make sure all null types are NaNs to be safe
