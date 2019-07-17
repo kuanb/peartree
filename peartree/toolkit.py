@@ -199,6 +199,10 @@ def coalesce(
     edge_summary_method=lambda x: x.max(),
     boarding_cost_summary_method=lambda x: x.mean(),
 ) -> nx.MultiDiGraph:
+    warnings.warn((
+        'coalesce method is experimental - application risks '
+        'deformation of overall graph structure'))
+
     # Make sure our resolution satisfies basic requirement
     if resolution < 1:
         raise ValueError('Resolution parameters must be >= 1')
