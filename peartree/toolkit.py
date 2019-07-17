@@ -199,9 +199,11 @@ def coalesce(
     edge_summary_method=lambda x: x.max(),
     boarding_cost_summary_method=lambda x: x.mean(),
 ) -> nx.MultiDiGraph:
+    # Note: Feature is experimental. For more details, see
+    #       https://github.com/kuanb/peartree/issues/126
     warnings.warn((
-        'coalesce method is experimental - application risks '
-        'deformation of overall graph structure'))
+        'coalesce method is experimental - method risks '
+        'deformation of relative graph structure'))
 
     # Make sure our resolution satisfies basic requirement
     if resolution < 1:
