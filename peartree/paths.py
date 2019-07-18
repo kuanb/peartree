@@ -249,7 +249,8 @@ def load_synthetic_network_as_graph(
         existing_graph: nx.MultiDiGraph=None,
         connection_threshold: float=50.0,
         walk_speed_kmph: float=4.5,
-        impute_walk_transfers: bool=True) -> nx.MultiDiGraph:
+        impute_walk_transfers: bool=True,
+        wait_time_cost_method: Any=lambda x: x / 2) -> nx.MultiDiGraph:
     """
     Convert formatted transit FeatureCollection into a directed network graph.
 
@@ -273,6 +274,8 @@ def load_synthetic_network_as_graph(
         for calculating cost (impedance in time) of walk transfers
     impute_walk_transfers : bool
         A flag to indicate whether or not walk transfers should be calculated
+    wait_time_cost_method: Any
+        Function that, given a headway float value, produces a wait time value
 
     Returns
     ——
@@ -303,8 +306,10 @@ def load_synthetic_network_as_graph(
 
     # First, instantiate whole TransitJSON as a SyntheticTransitNetwork object;
     # will provide necessory validation prior to synthetic network construction
-    as_synthetic_network = SyntheticTransitNetwork(reference_geojson,
-                                                   existing_graph_nodes)
+    as_synthetic_network = SyntheticTransitNetwork(
+        reference_geojson,
+        wait_time_cost_method,
+        existing_graph_nodes)
 
     return make_synthetic_system_network(
         G,
