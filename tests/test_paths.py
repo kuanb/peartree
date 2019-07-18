@@ -368,3 +368,6 @@ def test_feeds_with_no_direction_id():
     # Make sure each node has numeric boarding cost
     for i, node in G.nodes(data=True):
         assert not np.isnan(node['boarding_cost'])
+
+        # Also check type of the modes list
+        assert not type(node['modes']) == list

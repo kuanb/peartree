@@ -61,7 +61,7 @@ def test_save_and_read_zip():
 
     # Also make sure the basic attributes are preserved
     for node_id, node in G2.nodes(data=True):
-        for key in ['boarding_cost', 'x', 'y']:
+        for key in ['boarding_cost', 'modes', 'x', 'y']:
             assert key in node.keys()
 
     for from_id, to_id, edge in G2.edges(data=True):

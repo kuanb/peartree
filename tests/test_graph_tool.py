@@ -31,7 +31,8 @@ def test_conversion_to_graph_tool():
     assert isinstance(gtG, gt.Graph)
 
     # Also make sure that the attributes for all parameters have been preserved
-    assert set(gtG.vp.keys()) == set(('boarding_cost', 'id', 'x', 'y'))
+    assert set(gtG.vp.keys()) == set((
+        'boarding_cost', 'modes', 'id', 'x', 'y'))
     assert set(gtG.gp.keys()) == set(('crs', 'name'))
     assert set(gtG.ep.keys()) == set(('length', 'mode'))
 
