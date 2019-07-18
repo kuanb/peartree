@@ -224,10 +224,12 @@ def generate_nodes_df(
         stop_ids: List[str],
         all_points: List[Point],
         headway: float,
-        wait_time_cost_method: Any) -> pd.DataFrame:
+        wait_time_cost_method: Any,
+        mode: Optional[str]) -> pd.DataFrame:
     avg_costs = []
     stop_lats = []
     stop_lons = []
+    mode_col = []
 
     default_avg_cost = headway / 2
 
@@ -236,11 +238,20 @@ def generate_nodes_df(
         stop_lats.append(point.y)
         stop_lons.append(point.x)
 
+        # TODO: Improve addition of the mode list to the
+        #       nodes dataframe
+        if mode:
+            mode_col.append([mode])
+        else:
+            # When no mode is provided just pass through empty list
+            mode_col.append([])
+
     nodes_df = pd.DataFrame({
         'stop_id': stop_ids,
         'avg_cost': avg_costs,
         'stop_lat': stop_lats,
         'stop_lon': stop_lons,
+        'modes': mode_col,
     })
 
     return nodes_df
@@ -253,6 +264,7 @@ def generate_edges_df(
     from_stop_ids = []
     to_stop_ids = []
     edge_costs = []
+    mode_col = []
 
     paired_nodes = list(zip(stop_ids[:-1], stop_ids[1:]))
 
@@ -302,6 +314,10 @@ def _validate_feature_properties(props: Dict) -> Dict:
     if 'bidirectional' in props:
         fresh_props['bidirectional'] = bool(props['bidirectional'])
 
+    if 'mode' in props:
+        # GTFS mode types are held as strings
+        fresh_props['mode'] = str(props['mode'])
+
     # For this section, either the custom stops of the stop distance
     # value must be set
     if 'stops' in props:
@@ -340,6 +356,8 @@ class SyntheticTransitLine(abc.ABC):
         # properties.
         feature_props = feature['properties']
         props = _validate_feature_properties(feature_props)
+
+        self._mode = props.get('mode', None)
 
         # Headway measured in seconds (30 minutes to seconds)
         self._headway = props.get('headway', 30 * 60)
@@ -380,8 +398,12 @@ class SyntheticTransitLine(abc.ABC):
             stop_ids,
             all_pts,
             self._headway,
-            self._wait_time_cost_method)
-        self._edges = generate_edges_df(stop_ids, chunks, self._average_speed)
+            self._wait_time_cost_method,
+            self._mode)
+        self._edges = generate_edges_df(
+            stop_ids,
+            chunks,
+            self._average_speed)
 
     def get_nodes(self) -> pd.DataFrame:
         # Do this to prevent upstream mutation of the reference DataFrame
