@@ -498,3 +498,17 @@ def generate_edge_and_wait_values(
         use_multiprocessing)
 
     return (all_edge_costs, all_wait_times)
+
+
+def get_modes_at_stops(feed: ptg.gtfs.Feed):
+    route_subset = feed.routes[['route_id', 'route_type']]
+    trips_subset = feed.trips[['trip_id', 'route_id']]
+    route_trips = pd.merge(route_subset, trips_subset, on='route_id')
+
+    stop_times_subset = feed.stop_times[['trip_id', 'stop_id']]
+    route_trips_stimes = pd.merge(route_trips, stop_times_subset, on='trip_id')
+    rts_sub = route_trips_stimes[['stop_id', 'route_type']]
+    grouped = rts_sub.groupby('stop_id')
+
+    return grouped.apply(lambda x: x[
+        'route_type'].unique().astype(str).tolist())
