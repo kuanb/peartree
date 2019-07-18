@@ -8,7 +8,8 @@ from fiona import crs
 from .settings import WGS84
 from .summarizer import (generate_edge_and_wait_values,
                          generate_summary_edge_costs,
-                         generate_summary_wait_times)
+                         generate_summary_wait_times,
+                         get_modes_at_stops)
 from .synthetic import SyntheticTransitNetwork
 from .toolkit import generate_graph_node_dataframe, get_nearest_nodes
 
@@ -125,6 +126,24 @@ def generate_summary_graph_elements(
                                                      fallback_stop_cost)
 
     return (summary_edge_costs, wait_times_by_stop)
+
+
+def add_modes_to_wait_times(
+        feed: ptg.gtfs.Feed,
+        wait_times_by_stop: pd.DataFrame):
+    # Note: wait_times_by_stop dataframe has 2 columns when passed in:
+    #           stop_id, avg_cost
+    #       stops_modes_lookup will have 2 columns:
+    #           stop_id, modes
+    stops_modes_lookup = get_modes_at_stops(feed)
+
+    # Merge the two onto one dataframe with a total of 3 columns:
+    #       stop_id, avg_cost, modes
+    return pd.merge(
+        wait_times_by_stop,
+        stops_modes_lookup,
+        on='stop_id',
+        how='left')
 
 
 def generate_cross_feed_edges(G: nx.MultiDiGraph,
