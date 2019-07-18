@@ -127,7 +127,7 @@ def generate_nodes_df_from_graph(G: nx.MultiDiGraph) -> pd.DataFrame:
     nodes_df = pd.DataFrame(nodes_rows)
 
     # Make sure that the column order is consistent
-    nodes_df = nodes_df[['id', 'boarding_cost', 'modes' 'x', 'y']]
+    nodes_df = nodes_df[['id', 'boarding_cost', 'modes', 'x', 'y']]
     return nodes_df
 
 
