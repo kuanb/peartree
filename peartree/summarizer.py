@@ -510,5 +510,8 @@ def get_modes_at_stops(feed: ptg.gtfs.Feed):
     rts_sub = route_trips_stimes[['stop_id', 'route_type']]
     grouped = rts_sub.groupby('stop_id')
 
-    return grouped.apply(lambda x: x[
+    as_series = grouped.apply(lambda x: x[
         'route_type'].unique().astype(str).tolist())
+    as_df = as_series.to_frame().reset_index()
+    as_df.columns = ['stop_id', 'modes']
+    return as_df
