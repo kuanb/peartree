@@ -223,7 +223,8 @@ def generate_stop_ids(stops_count: int) -> List[str]:
 def generate_nodes_df(
         stop_ids: List[str],
         all_points: List[Point],
-        headway: float) -> pd.DataFrame:
+        headway: float,
+        wait_time_cost_method: Any) -> pd.DataFrame:
     avg_costs = []
     stop_lats = []
     stop_lons = []
@@ -329,9 +330,11 @@ class SyntheticTransitLine(abc.ABC):
     Derived from a single Feature in a TransitJSON GeoJSON FeatureCollection.
     """
 
-    def __init__(self,
-                 feature: Dict[str, Any],
-                 existing_graph_nodes: Optional[pd.DataFrame]=None):
+    def __init__(
+            self,
+            feature: Dict[str, Any],
+            wait_time_cost_method: Any,
+            existing_graph_nodes: Optional[pd.DataFrame]=None):
         # All values have defaults built in; which are overridden when the
         # user supplies, through the TransitJSON, custom values for those
         # properties.
@@ -340,6 +343,7 @@ class SyntheticTransitLine(abc.ABC):
 
         # Headway measured in seconds (30 minutes to seconds)
         self._headway = props.get('headway', 30 * 60)
+        self._wait_time_cost_method = wait_time_cost_method
 
         # Speed is measured in miles per hour
         self._average_speed = props.get('average_speed', 8)
@@ -372,7 +376,11 @@ class SyntheticTransitLine(abc.ABC):
         stop_ids = generate_stop_ids(len(all_pts))
 
         # Produce key graph components
-        self._nodes = generate_nodes_df(stop_ids, all_pts, self._headway)
+        self._nodes = generate_nodes_df(
+            stop_ids,
+            all_pts,
+            self._headway,
+            self._wait_time_cost_method)
         self._edges = generate_edges_df(stop_ids, chunks, self._average_speed)
 
     def get_nodes(self) -> pd.DataFrame:
@@ -417,16 +425,21 @@ class SyntheticTransitNetwork(abc.ABC):
     }
     """
 
-    def __init__(self,
-                 feature_collection: Dict[str, Any],
-                 existing_graph_nodes: Optional[pd.DataFrame]=None):
+    def __init__(
+            self,
+            feature_collection: Dict[str, Any],
+            wait_time_cost_method: Any,
+            existing_graph_nodes: Optional[pd.DataFrame]=None):
         # Initialize an empty list
         self._lines = []
 
         # For each Feature in the FeatureCollection group; add an additional
         # instantiated SyntheticTransitLine object
         for feature in feature_collection['features']:
-            new_line = SyntheticTransitLine(feature, existing_graph_nodes)
+            new_line = SyntheticTransitLine(
+                feature,
+                wait_time_cost_method,
+                existing_graph_nodes)
             self._lines.append(new_line)
 
     def _create_all_lines_generator(self):
