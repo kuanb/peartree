@@ -128,24 +128,6 @@ def generate_summary_graph_elements(
     return (summary_edge_costs, wait_times_by_stop)
 
 
-def add_modes_to_wait_times(
-        feed: ptg.gtfs.Feed,
-        wait_times_by_stop: pd.DataFrame):
-    # Note: wait_times_by_stop dataframe has 2 columns when passed in:
-    #           stop_id, avg_cost
-    #       stops_modes_lookup will have 2 columns:
-    #           stop_id, modes
-    stops_modes_lookup = get_modes_at_stops(feed)
-
-    # Merge the two onto one dataframe with a total of 3 columns:
-    #       stop_id, avg_cost, modes
-    return pd.merge(
-        wait_times_by_stop,
-        stops_modes_lookup,
-        on='stop_id',
-        how='left')
-
-
 def generate_cross_feed_edges(G: nx.MultiDiGraph,
                               name: str,
                               stops_df: pd.DataFrame,
@@ -233,9 +215,27 @@ def _verify_outputs(all_edge_costs: pd.DataFrame,
                                          'valid wait times from feed object.')
 
 
+def _add_modes_to_wait_times(
+        feed: ptg.gtfs.Feed,
+        wait_times_by_stop: pd.DataFrame):
+    # Note: wait_times_by_stop dataframe has 2 columns when passed in:
+    #           stop_id, avg_cost
+    #       stops_modes_lookup will have 2 columns:
+    #           stop_id, modes
+    stops_modes_lookup = get_modes_at_stops(feed)
+
+    # Merge the two onto one dataframe with a total of 3 columns:
+    #       stop_id, avg_cost, modes
+    return pd.merge(
+        wait_times_by_stop,
+        stops_modes_lookup,
+        on='stop_id',
+        how='left')
+
+
 def _merge_stop_waits_and_attributes(wait_times_by_stop: pd.DataFrame,
                                      feed_stops: pd.DataFrame) -> pd.DataFrame:
-    wt_sub = wait_times_by_stop[['avg_cost', 'stop_id']]
+    wt_sub = wait_times_by_stop[['avg_cost', 'modes', 'stop_id']]
     fs_sub = feed_stops[['stop_lat', 'stop_lon', 'stop_id']]
     mdf = pd.merge(wt_sub, fs_sub, on='stop_id', how='left')
     return mdf[~mdf.isnull()]
@@ -284,6 +284,7 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
         sid_lookup[sid] = full_sid
         G.add_node(full_sid,
                    boarding_cost=row.avg_cost,
+                   modes=row.modes,
                    y=row.stop_lat,
                    x=row.stop_lon)
 
@@ -341,11 +342,14 @@ def populate_graph(G: nx.MultiDiGraph,
     G : nx.MultiDiGraph
         The muti-directed graph
     """
+    wait_times_and_modes = _add_modes_to_wait_times(feed, wait_times_by_stop)
+
     # Generate a merge of the wait time data and the feed stops data that will
     # be used for both the addition of new stop nodes and the addition of
     # cross feed edges later on (that join one feeds stops to the other if
     # they are within the connection threshold).
-    stops_df = _merge_stop_waits_and_attributes(wait_times_by_stop, feed.stops)
+    stops_df = _merge_stop_waits_and_attributes(
+        wait_times_and_modes, feed.stops)
 
     # Mutates the G network object
     sid_lookup = _add_nodes_and_edges(G, name, stops_df, summary_edge_costs)
