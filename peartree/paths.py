@@ -4,7 +4,8 @@ import networkx as nx
 import numpy as np
 import partridge as ptg
 
-from .graph import (generate_empty_md_graph, generate_summary_graph_elements,
+from .graph import (add_modes_to_wait_times, generate_empty_md_graph,
+                    generate_summary_graph_elements,
                     make_synthetic_system_network, populate_graph)
 from .synthetic import SyntheticTransitNetwork
 from .toolkit import generate_random_name
@@ -219,6 +220,8 @@ def load_feed_as_graph(feed: ptg.gtfs.Feed,
                                                            stop_cost_method,
                                                            use_multiprocessing)
 
+    stop_attributes = add_modes_to_wait_times(feed, wait_times_by_stop)
+
     # This is a flag used to check if we need to run any additional steps
     # after the feed is returned to ensure that new nodes and edge can connect
     # with existing ones (if they exist/a graph is passed in)
@@ -236,7 +239,7 @@ def load_feed_as_graph(feed: ptg.gtfs.Feed,
     return populate_graph(G,
                           name,
                           feed,
-                          wait_times_by_stop,
+                          stop_attributes,
                           summary_edge_costs,
                           connection_threshold,
                           walk_speed_kmph,
