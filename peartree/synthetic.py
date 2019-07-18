@@ -272,10 +272,10 @@ def generate_edges_df(
         # Estimate the amount of time it would
         # take to traverse this portion of the
         # route path given the default speed
-        l = chunks[i].length / 1000  # distance in km
+        l_km = chunks[i].length / 1000  # distance in km
 
         # Note: Average speed is to be supplied in kmph
-        in_hours = round(l / avg_speed, 3)
+        in_hours = round(l_km / avg_speed, 3)
         # Convert to seconds
         in_seconds = in_hours * 60 * 60
         edge_costs.append(in_seconds)
