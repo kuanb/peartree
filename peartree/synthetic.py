@@ -1,4 +1,5 @@
 import abc
+import warnings
 from functools import partial
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -335,6 +336,12 @@ def _validate_feature_properties(props: Dict) -> Dict:
     if no_stops and no_dist:
         raise ValueError('Synthetic network addition must have either '
                          'custom stops or stops distance default set.')
+
+    if 'mode' not in fresh_props:
+        # Mode id based on GTFS mode spec - routes supplied absent modes
+        # may lead to undesired effects
+        warnings.warn(
+            'No mode id supplied for synthetic route, leaving blank.')
 
     return fresh_props
 
