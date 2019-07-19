@@ -85,7 +85,7 @@ def test_coalesce_operation():
                    boarding_cost=15)
         G.add_node('c',
                    x=-122.2711038, y=37.7660708,
-                   modes=['3'],
+                   modes=['1', '3'],
                    boarding_cost=12)
 
         G.add_edge('a', 'b', length=10, mode='transit')
@@ -120,7 +120,7 @@ def test_coalesce_operation():
             ref_node_b = {
                 'x': -1932800,
                 'y': -543400,
-                'modes': ['3'],
+                'modes': ['1', '3'],
                 'boarding_cost': 13.5}
             b = _dict_equal(node, ref_node_b)
 
