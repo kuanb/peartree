@@ -370,4 +370,4 @@ def test_feeds_with_no_direction_id():
         assert not np.isnan(node['boarding_cost'])
 
         # Also check type of the modes list
-        assert not type(node['modes']) == list
+        assert type(node['modes']) == list
