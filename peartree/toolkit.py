@@ -256,27 +256,12 @@ def coalesce(
     # Recast the lookup crosswalk as a series for convenience
     reference = pd.Series(lookup)
 
-    # Get the average boarding cost for each node grouping
+    # Get the following attributes:
+    #   1. average boarding cost for each node grouping
+    #   2. modes associated with each node grouping
     for nni in new_node_coords:
         # Initialize an empty list
         boarding_costs = []
-
-        # Get all original nodes that have been grouped
-        g_nodes = reference.loc[reference == nni].index.values
-
-        # Iterate through and add gather costs
-        for i in g_nodes:
-            bc = G.nodes[i]['boarding_cost']
-            boarding_costs.append(bc)
-
-        # Calculate the summary boarding costs
-        # and assign it to the new nodes objects
-        new_node_coords[nni]['boarding_cost'] = (
-            boarding_cost_summary_method(np.array(boarding_costs)))
-
-    # Get the modes associated with each node grouping
-    for nni in new_node_coords:
-        # Initialize an empty list
         all_modes_related = []
 
         # Get all original nodes that have been grouped
@@ -284,8 +269,18 @@ def coalesce(
 
         # Iterate through and add gather costs
         for i in g_nodes:
-            this_nodes_modes = G.nodes[i]['modes']
+            specific_node = G.nodes[i]
+
+            bc = specific_node['boarding_cost']
+            boarding_costs.append(bc)
+
+            this_nodes_modes = specific_node['modes']
             all_modes_related.extend(this_nodes_modes)
+
+        # Calculate the summary boarding costs
+        # and assign it to the new nodes objects
+        new_node_coords[nni]['boarding_cost'] = (
+            boarding_cost_summary_method(np.array(boarding_costs)))
 
         # Get all unique modes and assign it to the new nodes objects
         sorted_set_list = sorted(list(set(all_modes_related)))
