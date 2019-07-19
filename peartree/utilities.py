@@ -119,6 +119,7 @@ def generate_nodes_df_from_graph(G: nx.MultiDiGraph) -> pd.DataFrame:
         nodes_rows.append({
             'id': node_id,
             'boarding_cost': node['boarding_cost'],
+            'modes': node['modes'],
             'x': node['x'],
             'y': node['y']})
 
@@ -126,7 +127,7 @@ def generate_nodes_df_from_graph(G: nx.MultiDiGraph) -> pd.DataFrame:
     nodes_df = pd.DataFrame(nodes_rows)
 
     # Make sure that the column order is consistent
-    nodes_df = nodes_df[['id', 'boarding_cost', 'x', 'y']]
+    nodes_df = nodes_df[['id', 'boarding_cost', 'modes', 'x', 'y']]
     return nodes_df
 
 
@@ -206,6 +207,7 @@ def graph_from_zip(path_to_zip_file: str) -> nx.MultiDiGraph:
     for i, node in nodes_df.iterrows():
         G_from_zip.add_node(node['id'],
                             boarding_cost=node['boarding_cost'],
+                            modes=node['modes'],
                             x=node['x'],
                             y=node['y'])
 

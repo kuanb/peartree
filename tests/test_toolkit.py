@@ -76,11 +76,17 @@ def test_coalesce_operation():
 
         # And add two nodes to it
         G.add_node('a',
-                   x=-122.2729918, y=37.7688136, boarding_cost=10)
+                   x=-122.2729918, y=37.7688136,
+                   modes=['3'],
+                   boarding_cost=10)
         G.add_node('b',
-                   x=-122.2711039, y=37.7660709, boarding_cost=15)
+                   x=-122.2711039, y=37.7660709,
+                   modes=['3'],
+                   boarding_cost=15)
         G.add_node('c',
-                   x=-122.2711038, y=37.7660708, boarding_cost=12)
+                   x=-122.2711038, y=37.7660708,
+                   modes=['1', '3'],
+                   boarding_cost=12)
 
         G.add_edge('a', 'b', length=10, mode='transit')
         G.add_edge('b', 'c', length=1, mode='walk')
@@ -88,7 +94,9 @@ def test_coalesce_operation():
         # Also add a node, and edge that is a more expensive variant
         # of effectively the same edge
         G.add_node('b_alt',
-                   x=-122.2711039, y=37.7660709, boarding_cost=13.5)
+                   x=-122.2711039, y=37.7660709,
+                   modes=['3'],
+                   boarding_cost=13.5)
 
         G.add_edge('a', 'b_alt', length=100, mode='transit')
 
@@ -105,12 +113,14 @@ def test_coalesce_operation():
             ref_node_a = {
                 'x': -1933000,
                 'y': -543000,
+                'modes': ['3'],
                 'boarding_cost': 10.0}
             a = _dict_equal(node, ref_node_a)
 
             ref_node_b = {
                 'x': -1932800,
                 'y': -543400,
+                'modes': ['1', '3'],
                 'boarding_cost': 13.5}
             b = _dict_equal(node, ref_node_b)
 

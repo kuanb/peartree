@@ -274,6 +274,23 @@ def coalesce(
         new_node_coords[nni]['boarding_cost'] = (
             boarding_cost_summary_method(np.array(boarding_costs)))
 
+    # Get the modes associated with each node grouping
+    for nni in new_node_coords:
+        # Initialize an empty list
+        all_modes_related = []
+
+        # Get all original nodes that have been grouped
+        g_nodes = reference.loc[reference == nni].index.values
+
+        # Iterate through and add gather costs
+        for i in g_nodes:
+            this_nodes_modes = G.nodes[i]['modes']
+            all_modes_related.extend(this_nodes_modes)
+
+        # Get all unique modes and assign it to the new nodes objects
+        sorted_set_list = sorted(list(set(all_modes_related)))
+        new_node_coords[nni]['modes'] = sorted_set_list
+
     # First step to creating a list of replacement edges
     replacement_edges_fr = []
     replacement_edges_to = []
