@@ -337,6 +337,14 @@ def _validate_feature_properties(props: Dict) -> Dict:
         raise ValueError('Synthetic network addition must have either '
                          'custom stops or stops distance default set.')
 
+    # If both are provided make note that the custom stops will be used
+    # over the stop distance distribution variable
+    if not no_stops and not no_dist:
+        warnings.warn(
+            'Both custom stops and a stop distribution variable provided. '
+            'Using custom stops over stop distribution variable.')
+        del fresh_props['stop_dist']
+
     if 'mode' not in fresh_props:
         # Mode id based on GTFS mode spec - routes supplied absent modes
         # may lead to undesired effects
