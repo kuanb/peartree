@@ -157,7 +157,7 @@ def nan_helper(y):
         >>> y[nans]= np.interp(x(nans), x(~nans), y[~nans])
     """
 
-    return (np.isnan(y), lambda z: z.nonzero()[0])
+    return (np.isnan(y), lambda z: z.to_numpy().nonzero()[0])
 
 
 def reproject(G: nx.MultiDiGraph, to_epsg: int=2163) -> nx.MultiDiGraph:
