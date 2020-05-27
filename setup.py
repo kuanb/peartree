@@ -17,8 +17,8 @@ requirements = [
     'geopandas>=0.4.0',
     'networkx>=2.0',
     'numpy>=1.18.4',
-    'partridge>=1.0.0',
-    'pandas>=1.0.3'
+    'pandas>=1.0.3',
+    'partridge>=1.0.0'
 ]
 
 setup_requirements = [
