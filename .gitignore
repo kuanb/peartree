@@ -18,3 +18,4 @@ profile/
 .coverage-e
 coverage.xml
 .vscode/
+Pipfile
