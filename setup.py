@@ -16,7 +16,8 @@ requirements = [
     'fiona>=1.6.1',
     'geopandas>=0.4.0',
     'networkx>=2.0',
-    'partridge>=1.0.0'
+    'partridge>=1.0.0',
+    'pandas>=1.0.3'
 ]
 
 setup_requirements = [
