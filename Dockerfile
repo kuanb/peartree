@@ -2,7 +2,7 @@ FROM kuanb/peartree
 
 RUN mkdir /code && \
 	pip install --upgrade pip && \
-    pip install numpy==1.14.0 scipy==1.0.0
+    pip install numpy==1.18.4 scipy==1.4.1
 
 WORKDIR /code
 
