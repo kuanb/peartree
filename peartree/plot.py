@@ -25,7 +25,7 @@ def generate_plot(G: nx.MultiDiGraph, use_agg=False):
     #       also plan on incorporating OSMnx into this library
     #       down the road so it isn't too extraneous an import.
     fig, ax = ox.plot_graph(G,
-                            fig_height=12,
+                            figsize=(12,12),
                             show=False,
                             close=False,
                             node_color='#8aedfc',
