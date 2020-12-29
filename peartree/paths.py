@@ -219,6 +219,9 @@ def load_feed_as_graph(feed: ptg.gtfs.Feed,
                                                            stop_cost_method,
                                                            use_multiprocessing)
 
+    #print("print summary_edge_costs")
+    #print(summary_edge_costs)
+
     # This is a flag used to check if we need to run any additional steps
     # after the feed is returned to ensure that new nodes and edge can connect
     # with existing ones (if they exist/a graph is passed in)

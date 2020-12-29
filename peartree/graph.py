@@ -188,6 +188,7 @@ def generate_cross_feed_edges(G: nx.MultiDiGraph,
         lat = float(row.stop_lat)
         lon = float(row.stop_lon)
         point = (lat, lon)
+
         nearest_nodes = get_nearest_nodes(node_df,
                                           point,
                                           connection_threshold,
@@ -247,6 +248,7 @@ def _add_cross_feed_edges(G: nx.MultiDiGraph,
                           walk_speed_kmph: float) -> nx.MultiDiGraph:
     # Add the cross feed edge connectors to the graph to
     # capture transfer points
+
     for i, row in cross_feed_edges.iterrows():
         # Extract the row column values as discrete variables
         sid = row.stop_id
@@ -351,8 +353,10 @@ def populate_graph(G: nx.MultiDiGraph,
     stops_df = _merge_stop_waits_and_attributes(
         wait_times_and_modes, feed.stops)
 
+
     # Mutates the G network object
     sid_lookup = _add_nodes_and_edges(G, name, stops_df, summary_edge_costs)
+
 
     # Default to exempt new edges created, unless imputing internal
     # walk transfers is requested as well
