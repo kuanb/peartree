@@ -200,6 +200,7 @@ def generate_cross_feed_edges(G: nx.MultiDiGraph,
             to_nodes.append(node_id)
             edge_costs.append(dist_val)
 
+
     return pd.DataFrame({'stop_id': stop_ids,
                          'to_node': to_nodes,
                          'distance': edge_costs})
@@ -266,6 +267,8 @@ def _add_cross_feed_edges(G: nx.MultiDiGraph,
 
         # And then add it to the graph
         G.add_edge(full_sid, to, length=in_seconds, mode='walk')
+        # also add reverse edge
+        G.add_edge(to, full_sid, length=in_seconds, mode='walk')
 
 
 def _add_nodes_and_edges(G: nx.MultiDiGraph,
