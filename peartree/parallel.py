@@ -123,7 +123,8 @@ def generate_wait_times(
         for direction in [0, 1]:
             # Check if direction_id exists in source data
             if 'direction_id' in trips_and_stop_times:
-                constraint_2 = (trips_and_stop_times.direction_id == direction)
+                # convert to a nump array (indices do not need to be preserved)
+                constraint_2 = (trips_and_stop_times.direction_id == direction).values
                 direction_subset = stop_times_by_stop[constraint_2]
             else:
                 direction_subset = stop_times_by_stop.copy()
