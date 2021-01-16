@@ -275,10 +275,14 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
                          name: str,
                          stops_df: pd.DataFrame,
                          summary_edge_costs: pd.DataFrame,
-                         bidirectional: bool=False) -> Dict[str, str]:
+                         bidirectional: bool=False,
+                         add_trips_per_edge: bool=False) -> Dict[str, str]:
     # As we convert stop ids to actual nodes, let's keep track of those names
     # here so that we can reference them when we add connector edges across
     # the various feeds loaded into the graph
+    print("print add_trips_per_edge val from graph")
+    print(add_trips_per_edge)
+
     sid_lookup = {}
 
     for i, row in stops_df.iterrows():
@@ -296,12 +300,18 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
     for i, row in summary_edge_costs.iterrows():
         sid_fr = nameify_stop_id(name, row.from_stop_id)
         sid_to = nameify_stop_id(name, row.to_stop_id)
-        G.add_edge(sid_fr, sid_to, length=row.edge_cost, mode='transit')
+        if add_trips_per_edge:
+            G.add_edge(sid_fr, sid_to, length=row.edge_cost, trips=row.trips_per_edge, mode='transit')
+        else:
+            G.add_edge(sid_fr, sid_to, length=row.edge_cost, mode='transit')
 
         # If want to add both directions in this step, we can
         # by reversing the to/from node order on edge
         if bidirectional:
-            G.add_edge(sid_to, sid_fr, length=row.edge_cost, mode='transit')
+            if add_trips_per_edge:
+                G.add_edge(sid_to, sid_fr, length=row.edge_cost, trips=row.trips_per_edge, mode='transit')
+            else:
+                G.add_edge(sid_to, sid_fr, length=row.edge_cost, mode='transit')
 
     return sid_lookup
 
@@ -313,7 +323,8 @@ def populate_graph(G: nx.MultiDiGraph,
                    summary_edge_costs: pd.DataFrame,
                    connection_threshold: Union[int, float],
                    walk_speed_kmph: float=4.5,
-                   impute_walk_transfers: bool=True) -> nx.MultiDiGraph:
+                   impute_walk_transfers: bool=True,
+                   add_trips_per_edge: bool=False) -> nx.MultiDiGraph:
     """
     Takes an existing network graph object and adds all new nodes, transit \
     edges, and connector edges between existing and new nodes (stop ids).
@@ -347,6 +358,9 @@ def populate_graph(G: nx.MultiDiGraph,
     G : nx.MultiDiGraph
         The muti-directed graph
     """
+    print("print add_trips_per_edge val from populate_graph")
+    print(add_trips_per_edge)
+
     wait_times_and_modes = _add_modes_to_wait_times(feed, wait_times_by_stop)
 
     # Generate a merge of the wait time data and the feed stops data that will
@@ -358,7 +372,7 @@ def populate_graph(G: nx.MultiDiGraph,
 
 
     # Mutates the G network object
-    sid_lookup = _add_nodes_and_edges(G, name, stops_df, summary_edge_costs)
+    sid_lookup = _add_nodes_and_edges(G, name, stops_df, summary_edge_costs, False, add_trips_per_edge)
 
 
     # Default to exempt new edges created, unless imputing internal

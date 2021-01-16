@@ -139,7 +139,8 @@ def load_feed_as_graph(feed: ptg.gtfs.Feed,
                        fallback_stop_cost: bool=FALLBACK_STOP_COST_DEFAULT,
                        interpolate_times: bool=True,
                        impute_walk_transfers: bool=False,
-                       use_multiprocessing: bool=False):
+                       use_multiprocessing: bool=False,
+                       add_trips_per_edge: bool=False):
     """
     Convert a feed object into a NetworkX Graph, or connect to an existing \
     NetworkX graph if one is supplied.
@@ -197,6 +198,8 @@ def load_feed_as_graph(feed: ptg.gtfs.Feed,
         networkx.Graph, the loaded, combined representation of the schedule \
         data from the feed subset by the time parameters provided
     """
+    print("print add_trips_per_edge val")
+    print(add_trips_per_edge)
 
     # Generate a random name for name if it is None
     if not name:
@@ -243,7 +246,8 @@ def load_feed_as_graph(feed: ptg.gtfs.Feed,
                           summary_edge_costs,
                           connection_threshold,
                           walk_speed_kmph,
-                          impute_walk_transfers)
+                          impute_walk_transfers,
+                          add_trips_per_edge)
 
 
 def load_synthetic_network_as_graph(

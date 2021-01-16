@@ -60,13 +60,20 @@ def summarize_edge_costs(
         #       operator out from the nested summarize_edge_costs method
         avg_cost = unique_edge_operator(df[to_mask].edge_cost)
 
+        # number of trips that travel on edge
+        trips_per_edge = len(df[to_mask])
+
         # Add each row-array to the reference matrix, which...
         results_mtx.append([avg_cost,
+                            trips_per_edge,
                             from_stop_id,
                             to_stop_id])
 
+    # add a new column
+    new_columns = ['edge_cost', 'trips_per_edge', 'from_stop_id', 'to_stop_id']
+
     # ...will be converted into a DataFrame upon being returned
-    return pd.DataFrame(results_mtx, columns=df.columns)
+    return pd.DataFrame(results_mtx, columns=new_columns)
 
 
 def generate_summary_edge_costs(all_edge_costs: pd.DataFrame) -> pd.DataFrame:
@@ -85,6 +92,7 @@ def generate_summary_edge_costs(all_edge_costs: pd.DataFrame) -> pd.DataFrame:
         Edge costs grouped by from-to node pairs.
     """
     summary_groupings = all_edge_costs.groupby('from_stop_id')
+    
     summary = summary_groupings.apply(summarize_edge_costs)
     summary = summary.reset_index(drop=True)
     return summary
