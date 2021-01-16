@@ -85,11 +85,12 @@ def generate_graph_node_dataframe(G):
         x = float(data['x'])
         y = float(data['y'])
         clist.append([node, x, y])
-    coords = np.array(clist)
+    #coords = np.array(clist)
+    coords = np.array(clist, dtype='O')
 
     # Then make into a Pandas DataFrame, with the node as index (type string)
     df = pd.DataFrame(coords, columns=['node', 'x', 'y'])
-    df['node'] = df['node'].astype(str)
+    #df['node'] = df['node'].astype(str)
     df = df.set_index('node')
     return df
 
@@ -107,7 +108,7 @@ def get_nearest_nodes(df_orig: pd.DataFrame,
     df = df_orig.copy()
 
     if exempt_id is not None:
-        df.index = df.index.astype(str)
+        #df.index = df.index.astype(str)
         mask = ~(df.index == exempt_id)
         df = df[mask]
 
