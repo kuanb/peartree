@@ -116,15 +116,17 @@ def generate_wait_times(
         stop_cost_method: Any) -> Dict[int, List[float]]:
     wait_times = {0: {}, 1: {}}
     for stop_id in trips_and_stop_times.stop_id.unique():
-        constraint_1 = (trips_and_stop_times.stop_id == stop_id)
-        stop_times_by_stop = trips_and_stop_times[constraint_1]
+        #constraint_1 = (trips_and_stop_times.stop_id == stop_id)
+        #stop_times_by_stop = trips_and_stop_times[constraint_1]
+        stop_times_by_stop = trips_and_stop_times[trips_and_stop_times.stop_id == stop_id]
 
         # Handle both inbound and outbound directions
         for direction in [0, 1]:
             # Check if direction_id exists in source data
             if 'direction_id' in trips_and_stop_times:
-                constraint_2 = (trips_and_stop_times.direction_id == direction)
-                direction_subset = stop_times_by_stop[constraint_2]
+                #constraint_2 = (trips_and_stop_times.direction_id == direction)
+                #direction_subset = stop_times_by_stop[constraint_2]
+                direction_subset = trips_and_stop_times[(trips_and_stop_times.stop_id == stop_id) & (trips_and_stop_times.direction_id == direction)]
             else:
                 direction_subset = stop_times_by_stop.copy()
 

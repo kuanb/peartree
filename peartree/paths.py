@@ -198,9 +198,6 @@ def load_feed_as_graph(feed: ptg.gtfs.Feed,
         networkx.Graph, the loaded, combined representation of the schedule \
         data from the feed subset by the time parameters provided
     """
-    print("print add_trips_per_edge val")
-    print(add_trips_per_edge)
-
     # Generate a random name for name if it is None
     if not name:
         name = generate_random_name()

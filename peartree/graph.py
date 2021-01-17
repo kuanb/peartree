@@ -280,8 +280,6 @@ def _add_nodes_and_edges(G: nx.MultiDiGraph,
     # As we convert stop ids to actual nodes, let's keep track of those names
     # here so that we can reference them when we add connector edges across
     # the various feeds loaded into the graph
-    print("print add_trips_per_edge val from graph")
-    print(add_trips_per_edge)
 
     sid_lookup = {}
 
@@ -358,9 +356,6 @@ def populate_graph(G: nx.MultiDiGraph,
     G : nx.MultiDiGraph
         The muti-directed graph
     """
-    print("print add_trips_per_edge val from populate_graph")
-    print(add_trips_per_edge)
-
     wait_times_and_modes = _add_modes_to_wait_times(feed, wait_times_by_stop)
 
     # Generate a merge of the wait time data and the feed stops data that will
