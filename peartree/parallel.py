@@ -116,15 +116,16 @@ def generate_wait_times(
         stop_cost_method: Any) -> Dict[int, List[float]]:
     wait_times = {0: {}, 1: {}}
     for stop_id in trips_and_stop_times.stop_id.unique():
+        # First subsetting of the dataframe to create initial sub-df
         constraint_1 = (trips_and_stop_times.stop_id == stop_id)
-        stop_times_by_stop = trips_and_stop_times[constraint_1]
+        stop_times_by_stop = trips_and_stop_times[constraint_1].copy()
 
         # Handle both inbound and outbound directions
         for direction in [0, 1]:
             # Check if direction_id exists in source data
-            if 'direction_id' in trips_and_stop_times:
+            if 'direction_id' in stop_times_by_stop:
                 constraint_2 = (stop_times_by_stop.direction_id == direction)
-                direction_subset = stop_times_by_stop[constraint_2]
+                direction_subset = stop_times_by_stop[constraint_2].copy()
             else:
                 direction_subset = stop_times_by_stop.copy()
 
