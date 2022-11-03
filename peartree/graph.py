@@ -194,7 +194,7 @@ def generate_cross_feed_edges(G: nx.MultiDiGraph,
                                           exempt_id=full_sid)
 
         # Iterate through series results and add to output
-        for node_id, dist_val in nearest_nodes.iteritems():
+        for node_id, dist_val in nearest_nodes.items():
             stop_ids.append(sid)
             to_nodes.append(node_id)
             edge_costs.append(dist_val)
