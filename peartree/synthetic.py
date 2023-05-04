@@ -169,11 +169,11 @@ def generate_meter_projected_chunks(
     # Take chunks and merge in the small lines
     # from intersection inside of the buffered circles
     # and attach to nearest larger line
-    clean_chunks = [chunks[0]]
-    r = len(chunks)
+    clean_chunks = [chunks.geoms[0]]
+    r = len(chunks.geoms)
     for c in range(1, r):
         latest = clean_chunks[-1]
-        current = chunks[c]
+        current = chunks.geoms[c]
         # Again, this is a week point of the buffer of
         # 1 meter method
         if latest.length <= 2:
@@ -210,7 +210,7 @@ def generate_stop_points(chunks: List[LineString]) -> List[Point]:
     ap_ma_reproj = transform(project, ap_ma)  # apply projection
 
     # Final step will be to pull out all points back into a list
-    return [p for p in ap_ma_reproj]
+    return [p for p in ap_ma_reproj.geoms]
 
 
 def generate_stop_ids(stops_count: int) -> List[str]:
